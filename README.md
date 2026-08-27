@@ -1,15 +1,26 @@
 # Semtags
 
-![Semtags social preview](assets/branding/semtags-github-social-preview-clean-1280x640.png)
-
-Semtags is a local Markdown-first knowledge workspace for notes, and tasks using
-backlinks as semantic tags.
-
-The app is inspired by OrgMode and Logseq, but Markdown files remain the source of truth.
-Semtags scans a local workspace folder, renders wiki links and backlinks, and
-adds project-oriented task workflows on top of plain `.md` files.
-
-Repository: [SphericalCow1/Semtags](https://github.com/SphericalCow1/Semtags)
+<table>
+  <tr>
+    <td width="38%">
+      <img src="assets/branding/semtags-readme-hero-square.png" alt="Semtags Markdown document connected to semantic tags" />
+    </td>
+    <td width="62%" valign="middle">
+      <p>
+        Semtags is a local Markdown-first knowledge workspace for notes, and tasks using
+        backlinks as semantic tags.
+      </p>
+      <p>
+        The app is inspired by OrgMode and Logseq, but Markdown files remain the source of truth.
+        Semtags scans a local workspace folder, renders wiki links and backlinks, and
+        adds project-oriented task workflows on top of plain <code>.md</code> files.
+      </p>
+      <p>
+        Repository: <a href="https://github.com/SphericalCow1/Semtags">SphericalCow1/Semtags</a>
+      </p>
+    </td>
+  </tr>
+</table>
 
 ## Product Vision
 
