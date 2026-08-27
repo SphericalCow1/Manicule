@@ -1,5 +1,7 @@
 # Semtags
 
+![Semtags social preview](assets/branding/semtags-github-social-preview-clean-1280x640.png)
+
 Semtags is a local Markdown-first knowledge workspace for notes, and tasks using
 backlinks as semantic tags.
 
