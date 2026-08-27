@@ -13,6 +13,7 @@
   import WorkspaceHeader from "./WorkspaceHeader.svelte";
   import NavigationTree from "./NavigationTree.svelte";
   import NavigationContextMenu from "./NavigationContextMenu.svelte";
+  import ContextMenuShell from "./ContextMenuShell.svelte";
   import {
     ancestorFolderPaths,
     buildNavigationTree,
@@ -35,6 +36,7 @@
   let popupError: string | null = null;
   let searchQuery = "";
   let contextMenu: ContextMenuState | null = null;
+  let searchResultContextMenu: SearchResultContextMenuState | null = null;
   let folderPageDialog: FolderPageDialogState | null = null;
   let folderPageInput: HTMLInputElement | null = null;
   let folderPageError: string | null = null;
@@ -97,6 +99,12 @@
     x: number;
     y: number;
     node: NavigationNode;
+  };
+
+  type SearchResultContextMenuState = {
+    x: number;
+    y: number;
+    result: SearchResult;
   };
 
   type FolderPageDialogState = {
@@ -167,6 +175,7 @@
     searchQuery = "";
     searchResults = [];
     searchError = null;
+    searchResultContextMenu = null;
     selectedPaths = new Set();
     selectionAnchorPath = null;
     if ($workspaceStore.root) {
@@ -226,6 +235,17 @@
 
   $: if (contextMenu && !nodeExists(contextMenu.node)) {
     contextMenu = null;
+  }
+
+  $: if (
+    searchResultContextMenu &&
+    !searchResults.some(
+      (result) =>
+        result.path === searchResultContextMenu?.result.path &&
+        result.line === searchResultContextMenu.result.line,
+    )
+  ) {
+    searchResultContextMenu = null;
   }
 
   $: if (focusedTreePath && !filteredRows.some((row) => row.node.path === focusedTreePath)) {
@@ -729,6 +749,7 @@
       searchResults = [];
       searchLoading = false;
       searchError = null;
+      searchResultContextMenu = null;
       return;
     }
 
@@ -750,6 +771,7 @@
 
       searchResults = results.slice(0, 30);
       searchError = null;
+      searchResultContextMenu = null;
     } catch (error) {
       if (requestId !== searchSequence) {
         return;
@@ -757,6 +779,7 @@
 
       searchResults = [];
       searchError = error instanceof Error ? error.message : String(error);
+      searchResultContextMenu = null;
     } finally {
       if (requestId === searchSequence) {
         searchLoading = false;
@@ -768,6 +791,54 @@
     mainViewStore.set("editor");
     rememberRecentPage(result.path);
     void editorSessionStore.open(result.path, { line: result.line });
+  }
+
+  function openSearchResultInRightPane(result: SearchResult) {
+    openPageInRightPane(result.path);
+  }
+
+  function openSearchResultContextMenu(result: SearchResult, event: MouseEvent) {
+    event.preventDefault();
+    searchResultContextMenu = {
+      x: event.clientX,
+      y: event.clientY,
+      result,
+    };
+  }
+
+  function openSearchResultKeyboardContextMenu(result: SearchResult, event: KeyboardEvent) {
+    if (event.key !== "ContextMenu" && !(event.key === "F10" && event.shiftKey)) {
+      return;
+    }
+
+    event.preventDefault();
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    searchResultContextMenu = {
+      x: rect.left + 12,
+      y: rect.top + 12,
+      result,
+    };
+  }
+
+  function closeSearchResultContextMenu() {
+    searchResultContextMenu = null;
+  }
+
+  function handleSearchResultContextMenuAction(action: "open-editor" | "open-right") {
+    if (!searchResultContextMenu) {
+      return;
+    }
+
+    const { result } = searchResultContextMenu;
+    searchResultContextMenu = null;
+
+    if (action === "open-right") {
+      openSearchResultInRightPane(result);
+      return;
+    }
+
+    openSearchResult(result);
   }
 
   function openTaskOverview() {
@@ -2116,6 +2187,8 @@
               class="search-result"
               title={`${result.path}:${result.line}`}
               on:click={() => openSearchResult(result)}
+              on:contextmenu={(event) => openSearchResultContextMenu(result, event)}
+              on:keydown={(event) => openSearchResultKeyboardContextMenu(result, event)}
             >
               <span>{pageNameFromPath(result.path)}</span>
               <small>{result.path}:{result.line}</small>
@@ -2136,6 +2209,31 @@
     {folderSortFor}
     folderColors={$workspaceStore.folderColors}
   />
+
+  {#if searchResultContextMenu}
+    <ContextMenuShell
+      x={searchResultContextMenu.x}
+      y={searchResultContextMenu.y}
+      onClose={closeSearchResultContextMenu}
+    >
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="e"
+        on:click={() => handleSearchResultContextMenuAction("open-editor")}
+      >
+        Open in <span class="menu-mnemonic">e</span>ditor
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="r"
+        on:click={() => handleSearchResultContextMenuAction("open-right")}
+      >
+        Open in <span class="menu-mnemonic">r</span>ight pane
+      </button>
+    </ContextMenuShell>
+  {/if}
 
   {#if folderPageDialog}
     <div
