@@ -2,9 +2,6 @@
 
 <table>
   <tr>
-    <td width="38%">
-      <img src="assets/branding/semtags-readme-hero-square.png" alt="Semtags Markdown document connected to semantic tags" />
-    </td>
     <td width="62%" valign="middle">
       <p>
         Semtags is a local Markdown-first knowledge workspace for notes, and tasks using
@@ -18,6 +15,9 @@
       <p>
         Repository: <a href="https://github.com/SphericalCow1/Semtags">SphericalCow1/Semtags</a>
       </p>
+    </td>
+    <td width="38%">
+      <img src="assets/branding/semtags-readme-hero-square.png" alt="Semtags Markdown document connected to semantic tags" />
     </td>
   </tr>
 </table>
