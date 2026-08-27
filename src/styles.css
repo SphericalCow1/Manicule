@@ -629,6 +629,12 @@ textarea {
   width: 24px;
   height: 20px;
   font-size: 11px;
+  opacity: 0;
+}
+
+.quick-row:hover .icon-button,
+.quick-row:focus-within .icon-button {
+  opacity: 1;
 }
 
 .quick-icon {
