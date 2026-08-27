@@ -1,0 +1,74 @@
+{
+  "wikiLinks": [
+    {
+      "name": "plain target",
+      "source": "See [[Projects/Alpha]] today",
+      "links": [
+        {
+          "target": "Projects/Alpha",
+          "alias": null,
+          "label": "Projects/Alpha"
+        }
+      ]
+    },
+    {
+      "name": "alias target",
+      "source": "[[Projects/Alpha|Alpha plan]]",
+      "links": [
+        {
+          "target": "Projects/Alpha",
+          "alias": "Alpha plan",
+          "label": "Alpha plan"
+        }
+      ]
+    },
+    {
+      "name": "markdown extension target",
+      "source": "[[projects/forecasts.md|Forecast]]",
+      "links": [
+        {
+          "target": "projects/forecasts.md",
+          "alias": "Forecast",
+          "label": "Forecast"
+        }
+      ]
+    },
+    {
+      "name": "invalid targets",
+      "source": "[[]] [[/Alpha]] [[../Alpha]] [[Alpha/./Beta]]",
+      "links": []
+    }
+  ],
+  "taskLines": [
+    {
+      "name": "todo list item",
+      "source": "- TODO Prepare kickoff",
+      "status": "TODO",
+      "rendered": "- **TODO** Prepare kickoff"
+    },
+    {
+      "name": "in progress ordered item",
+      "source": "1. INPROGRESS Follow up",
+      "status": "INPROGRESS",
+      "rendered": "1. **INPROGRESS** Follow up"
+    },
+    {
+      "name": "waiting checkbox",
+      "source": "- [ ] WAITING Input",
+      "status": "WAITING",
+      "rendered": "- [ ] **WAITING** Input"
+    },
+    {
+      "name": "done checkbox",
+      "source": "- [x] DONE Closed",
+      "status": "DONE",
+      "rendered": "- [x] **DONE** Closed"
+    },
+    {
+      "name": "keyword inside ordinary text",
+      "source": "- Discuss TODO handling",
+      "status": null,
+      "rendered": "- Discuss TODO handling"
+    }
+  ]
+}

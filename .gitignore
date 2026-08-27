@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.tmp-tests/
+.svelte-kit/
+
+src-tauri/target/
+src-tauri/gen/
+target/
+
+.DS_Store
+*.log
