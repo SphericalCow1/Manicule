@@ -3,7 +3,7 @@
 Semtags is a local Markdown-first knowledge workspace for notes, and tasks using
 backlinks as semantic tags.
 
-The app is inspired by Logseq, but Markdown files remain the source of truth.
+The app is inspired by OrgMode and Logseq, but Markdown files remain the source of truth.
 Semtags scans a local workspace folder, renders wiki links and backlinks, and
 adds project-oriented task workflows on top of plain `.md` files.
 
@@ -11,8 +11,7 @@ Repository: [SphericalCow1/Semtags](https://github.com/SphericalCow1/Semtags)
 
 ## Product Vision
 
-Semtags is built for personal knowledge management in project and team
-leadership contexts. It follows a simple product promise:
+Semtags is built for personal knowledge management in project and task management contexts. It follows a simple product promise:
 
 > Capture first. Structure later. Files forever.
 
@@ -31,9 +30,6 @@ The default workflow is:
 5. Retrieve information through backlinks, task overview, search, and the
    Markdown files themselves.
 
-Semtags may use an index or cache internally, but all relevant user content
-stays in Markdown files inside the workspace. The index can be rebuilt from the
-files.
 
 ## Core Workflow
 
@@ -153,31 +149,6 @@ Backlinks are sorted by source path in reverse alphabetical order, then by their
 order inside the source file. This keeps newer journal pages near the top when
 they use date-based names.
 
-### Editor Modes
-
-The editor is a CodeMirror-based hybrid editor.
-
-`Live` mode visually renders common Markdown elements in inactive lines while
-the active line remains editable Markdown source. This includes headings, wiki
-links, task keywords, priorities, checkboxes, bold text and italic text.
-
-`Source` mode shows plain Markdown text.
-
-Use the top menu under `View` to switch between Live and Source mode.
-
-### Saving and Conflicts
-
-Semtags autosaves after a short delay when editing stops. You can also save
-manually with the `Save` button next to the filename, `File > Save`, or
-`Cmd/Ctrl+S`.
-
-If a file changed on disk since it was opened, Semtags does not silently
-overwrite it. The conflict state offers:
-
-- `Reload from disk`
-- `Overwrite disk`
-
-There is currently no automatic merge.
 
 ### Tasks
 
