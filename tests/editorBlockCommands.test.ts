@@ -12,6 +12,7 @@ import {
   movableBlockRanges,
   nextTaskLineText,
   outdentLineText,
+  renumberOrderedListLinesAfterInsertion,
 } from "../src/lib/editorBlockCommands.js";
 
 test("builds continuation prefixes for unordered list blocks", () => {
@@ -51,6 +52,59 @@ test("continues at current indentation when no following child block exists", ()
   assert.equal(insertedListBlockPrefix(["- Parent", "- Sibling"], 1), "- ");
   assert.equal(insertedListBlockPrefix(["- Parent"], 1), "- ");
   assert.equal(insertedListBlockPrefix(["Plain paragraph", "  - Existing child"], 1), null);
+});
+
+test("renumbers following ordered list items after insertion", () => {
+  assert.deepEqual(
+    renumberOrderedListLinesAfterInsertion(
+      ["1. First", "2. Second", "3. ", "3. Third"],
+      3,
+    ),
+    ["1. First", "2. Second", "3. ", "4. Third"],
+  );
+});
+
+test("renumbers only same-level ordered list items after insertion", () => {
+  assert.deepEqual(
+    renumberOrderedListLinesAfterInsertion(
+      [
+        "1. First",
+        "  1. Child",
+        "2. Second",
+        "3. ",
+        "  1. Inserted child",
+        "  2. Existing child",
+        "3. Third",
+      ],
+      4,
+    ),
+    [
+      "1. First",
+      "  1. Child",
+      "2. Second",
+      "3. ",
+      "  1. Inserted child",
+      "  2. Existing child",
+      "4. Third",
+    ],
+  );
+});
+
+test("stops ordered list renumbering at list boundaries", () => {
+  assert.deepEqual(
+    renumberOrderedListLinesAfterInsertion(
+      ["1. First", "2. ", "2. Second", "", "1. Separate list"],
+      2,
+    ),
+    ["1. First", "2. ", "3. Second", "", "1. Separate list"],
+  );
+  assert.deepEqual(
+    renumberOrderedListLinesAfterInsertion(
+      ["1. First", "2. ", "2. Second", "Paragraph", "1. Separate list"],
+      2,
+    ),
+    ["1. First", "2. ", "3. Second", "Paragraph", "1. Separate list"],
+  );
 });
 
 test("does not create continuation prefixes for plain text", () => {

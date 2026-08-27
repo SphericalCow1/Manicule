@@ -35,6 +35,50 @@ export function insertedListBlockPrefix(lines: string[], lineNumber: number) {
   return listContinuationPrefix(currentLine);
 }
 
+export function renumberOrderedListLinesAfterInsertion(lines: string[], insertedLineNumber: number) {
+  const inserted = orderedListItemInfo(lines[insertedLineNumber - 1] ?? "");
+  if (!inserted) {
+    return lines;
+  }
+
+  const nextLines = [...lines];
+  let expectedNumber = inserted.number + 1;
+
+  for (let lineNumber = insertedLineNumber + 1; lineNumber <= nextLines.length; lineNumber += 1) {
+    const lineText = nextLines[lineNumber - 1] ?? "";
+    if (lineText.trim() === "") {
+      break;
+    }
+
+    const item = listItemInfo(lineText);
+    if (!item) {
+      if (countIndent(lineText) <= inserted.indent) {
+        break;
+      }
+      continue;
+    }
+
+    if (item.indent < inserted.indent) {
+      break;
+    }
+
+    if (item.indent > inserted.indent) {
+      continue;
+    }
+
+    const ordered = orderedListItemInfo(lineText);
+    if (!ordered || ordered.delimiter !== inserted.delimiter) {
+      break;
+    }
+
+    nextLines[lineNumber - 1] =
+      `${lineText.slice(0, ordered.markerFrom)}${expectedNumber}${ordered.delimiter}${lineText.slice(ordered.markerTo)}`;
+    expectedNumber += 1;
+  }
+
+  return nextLines;
+}
+
 export function indentLineText(lineText: string) {
   return `${blockIndent}${lineText}`;
 }
@@ -122,8 +166,16 @@ export const insertListBlock: Command = (view) => {
     return false;
   }
 
+  const renumberChanges = orderedListRenumberChanges(
+    view.state,
+    line.number + 1,
+    prefix,
+  );
   view.dispatch({
-    changes: { from: selection.head, insert: `\n${prefix}` },
+    changes: [
+      { from: selection.head, insert: `\n${prefix}` },
+      ...renumberChanges,
+    ],
     selection: EditorSelection.cursor(selection.head + prefix.length + 1),
     scrollIntoView: true,
   });
@@ -460,6 +512,73 @@ function lineColumnToPosition(lines: string[], lineNumber: number, column: numbe
 function listItemInfo(lineText: string) {
   const match = listMarkerMatch(lineText);
   return match ? { indent: countIndent(match[1]) } : null;
+}
+
+function orderedListItemInfo(lineText: string) {
+  const match = listMarkerMatch(lineText);
+  const ordered = match ? /^(\d+)([.)])$/.exec(match[2]) : null;
+  if (!match || !ordered) {
+    return null;
+  }
+
+  return {
+    indent: countIndent(match[1]),
+    number: Number(ordered[1]),
+    delimiter: ordered[2],
+    markerFrom: match[1].length,
+    markerTo: match[1].length + match[2].length,
+  };
+}
+
+function orderedListRenumberChanges(
+  state: EditorState,
+  firstOriginalLineNumber: number,
+  insertedPrefix: string,
+): ChangeSpec[] {
+  const inserted = orderedListItemInfo(insertedPrefix);
+  if (!inserted) {
+    return [];
+  }
+
+  const changes: ChangeSpec[] = [];
+  let expectedNumber = inserted.number + 1;
+
+  for (let lineNumber = firstOriginalLineNumber; lineNumber <= state.doc.lines; lineNumber += 1) {
+    const line = state.doc.line(lineNumber);
+    if (line.text.trim() === "") {
+      break;
+    }
+
+    const item = listItemInfo(line.text);
+    if (!item) {
+      if (countIndent(line.text) <= inserted.indent) {
+        break;
+      }
+      continue;
+    }
+
+    if (item.indent < inserted.indent) {
+      break;
+    }
+
+    if (item.indent > inserted.indent) {
+      continue;
+    }
+
+    const ordered = orderedListItemInfo(line.text);
+    if (!ordered || ordered.delimiter !== inserted.delimiter) {
+      break;
+    }
+
+    changes.push({
+      from: line.from + ordered.markerFrom,
+      to: line.from + ordered.markerTo,
+      insert: `${expectedNumber}${ordered.delimiter}`,
+    });
+    expectedNumber += 1;
+  }
+
+  return changes;
 }
 
 function listMarkerMatch(lineText: string) {
