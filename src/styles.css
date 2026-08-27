@@ -865,8 +865,12 @@ textarea {
   text-align: left;
 }
 
-.context-menu button:hover {
+.context-menu button:hover:not(:disabled) {
   background: #f1f3f5;
+}
+
+.context-menu button:disabled {
+  color: #9aa3ad;
 }
 
 .menu-mnemonic {

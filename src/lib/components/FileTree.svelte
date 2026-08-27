@@ -394,6 +394,25 @@
     persistNavigation(pageFavorites, $workspaceStore.recentPages);
   }
 
+  function moveFavorite(path: string, direction: "up" | "down") {
+    const currentIndex = $workspaceStore.pageFavorites.indexOf(path);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (nextIndex < 0 || nextIndex >= $workspaceStore.pageFavorites.length) {
+      return;
+    }
+
+    const pageFavorites = [...$workspaceStore.pageFavorites];
+    [pageFavorites[currentIndex], pageFavorites[nextIndex]] = [
+      pageFavorites[nextIndex],
+      pageFavorites[currentIndex],
+    ];
+    persistNavigation(pageFavorites, $workspaceStore.recentPages);
+  }
+
   function persistNavigation(pageFavorites: string[], recentPages: string[]) {
     void workspaceStore.saveNavigationConfig(pageFavorites, recentPages);
   }
@@ -2118,6 +2137,7 @@
         {openPageInEditor}
         {openPageInRightPane}
         {toggleFavorite}
+        {moveFavorite}
         {removeRecentPage}
       />
     </div>

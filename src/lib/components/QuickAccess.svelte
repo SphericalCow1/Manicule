@@ -24,6 +24,7 @@
   export let openPageInEditor: (path: string) => void;
   export let openPageInRightPane: (path: string) => void;
   export let toggleFavorite: (kind: FavoriteItem["kind"], path: string) => void;
+  export let moveFavorite: (path: string, direction: "up" | "down") => void;
   export let removeRecentPage: (path: string) => void;
   export let folderGlyphStyle: (path: string) => string = () => "";
 
@@ -81,6 +82,24 @@
     }
 
     contextMenu = null;
+  }
+
+  function moveContextFavorite(direction: "up" | "down") {
+    if (!contextMenu || contextMenu.source !== "favorite" || !contextMenu.favorite) {
+      return;
+    }
+
+    moveFavorite(contextMenu.favorite.path, direction);
+    contextMenu = null;
+  }
+
+  function canMoveContextFavorite(direction: "up" | "down") {
+    if (!contextMenu || contextMenu.source !== "favorite") {
+      return false;
+    }
+
+    const index = favorites.findIndex((favorite) => favorite.path === contextMenu?.path);
+    return direction === "up" ? index > 0 : index >= 0 && index < favorites.length - 1;
   }
 
   function closeContextMenu() {
@@ -188,6 +207,27 @@
     <button type="button" role="menuitem" data-menu-key="r" on:click={openContextItemInRightPane}>
       Open in <span class="menu-mnemonic">r</span>ight pane
     </button>
+    {#if contextMenu.source === "favorite"}
+      <div class="context-menu-separator"></div>
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="u"
+        disabled={!canMoveContextFavorite("up")}
+        on:click={() => moveContextFavorite("up")}
+      >
+        Move <span class="menu-mnemonic">u</span>p
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="d"
+        disabled={!canMoveContextFavorite("down")}
+        on:click={() => moveContextFavorite("down")}
+      >
+        Move <span class="menu-mnemonic">d</span>own
+      </button>
+    {/if}
     <div class="context-menu-separator"></div>
     <button type="button" role="menuitem" data-menu-key="f" on:click={removeContextItem}>
       Remove <span class="menu-mnemonic">f</span>rom {contextMenu.source === "favorite" ? "Favorites" : "Recents"}
