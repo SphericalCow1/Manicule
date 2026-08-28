@@ -362,6 +362,10 @@ export type BlockLineRange = {
   isList: boolean;
 };
 
+export type CollapsibleBlockRange = BlockLineRange & {
+  level: number;
+};
+
 export function blockRangeForLines(lines: string[], lineNumber: number): BlockLineRange {
   const boundedLine = Math.min(Math.max(lineNumber, 1), lines.length);
   const current = listItemInfo(lines[boundedLine - 1] ?? "");
@@ -395,6 +399,55 @@ export function blockRangeForLines(lines: string[], lineNumber: number): BlockLi
     indent: current.indent,
     isList: true,
   };
+}
+
+export function collapsibleBlockRangeForLines(
+  lines: string[],
+  lineNumber: number,
+): CollapsibleBlockRange | null {
+  const range = blockRangeForLines(lines, lineNumber);
+  const level = listBlockLevelForLine(lines, range.startLine);
+  if (!range.isList || range.endLine <= range.startLine || level === null) {
+    return null;
+  }
+
+  for (let currentLine = range.startLine + 1; currentLine <= range.endLine; currentLine += 1) {
+    const child = listItemInfo(lines[currentLine - 1] ?? "");
+    if (child && child.indent > range.indent) {
+      return { ...range, level };
+    }
+  }
+
+  return null;
+}
+
+export function listBlockLevelForLine(lines: string[], lineNumber: number) {
+  const boundedLine = Math.min(Math.max(lineNumber, 1), lines.length);
+  const current = listItemInfo(lines[boundedLine - 1] ?? "");
+  if (!current) {
+    return null;
+  }
+
+  const indents = listBlockIndents(lines);
+  const index = indents.indexOf(current.indent);
+  return index === -1 ? null : index + 1;
+}
+
+export function collapsibleBlockRangesBelowLevel(lines: string[], level: number) {
+  const ranges: CollapsibleBlockRange[] = [];
+  for (let lineNumber = 1; lineNumber <= lines.length; lineNumber += 1) {
+    if (listBlockLevelForLine(lines, lineNumber) !== level) {
+      continue;
+    }
+
+    const range = collapsibleBlockRangeForLines(lines, lineNumber);
+    if (range) {
+      ranges.push(range);
+      lineNumber = range.endLine;
+    }
+  }
+
+  return ranges;
 }
 
 export function blockEditingKeymap(
@@ -512,6 +565,16 @@ function lineColumnToPosition(lines: string[], lineNumber: number, column: numbe
 function listItemInfo(lineText: string) {
   const match = listMarkerMatch(lineText);
   return match ? { indent: countIndent(match[1]) } : null;
+}
+
+function listBlockIndents(lines: string[]) {
+  return [
+    ...new Set(
+      lines
+        .map((line) => listItemInfo(line)?.indent)
+        .filter((indent): indent is number => typeof indent === "number"),
+    ),
+  ].sort((left, right) => left - right);
 }
 
 function orderedListItemInfo(lineText: string) {

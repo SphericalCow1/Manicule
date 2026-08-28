@@ -24,6 +24,17 @@
   } from "@codemirror/commands";
   import { onDestroy, onMount, tick } from "svelte";
   import { keepContextMenuInViewport } from "../contextMenuPosition";
+  import {
+    blockFoldingExtension,
+    collapseAllBlocksBelowLevel,
+    collapseBlock,
+    collapsibleBlockAtLine,
+    ensureLineVisible,
+    expandAllBlockFolds,
+    expandBlock,
+    foldableBlockLevelAtLine,
+    foldedBlockAtLine,
+  } from "../editorBlockFolding";
   import { clickMenuMnemonic } from "../menuMnemonics";
   import { blockEditingKeymap } from "../editorBlockCommands";
   import { listWrapIndentExtension } from "../editorLineWrapping";
@@ -461,6 +472,14 @@
   }
 
   function handleEditorMouseDown(event: MouseEvent) {
+    if (isBlockFoldMarkerEvent(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressCheckboxClick = false;
+      suppressWikiLinkClick = false;
+      return;
+    }
+
     suppressCheckboxClick = toggleCheckboxFromPointerEvent(event);
     if (suppressCheckboxClick) {
       suppressWikiLinkClick = false;
@@ -471,6 +490,12 @@
   }
 
   function handleEditorClick(event: MouseEvent) {
+    if (toggleBlockFoldFromPointerEvent(event)) {
+      suppressCheckboxClick = false;
+      suppressWikiLinkClick = false;
+      return;
+    }
+
     if (suppressWikiLinkClick) {
       event.preventDefault();
       event.stopPropagation();
@@ -486,6 +511,28 @@
     }
 
     toggleCheckboxFromPointerEvent(event);
+  }
+
+  function isBlockFoldMarkerEvent(event: MouseEvent) {
+    return Boolean((event.target as HTMLElement | null)?.closest(".cm-block-fold-marker"));
+  }
+
+  function toggleBlockFoldFromPointerEvent(event: MouseEvent) {
+    if (!view || !isBlockFoldMarkerEvent(event)) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    const block = view.lineBlockAtHeight(event.clientY - view.documentTop);
+    const lineNumber = view.state.doc.lineAt(block.from).number;
+    if (foldedBlockAtLine(view.state, lineNumber)) {
+      expandBlock(view, lineNumber);
+    } else {
+      collapseBlock(view, lineNumber);
+    }
+    view.focus();
+    return true;
   }
 
   function openWikiLinkFromPointerEvent(event: MouseEvent) {
@@ -628,6 +675,94 @@
     onOpenSourceLineInRightPane(line);
   }
 
+  function currentSourceLineBlockLevel() {
+    if (!view || !sourceLineContextMenu) {
+      return null;
+    }
+
+    return foldableBlockLevelAtLine(view.state, sourceLineContextMenu.line);
+  }
+
+  function currentSourceLineBlockIsCollapsible() {
+    return Boolean(
+      view &&
+        sourceLineContextMenu &&
+        collapsibleBlockAtLine(view.state, sourceLineContextMenu.line),
+    );
+  }
+
+  function currentSourceLineBlockIsFolded() {
+    return Boolean(
+      view &&
+        sourceLineContextMenu &&
+        foldedBlockAtLine(view.state, sourceLineContextMenu.line),
+    );
+  }
+
+  function toggleSourceLineBlockFold() {
+    if (!view || !sourceLineContextMenu) {
+      return;
+    }
+
+    const { line } = sourceLineContextMenu;
+    if (foldedBlockAtLine(view.state, line)) {
+      expandBlock(view, line);
+    } else {
+      collapseBlock(view, line);
+    }
+
+    sourceLineContextMenu = null;
+    view.focus();
+  }
+
+  function collapseSourceLineBelowLevel() {
+    if (!view || !sourceLineContextMenu) {
+      return;
+    }
+
+    const level = foldableBlockLevelAtLine(view.state, sourceLineContextMenu.line);
+    if (level === null) {
+      return;
+    }
+
+    collapseAllBlocksBelowLevel(view, level);
+    sourceLineContextMenu = null;
+    view.focus();
+  }
+
+  function expandAllSourceLineBlocks() {
+    if (!view) {
+      return;
+    }
+
+    expandAllBlockFolds(view);
+    sourceLineContextMenu = null;
+    view.focus();
+  }
+
+  function handleCollapseBelowLevelEvent(event: Event) {
+    if (!view || !(event instanceof CustomEvent)) {
+      return;
+    }
+
+    const level = Number(event.detail?.level);
+    if (!Number.isInteger(level) || level < 1) {
+      return;
+    }
+
+    collapseAllBlocksBelowLevel(view, level);
+    view.focus();
+  }
+
+  function handleExpandAllBlocksEvent() {
+    if (!view) {
+      return;
+    }
+
+    expandAllBlockFolds(view);
+    view.focus();
+  }
+
   function createWikiLinkPage() {
     if (!wikiContextMenu?.resolvedPath || wikiContextMenu.resolvedExists) {
       return;
@@ -649,6 +784,7 @@
       return;
     }
 
+    ensureLineVisible(view, lineNumber);
     const line = view.state.doc.line(Math.min(lineNumber, view.state.doc.lines));
 
     view.dispatch({
@@ -698,6 +834,7 @@
   function editorExtensions() {
     return [
       lineNumbers(),
+      blockFoldingExtension,
       history(),
       markdown(),
       EditorView.lineWrapping,
@@ -742,6 +879,8 @@
     window.addEventListener("semtags-editor-undo", handleEditorUndoEvent);
     window.addEventListener("semtags-editor-redo", handleEditorRedoEvent);
     window.addEventListener("semtags-editor-isolate-history", isolateEditorHistory);
+    window.addEventListener("semtags-collapse-all-blocks-below-level", handleCollapseBelowLevelEvent);
+    window.addEventListener("semtags-expand-all-blocks", handleExpandAllBlocksEvent);
     lastDocumentPath = documentPath;
     view = new EditorView({
       parent: host,
@@ -816,6 +955,11 @@
     window.removeEventListener("semtags-editor-undo", handleEditorUndoEvent);
     window.removeEventListener("semtags-editor-redo", handleEditorRedoEvent);
     window.removeEventListener("semtags-editor-isolate-history", isolateEditorHistory);
+    window.removeEventListener(
+      "semtags-collapse-all-blocks-below-level",
+      handleCollapseBelowLevelEvent,
+    );
+    window.removeEventListener("semtags-expand-all-blocks", handleExpandAllBlocksEvent);
     if (highlightTimer) {
       clearTimeout(highlightTimer);
     }
@@ -976,6 +1120,9 @@
 {/if}
 
 {#if sourceLineContextMenu}
+  {@const blockLevel = currentSourceLineBlockLevel()}
+  {@const blockIsCollapsible = currentSourceLineBlockIsCollapsible()}
+  {@const blockIsFolded = currentSourceLineBlockIsFolded()}
   <div
     class="editor-link-menu"
     use:keepContextMenuInViewport={{ x: sourceLineContextMenu.x, y: sourceLineContextMenu.y }}
@@ -985,6 +1132,41 @@
     tabindex="-1"
     bind:this={menuElement}
   >
+    <details class="editor-submenu" open>
+      <summary>Block folding</summary>
+      {#if blockIsCollapsible}
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key={blockIsFolded ? "e" : "c"}
+          on:click={toggleSourceLineBlockFold}
+        >
+          {#if blockIsFolded}
+            <span class="menu-mnemonic">E</span>xpand block
+          {:else}
+            <span class="menu-mnemonic">C</span>ollapse block
+          {/if}
+        </button>
+      {/if}
+      {#if blockLevel !== null}
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="l"
+          on:click={collapseSourceLineBelowLevel}
+        >
+          Collapse all below <span class="menu-mnemonic">l</span>evel {blockLevel}
+        </button>
+      {/if}
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="a"
+        on:click={expandAllSourceLineBlocks}
+      >
+        Expand <span class="menu-mnemonic">a</span>ll
+      </button>
+    </details>
     <button
       type="button"
       role="menuitem"

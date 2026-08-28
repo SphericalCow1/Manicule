@@ -109,13 +109,8 @@ export async function setupCoreEvents() {
   window.addEventListener("keydown", handleGlobalUndoKeydown, { capture: true });
   window.addEventListener("keydown", handleGlobalViewKeydown, { capture: true });
 
-  await onCoreEvent("menu-show-editor", async () => {
-    mainViewStore.set("editor");
-  });
-
-  await onCoreEvent("menu-show-tasks", async () => {
-    mainViewStore.set("tasks");
-    await taskStore.refresh();
+  await onCoreEvent("menu-toggle-task-overview", async () => {
+    await toggleTaskOverview();
   });
 
   await onCoreEvent("menu-editor-mode-live", async () => {
@@ -128,6 +123,26 @@ export async function setupCoreEvents() {
 
   await onCoreEvent("menu-reset-layout", async () => {
     window.dispatchEvent(new CustomEvent("semtags-reset-layout"));
+  });
+
+  for (const level of [1, 2, 3, 4]) {
+    await onCoreEvent(`menu-collapse-blocks-below-level-${level}`, async () => {
+      mainViewStore.set("editor");
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent("semtags-collapse-all-blocks-below-level", {
+            detail: { level },
+          }),
+        );
+      }, 0);
+    });
+  }
+
+  await onCoreEvent("menu-expand-all-blocks", async () => {
+    mainViewStore.set("editor");
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("semtags-expand-all-blocks"));
+    }, 0);
   });
 
   await onCoreEvent("menu-zoom-in", async () => {
@@ -231,12 +246,14 @@ function handleGlobalViewKeydown(event: KeyboardEvent) {
 
   if (key === "e") {
     mainViewStore.set("editor");
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("semtags-expand-all-blocks"));
+    }, 0);
     return;
   }
 
   if (key === "t") {
-    mainViewStore.set("tasks");
-    void taskStore.refresh();
+    void toggleTaskOverview();
     return;
   }
 
@@ -246,6 +263,16 @@ function handleGlobalViewKeydown(event: KeyboardEvent) {
   }
 
   editorModeStore.set("source");
+}
+
+async function toggleTaskOverview() {
+  if (get(mainViewStore) === "tasks") {
+    mainViewStore.set("editor");
+    return;
+  }
+
+  mainViewStore.set("tasks");
+  await taskStore.refresh();
 }
 
 function isUndoRedoShortcut(event: KeyboardEvent) {

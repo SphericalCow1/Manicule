@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   blockRangeForLines,
+  collapsibleBlockRangeForLines,
+  collapsibleBlockRangesBelowLevel,
   emptyListBlockRange,
   emptyListLineAfterEnter,
   indentLineText,
   insertedListBlockPrefix,
+  listBlockLevelForLine,
   listBlockPrefix,
   listContinuationPrefix,
   moveBlockLines,
@@ -173,6 +176,73 @@ test("finds block ranges including child blocks", () => {
     indent: 0,
     isList: true,
   });
+});
+
+test("detects collapsible list blocks with descendants", () => {
+  const lines = [
+    "- Parent",
+    "  - Child",
+    "    - Detail",
+    "- Sibling",
+    "  continuation",
+    "- After",
+  ];
+
+  assert.deepEqual(collapsibleBlockRangeForLines(lines, 1), {
+    startLine: 1,
+    endLine: 3,
+    indent: 0,
+    isList: true,
+    level: 1,
+  });
+  assert.equal(collapsibleBlockRangeForLines(lines, 3), null);
+  assert.equal(collapsibleBlockRangeForLines(lines, 4), null);
+});
+
+test("derives list block levels from document indentation", () => {
+  const lines = [
+    "- Parent",
+    "  - Child",
+    "      - Detail",
+    "- Sibling",
+    "Plain text",
+  ];
+
+  assert.equal(listBlockLevelForLine(lines, 1), 1);
+  assert.equal(listBlockLevelForLine(lines, 2), 2);
+  assert.equal(listBlockLevelForLine(lines, 3), 3);
+  assert.equal(listBlockLevelForLine(lines, 4), 1);
+  assert.equal(listBlockLevelForLine(lines, 5), null);
+});
+
+test("finds document-wide collapsible blocks below a clicked level", () => {
+  const lines = [
+    "- First",
+    "  - First child",
+    "    - First detail",
+    "- Second",
+    "  - Second child",
+    "    - Second detail",
+    "- Third",
+    "  - Third child without descendants",
+  ];
+
+  assert.deepEqual(collapsibleBlockRangesBelowLevel(lines, 2), [
+    {
+      startLine: 2,
+      endLine: 3,
+      indent: 2,
+      isList: true,
+      level: 2,
+    },
+    {
+      startLine: 5,
+      endLine: 6,
+      indent: 2,
+      isList: true,
+      level: 2,
+    },
+  ]);
 });
 
 test("finds sibling ranges for moving blocks", () => {

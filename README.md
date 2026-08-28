@@ -214,7 +214,8 @@ Clicking a checkbox updates the underlying Markdown file.
 
 ### Task Overview
 
-Open the task overview from the left pane with `Show Task Overview`.
+Open the task overview from the left pane with `Show Task Overview`, or toggle
+it from the native menu with `View > Toggle Task Overview`.
 
 The task overview can filter and group tasks by status, priority, source, text,
 and linked pages. Link-based grouping also considers links in parent blocks, so
@@ -270,6 +271,9 @@ Important editor shortcuts:
 - `Cmd/Ctrl+ArrowUp`: move current block including child blocks up
 - `Cmd/Ctrl+ArrowDown`: move current block including child blocks down
 - `Cmd/Ctrl+Enter`: add or cycle task state
+- `Cmd/Ctrl+Shift+E`: expand all folded blocks
+- `Cmd/Ctrl+Shift+T`: toggle task overview
+- `Cmd/Ctrl+1` to `Cmd/Ctrl+4`: collapse all blocks below that level
 - `Cmd/Ctrl+F`: search in current file
 - `Cmd/Ctrl+S`: save current file
 - `Cmd/Ctrl+Z`: undo

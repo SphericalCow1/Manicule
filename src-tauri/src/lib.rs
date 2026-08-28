@@ -27,10 +27,14 @@ const MENU_CLOSE_WORKSPACE: &str = "file.close_workspace";
 const MENU_SAVE: &str = "file.save";
 const MENU_UNDO: &str = "edit.undo";
 const MENU_REDO: &str = "edit.redo";
-const MENU_SHOW_EDITOR: &str = "view.show_editor";
-const MENU_SHOW_TASKS: &str = "view.show_tasks";
+const MENU_TOGGLE_TASK_OVERVIEW: &str = "view.toggle_task_overview";
 const MENU_EDITOR_MODE_LIVE: &str = "view.editor_mode_live";
 const MENU_EDITOR_MODE_SOURCE: &str = "view.editor_mode_source";
+const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1: &str = "view.collapse_blocks_below_level_1";
+const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_2: &str = "view.collapse_blocks_below_level_2";
+const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_3: &str = "view.collapse_blocks_below_level_3";
+const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_4: &str = "view.collapse_blocks_below_level_4";
+const MENU_EXPAND_ALL_BLOCKS: &str = "view.expand_all_blocks";
 const MENU_ZOOM_IN: &str = "view.zoom_in";
 const MENU_ZOOM_OUT: &str = "view.zoom_out";
 const MENU_RESET_ZOOM: &str = "view.reset_zoom";
@@ -107,10 +111,14 @@ pub fn run() {
                 MENU_SAVE => Some("menu-save"),
                 MENU_UNDO => Some("menu-undo"),
                 MENU_REDO => Some("menu-redo"),
-                MENU_SHOW_EDITOR => Some("menu-show-editor"),
-                MENU_SHOW_TASKS => Some("menu-show-tasks"),
+                MENU_TOGGLE_TASK_OVERVIEW => Some("menu-toggle-task-overview"),
                 MENU_EDITOR_MODE_LIVE => Some("menu-editor-mode-live"),
                 MENU_EDITOR_MODE_SOURCE => Some("menu-editor-mode-source"),
+                MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1 => Some("menu-collapse-blocks-below-level-1"),
+                MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_2 => Some("menu-collapse-blocks-below-level-2"),
+                MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_3 => Some("menu-collapse-blocks-below-level-3"),
+                MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_4 => Some("menu-collapse-blocks-below-level-4"),
+                MENU_EXPAND_ALL_BLOCKS => Some("menu-expand-all-blocks"),
                 MENU_ZOOM_IN => Some("menu-zoom-in"),
                 MENU_ZOOM_OUT => Some("menu-zoom-out"),
                 MENU_RESET_ZOOM => Some("menu-reset-zoom"),
@@ -252,17 +260,40 @@ fn ensure_edit_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
 }
 
 fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri::Result<()> {
-    let show_editor = MenuItemBuilder::with_id(MENU_SHOW_EDITOR, "Show Editor")
-        .accelerator("CmdOrCtrl+Shift+E")
-        .build(handle)?;
-    let show_tasks = MenuItemBuilder::with_id(MENU_SHOW_TASKS, "Show Task Overview")
-        .accelerator("CmdOrCtrl+Shift+T")
-        .build(handle)?;
+    let toggle_task_overview =
+        MenuItemBuilder::with_id(MENU_TOGGLE_TASK_OVERVIEW, "Toggle Task Overview")
+            .accelerator("CmdOrCtrl+Shift+T")
+            .build(handle)?;
     let live_mode = MenuItemBuilder::with_id(MENU_EDITOR_MODE_LIVE, "Live Preview")
         .accelerator("CmdOrCtrl+Shift+L")
         .build(handle)?;
     let source_mode = MenuItemBuilder::with_id(MENU_EDITOR_MODE_SOURCE, "Source Markdown")
         .accelerator("CmdOrCtrl+Shift+M")
+        .build(handle)?;
+    let collapse_below_level_1 =
+        MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1, "Level 1")
+            .accelerator("CmdOrCtrl+1")
+            .build(handle)?;
+    let collapse_below_level_2 =
+        MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_2, "Level 2")
+            .accelerator("CmdOrCtrl+2")
+            .build(handle)?;
+    let collapse_below_level_3 =
+        MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_3, "Level 3")
+            .accelerator("CmdOrCtrl+3")
+            .build(handle)?;
+    let collapse_below_level_4 =
+        MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_4, "Level 4")
+            .accelerator("CmdOrCtrl+4")
+            .build(handle)?;
+    let collapse_blocks_submenu = SubmenuBuilder::new(handle, "Collapse All Blocks Below Level")
+        .item(&collapse_below_level_1)
+        .item(&collapse_below_level_2)
+        .item(&collapse_below_level_3)
+        .item(&collapse_below_level_4)
+        .build()?;
+    let expand_all_blocks = MenuItemBuilder::with_id(MENU_EXPAND_ALL_BLOCKS, "Expand All Blocks")
+        .accelerator("CmdOrCtrl+Shift+E")
         .build(handle)?;
     let zoom_in = MenuItemBuilder::with_id(MENU_ZOOM_IN, "Zoom In")
         .accelerator("CmdOrCtrl+=")
@@ -282,26 +313,29 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
     if let Some(view_menu) = find_submenu(menu, "View")? {
         view_menu.insert_items(
             &[
-                &show_editor,
-                &show_tasks,
+                &toggle_task_overview,
                 &live_mode,
                 &source_mode,
                 &separator_after_mode,
+                &collapse_blocks_submenu,
+                &expand_all_blocks,
+                &separator_after_layout,
                 &zoom_in,
                 &zoom_out,
                 &reset_zoom,
                 &separator_after_zoom,
                 &reset_layout,
-                &separator_after_layout,
             ],
             0,
         )?;
     } else {
         let view_menu = SubmenuBuilder::new(handle, "View")
-            .item(&show_editor)
-            .item(&show_tasks)
+            .item(&toggle_task_overview)
             .item(&live_mode)
             .item(&source_mode)
+            .separator()
+            .item(&collapse_blocks_submenu)
+            .item(&expand_all_blocks)
             .separator()
             .item(&zoom_in)
             .item(&zoom_out)

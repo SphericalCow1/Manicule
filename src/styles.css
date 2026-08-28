@@ -1614,6 +1614,29 @@ textarea {
   color: #9aa3ad;
 }
 
+.code-editor .cm-block-fold-gutter {
+  min-width: 16px;
+}
+
+.code-editor .cm-block-fold-marker {
+  display: grid;
+  width: 16px;
+  height: 100%;
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7b858f;
+  cursor: pointer;
+  font: inherit;
+  line-height: inherit;
+  place-items: center;
+}
+
+.code-editor .cm-block-fold-marker:hover {
+  color: #202124;
+}
+
 .code-editor .cm-focused {
   outline: none;
 }
