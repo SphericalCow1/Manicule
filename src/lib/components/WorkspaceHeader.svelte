@@ -104,57 +104,62 @@
 {/if}
 
 {#if root}
-  <div class="journal-actions" aria-label="Journal shortcuts">
-    <button type="button" title="Yesterday" on:click={() => openJournal("yesterday")}>-1d</button>
-    <button type="button" title="Today" on:click={() => openJournal("today")}>Today</button>
-    <button type="button" title="Tomorrow" on:click={() => openJournal("tomorrow")}>+1d</button>
-    <div class="journal-date-picker">
-      <button type="button" title="Pick journal date" on:click={toggleDatePicker}>Pick</button>
-      {#if datePickerOpen}
-        <div class="journal-date-popover" role="dialog" aria-label="Pick journal date">
-          <div class="journal-date-popover-header">
-            <button
-              type="button"
-              title="Previous month"
-              on:click|stopPropagation={() => movePickerMonth(-1)}
-            >
-              &lt;
-            </button>
-            <span>{pickerMonthLabel}</span>
-            <button
-              type="button"
-              title="Next month"
-              on:click|stopPropagation={() => movePickerMonth(1)}
-            >
-              &gt;
-            </button>
-          </div>
-          <div class="journal-date-weekdays" aria-hidden="true">
-            <span>Mo</span>
-            <span>Tu</span>
-            <span>We</span>
-            <span>Th</span>
-            <span>Fr</span>
-            <span>Sa</span>
-            <span>Su</span>
-          </div>
-          <div class="journal-date-grid">
-            {#each pickerDays as day}
+  <section class="journal-panel" aria-label="Journal">
+    <div class="navigator-section-heading">
+      <span>Journal</span>
+    </div>
+    <div class="journal-actions" aria-label="Journal shortcuts">
+      <button type="button" title="Yesterday" on:click={() => openJournal("yesterday")}>-1d</button>
+      <button type="button" title="Today" on:click={() => openJournal("today")}>Today</button>
+      <button type="button" title="Tomorrow" on:click={() => openJournal("tomorrow")}>+1d</button>
+      <div class="journal-date-picker">
+        <button type="button" title="Pick journal date" on:click={toggleDatePicker}>Pick</button>
+        {#if datePickerOpen}
+          <div class="journal-date-popover" role="dialog" aria-label="Pick journal date">
+            <div class="journal-date-popover-header">
               <button
                 type="button"
-                class:outside-month={!day.currentMonth}
-                class:today={day.today}
-                title={day.dateInput}
-                on:click|stopPropagation={() => pickJournalDate(day.dateInput)}
+                title="Previous month"
+                on:click|stopPropagation={() => movePickerMonth(-1)}
               >
-                {day.day}
+                &lt;
               </button>
-            {/each}
+              <span>{pickerMonthLabel}</span>
+              <button
+                type="button"
+                title="Next month"
+                on:click|stopPropagation={() => movePickerMonth(1)}
+              >
+                &gt;
+              </button>
+            </div>
+            <div class="journal-date-weekdays" aria-hidden="true">
+              <span>Mo</span>
+              <span>Tu</span>
+              <span>We</span>
+              <span>Th</span>
+              <span>Fr</span>
+              <span>Sa</span>
+              <span>Su</span>
+            </div>
+            <div class="journal-date-grid">
+              {#each pickerDays as day}
+                <button
+                  type="button"
+                  class:outside-month={!day.currentMonth}
+                  class:today={day.today}
+                  title={day.dateInput}
+                  on:click|stopPropagation={() => pickJournalDate(day.dateInput)}
+                >
+                  {day.day}
+                </button>
+              {/each}
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
     </div>
-  </div>
+  </section>
 {/if}
 
 {#if diagnostics.length > 0}

@@ -334,14 +334,19 @@ textarea {
   color: #695a13;
 }
 
-.journal-actions {
+.journal-panel {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   padding: 8px 12px;
   border-bottom: 1px solid #e4e7eb;
   background: #fbfcfd;
+}
+
+.journal-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .journal-actions button {
