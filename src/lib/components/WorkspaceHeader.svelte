@@ -72,9 +72,11 @@
 <svelte:window on:click={() => (datePickerOpen = false)} />
 
 <div class="workspace-header">
-  <div class="workspace-title">
-    <p title={root ?? ""}>{root ?? "Open a folder to begin"}</p>
-  </div>
+  {#if !root}
+    <div class="workspace-title">
+      <p>Open a folder to begin</p>
+    </div>
+  {/if}
   {#if root}
     <TaskListPanel loading={taskLoading} {taskCount} {openTaskOverview} />
   {/if}

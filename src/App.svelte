@@ -5,6 +5,7 @@
   import FileTree from "./lib/components/FileTree.svelte";
   import RightPane from "./lib/components/RightPane.svelte";
   import TaskOverview from "./lib/components/TaskOverview.svelte";
+  import { setWindowTitle } from "./lib/api";
   import { setupCoreEvents } from "./lib/coreEvents";
   import { trapDialogFocus } from "./lib/dialogFocus";
   import { journalPath } from "./lib/journals";
@@ -32,6 +33,7 @@
   let sessionRestoreRoot: string | null = null;
   let restoringWorkspaceSession = false;
   let lastSavedSessionKey = "";
+  let lastWindowTitle = "";
   let sessionSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
@@ -55,6 +57,7 @@
     $editorSessionStore.path,
     $rightPaneStore.path,
   );
+  $: updateWindowTitle($workspaceStore.root);
 
   function loadLayout() {
     try {
@@ -81,6 +84,16 @@
     } catch {
       appVersion = "0.1.0";
     }
+  }
+
+  function updateWindowTitle(root: string | null) {
+    const title = root ? `Semtags: ${root}` : "Semtags";
+    if (title === lastWindowTitle) {
+      return;
+    }
+
+    lastWindowTitle = title;
+    void setWindowTitle(title);
   }
 
   function openAboutDialog() {
