@@ -18,6 +18,9 @@
   export let onOpenWikiLinkInEditor: (target: string) => void = () => {};
   export let onOpenWikiLinkInRightPane: (target: string) => void = () => {};
   export let onOpenSourceInEditor: (backlink: BacklinkView) => void;
+  export let onOpenSourceLineInEditor: (backlink: BacklinkView, line: number) => void = () => {};
+  export let onOpenSourceLineInRightPane: (backlink: BacklinkView, line: number) => void = () => {};
+  export let sourceLineMenuTargets: Array<"editor" | "right"> = [];
   export let enableTaskContextMenu = false;
   export let onCheckboxToggle: (path: string, line: number, checked: boolean) => void = () => {};
   export let onTaskStatusChange: (
@@ -167,6 +170,10 @@
                   onCheckboxToggle(backlink.sourcePath, line, checked)}
                 onOpenWikiLinkInEditor={onOpenWikiLinkInEditor}
                 onOpenWikiLinkInRightPane={onOpenWikiLinkInRightPane}
+                onOpenSourceLineInEditor={(line) => onOpenSourceLineInEditor(backlink, line)}
+                onOpenSourceLineInRightPane={(line) =>
+                  onOpenSourceLineInRightPane(backlink, line)}
+                {sourceLineMenuTargets}
                 {enableTaskContextMenu}
                 onTaskStatusChange={(line, currentStatus, nextStatus) =>
                   onTaskStatusChange(backlink.sourcePath, line, currentStatus, nextStatus)}

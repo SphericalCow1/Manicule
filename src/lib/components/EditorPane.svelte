@@ -87,6 +87,16 @@
     }
   }
 
+  function openCurrentLineInRightPane(line: number) {
+    if ($editorSessionStore.path) {
+      void rightPaneStore.open($editorSessionStore.path, { line });
+    }
+  }
+
+  function openBacklinkLineInRightPane(backlink: BacklinkView, line: number) {
+    void rightPaneStore.open(backlink.sourcePath, { line });
+  }
+
   function saveBacklinkOpenTasksOnly(openTasksOnly: boolean) {
     void workspaceStore.saveBacklinkViewConfig({
       ...$workspaceStore.backlinkView,
@@ -204,6 +214,7 @@
       onEditorHistoryDiscard={(path) => appUndoStore.discardEditorHistory(path)}
       onOpenWikiLinkInEditor={(path) => void editorSessionStore.open(path)}
       onOpenWikiLinkInRightPane={(path) => void rightPaneStore.open(path)}
+      onOpenSourceLineInRightPane={openCurrentLineInRightPane}
       onCreateWikiLinkPage={(path) => void createWikiLinkPage(path)}
     />
     {#if missingLinkPath}
@@ -239,6 +250,8 @@
         onOpenWikiLinkInEditor={openWikiTargetInEditor}
         onOpenWikiLinkInRightPane={openWikiTargetInRightPane}
         onOpenSourceInEditor={openBacklinkInEditor}
+        onOpenSourceLineInRightPane={openBacklinkLineInRightPane}
+        sourceLineMenuTargets={["right"]}
       />
     {/if}
   </div>

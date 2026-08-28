@@ -1,8 +1,14 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import MarkdownIt from "markdown-it";
   import ContextMenuShell from "./ContextMenuShell.svelte";
   import { renderCheckboxItems } from "../markdownRendering";
+  import {
+    SOURCE_LINE_RENDER_TOKEN_RULES,
+    sourceLineForLocalLine,
+    sourceLineFromContextMenuTarget,
+    sourceLineSelectorForLine,
+  } from "../markdownSourceLines";
   import { taskColorStyle } from "../taskColors";
   import {
     DEFAULT_TASK_STATES,
@@ -25,6 +31,9 @@
   export let onCheckboxToggle: (line: number, checked: boolean) => void = () => {};
   export let onOpenWikiLinkInEditor: (target: string) => void = () => {};
   export let onOpenWikiLinkInRightPane: (target: string) => void = () => {};
+  export let onOpenSourceLineInEditor: (line: number) => void = () => {};
+  export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
+  export let sourceLineMenuTargets: Array<"editor" | "right"> = [];
   export let onTaskStatusChange: (
     line: number,
     currentStatus: string,
@@ -51,9 +60,15 @@
     localLine: number;
     status: string;
   } | null = null;
+  let sourceLineContextMenu: {
+    x: number;
+    y: number;
+    line: number;
+  } | null = null;
   let markdownElement: HTMLElement | null = null;
   let lastHighlightKey = "";
   let lastObservedWidth: number | null = null;
+  let highlightTimer: ReturnType<typeof setTimeout> | null = null;
   const taskPriorityOptions = ["A", "B", "C"];
 
   const markdown = new MarkdownIt({
@@ -61,13 +76,14 @@
     html: false,
     linkify: true,
   });
+  const markdownWithSourceLines = markdown as unknown as MarkdownItWithSourceLines;
 
   $: taskRender = markTaskKeywordsForRendering(content, taskStates, sourceLineNumbers);
   $: rendered = renderTaskPriorityMarkers(
     renderTaskKeywordMarkers(
       renderCheckboxItems(
         applyWikiLinkColorStyles(
-          markdown.render(renderWikiLinks(taskRender.markdown, pages)),
+          renderMarkdownWithSourceLines(renderWikiLinks(taskRender.markdown, pages)),
           pages,
           folderColors,
         ),
@@ -84,7 +100,7 @@
     if (highlightedLine) {
       void scrollHighlightedLineIntoView();
     } else {
-      clearHighlightedLineOverlay();
+      clearHighlightedLineHighlight();
     }
   }
 
@@ -106,7 +122,7 @@
 
       if (Math.abs(nextWidth - lastObservedWidth) > 0.5) {
         lastObservedWidth = nextWidth;
-        clearHighlightedLineOverlay();
+        clearHighlightedLineHighlight();
       }
     });
 
@@ -114,6 +130,34 @@
 
     return () => resizeObserver.disconnect();
   });
+
+  onDestroy(() => {
+    clearHighlightedLineHighlight();
+  });
+
+  for (const rule of SOURCE_LINE_RENDER_TOKEN_RULES) {
+    markdownWithSourceLines.renderer.rules[rule] = renderTokenWithSourceLine;
+  }
+
+  function renderTokenWithSourceLine(
+    tokens: MarkdownToken[],
+    index: number,
+    options: unknown,
+    env: MarkdownRenderEnv,
+    self: MarkdownRenderer,
+  ) {
+    const localLine = tokens[index]?.map?.[0];
+    if (localLine !== undefined) {
+      const line = sourceLineForLocalLine(localLine + 1, env.sourceLineNumbers);
+      tokens[index]?.attrSet("data-source-line", String(line));
+    }
+
+    return self.renderToken(tokens, index, options);
+  }
+
+  function renderMarkdownWithSourceLines(markdownContent: string) {
+    return markdownWithSourceLines.render(markdownContent, { sourceLineNumbers });
+  }
 
   function renderTaskKeywordMarkers(html: string, tokens: TaskKeywordToken[]) {
     let renderedHtml = html;
@@ -197,6 +241,7 @@
   function handleClick(event: MouseEvent) {
     linkContextMenu = null;
     taskContextMenu = null;
+    sourceLineContextMenu = null;
 
     const checkbox = (event.target as HTMLElement).closest<HTMLInputElement>(
       "input.task-list-checkbox",
@@ -239,6 +284,7 @@
         event.preventDefault();
         event.stopPropagation();
         linkContextMenu = null;
+        sourceLineContextMenu = null;
         taskContextMenu = {
           x: event.clientX,
           y: event.clientY,
@@ -254,6 +300,25 @@
     const href = link?.getAttribute("href");
 
     if (!href?.startsWith("semtags:") && !href?.startsWith("semtags-missing:")) {
+      if (sourceLineMenuTargets.length === 0) {
+        return;
+      }
+
+      const line = sourceLineFromContextMenuTarget(event.target);
+
+      if (line === null) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      linkContextMenu = null;
+      taskContextMenu = null;
+      sourceLineContextMenu = {
+        x: event.clientX,
+        y: event.clientY,
+        line,
+      };
       return;
     }
 
@@ -261,6 +326,7 @@
     event.stopPropagation();
 
     taskContextMenu = null;
+    sourceLineContextMenu = null;
     const missing = href.startsWith("semtags-missing:");
     const prefix = missing ? "semtags-missing:" : "semtags:";
     linkContextMenu = {
@@ -270,6 +336,21 @@
       target: decodeURIComponent(href.slice(prefix.length)),
       exists: !missing,
     };
+  }
+
+  function openSourceLine(targetPane: "editor" | "right") {
+    if (!sourceLineContextMenu) {
+      return;
+    }
+
+    const { line } = sourceLineContextMenu;
+    sourceLineContextMenu = null;
+
+    if (targetPane === "editor") {
+      onOpenSourceLineInEditor(line);
+    } else {
+      onOpenSourceLineInRightPane(line);
+    }
   }
 
   function openContextLink(targetPane: "editor" | "right") {
@@ -300,6 +381,7 @@
   function closeContextMenu() {
     linkContextMenu = null;
     taskContextMenu = null;
+    sourceLineContextMenu = null;
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
@@ -348,67 +430,37 @@
       return;
     }
 
-    clearHighlightedLineOverlay();
+    clearHighlightedLineHighlight();
 
     const marker = markdownElement.querySelector<HTMLElement>(
-      `[data-task-line="${highlightedLine}"]`,
+      sourceLineSelectorForLine(highlightedLine),
     );
     if (!marker) {
       return;
     }
 
     marker.scrollIntoView({ block: "center", behavior: "smooth" });
-    await nextAnimationFrame();
+    marker.classList.add("markdown-line-highlight");
 
-    const markdownRect = markdownElement.getBoundingClientRect();
-    const markerRect = marker.getClientRects()[0] ?? marker.getBoundingClientRect();
-    const taskLineRect = getTaskLineRect(marker);
-    const highlightOffset = 2;
-    const highlightTop = markerRect.top - highlightOffset;
-    const highlightBottom = Math.max(taskLineRect.bottom, markerRect.bottom);
-    const overlay = document.createElement("div");
-    overlay.className = "markdown-line-highlight-overlay";
-    overlay.style.top = `${highlightTop - markdownRect.top + markdownElement.scrollTop}px`;
-    overlay.style.height = `${highlightBottom - highlightTop + highlightOffset}px`;
-    markdownElement.append(overlay);
-  }
-
-  function nextAnimationFrame() {
-    return new Promise<void>((resolve) => {
-      requestAnimationFrame(() => resolve());
-    });
-  }
-
-  function getTaskLineRect(marker: HTMLElement) {
-    const paragraph = marker.closest<HTMLElement>("p");
-    if (paragraph && markdownElement?.contains(paragraph)) {
-      return paragraph.getBoundingClientRect();
+    if (highlightTimer) {
+      clearTimeout(highlightTimer);
     }
 
-    const listItem = marker.closest<HTMLElement>("li");
-    if (listItem && markdownElement?.contains(listItem)) {
-      const nestedList = Array.from(listItem.children).find(
-        (child) => child.tagName === "UL" || child.tagName === "OL",
-      );
-      const range = document.createRange();
-      range.selectNodeContents(listItem);
-      if (nestedList) {
-        range.setEndBefore(nestedList);
-      }
-      const rect = range.getBoundingClientRect();
-      range.detach();
-      if (rect.height > 0) {
-        return rect;
-      }
-    }
-
-    return marker.getBoundingClientRect();
+    highlightTimer = setTimeout(() => {
+      clearHighlightedLineHighlight();
+      highlightTimer = null;
+    }, 1800);
   }
 
-  function clearHighlightedLineOverlay() {
+  function clearHighlightedLineHighlight() {
+    if (highlightTimer) {
+      clearTimeout(highlightTimer);
+      highlightTimer = null;
+    }
+
     markdownElement
-      ?.querySelectorAll(".markdown-line-highlight-overlay")
-      .forEach((element) => element.remove());
+      ?.querySelectorAll(".markdown-line-highlight")
+      .forEach((element) => element.classList.remove("markdown-line-highlight"));
   }
 
   function markTaskKeywordsForRendering(
@@ -441,6 +493,26 @@
 
   type TaskPriorityToken = TaskKeywordToken & {
     priority: string;
+  };
+
+  type MarkdownToken = {
+    map: [number, number] | null;
+    attrSet(name: string, value: string): void;
+  };
+
+  type MarkdownRenderEnv = {
+    sourceLineNumbers: number[];
+  };
+
+  type MarkdownRenderer = {
+    renderToken(tokens: MarkdownToken[], index: number, options: unknown): string;
+  };
+
+  type MarkdownItWithSourceLines = {
+    renderer: {
+      rules: Record<string, typeof renderTokenWithSourceLine>;
+    };
+    render(markdownContent: string, env: MarkdownRenderEnv): string;
   };
 </script>
 
@@ -488,6 +560,36 @@
     {#if !linkContextMenu.exists}
       <button type="button" role="menuitem" data-menu-key="c" on:click={createContextLinkPage}>
         <span class="menu-mnemonic">C</span>reate page
+      </button>
+    {/if}
+  </ContextMenuShell>
+{/if}
+
+{#if sourceLineContextMenu}
+  <ContextMenuShell
+    className="editor-link-menu"
+    x={sourceLineContextMenu.x}
+    y={sourceLineContextMenu.y}
+    onClose={closeContextMenu}
+  >
+    {#if sourceLineMenuTargets.includes("editor")}
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="e"
+        on:click={() => openSourceLine("editor")}
+      >
+        Open line in <span class="menu-mnemonic">e</span>ditor
+      </button>
+    {/if}
+    {#if sourceLineMenuTargets.includes("right")}
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="r"
+        on:click={() => openSourceLine("right")}
+      >
+        Open line in <span class="menu-mnemonic">r</span>ight pane
       </button>
     {/if}
   </ContextMenuShell>

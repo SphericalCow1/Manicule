@@ -60,6 +60,7 @@
   export let onEditorHistoryDiscard: (path: string | null) => void = () => {};
   export let onOpenWikiLinkInEditor: (path: string) => void = () => {};
   export let onOpenWikiLinkInRightPane: (path: string) => void = () => {};
+  export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
   export let onCreateWikiLinkPage: (path: string) => void = () => {};
 
   let host: HTMLDivElement;
@@ -75,6 +76,11 @@
     x: number;
     y: number;
     task: TaskKeywordAtPosition;
+  } | null = null;
+  let sourceLineContextMenu: {
+    x: number;
+    y: number;
+    line: number;
   } | null = null;
   let menuElement: HTMLElement | null = null;
   let applyingExternalValue = false;
@@ -382,7 +388,7 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (wikiContextMenu || taskContextMenu) {
+    if (wikiContextMenu || taskContextMenu || sourceLineContextMenu) {
       if (clickMenuMnemonic(event, menuElement)) {
         return;
       }
@@ -399,7 +405,7 @@
   }
 
   function openWikiContextMenu(event: MouseEvent) {
-    if (!view || mode !== "live-preview") {
+    if (!view) {
       return;
     }
 
@@ -408,35 +414,49 @@
       return;
     }
 
-    const task = taskKeywordAtDocumentPosition(view.state, position, taskStates);
-    if (task) {
-      event.preventDefault();
-      event.stopPropagation();
-      wikiContextMenu = null;
-      taskContextMenu = {
-        x: event.clientX,
-        y: event.clientY,
-        task,
-      };
-      return;
-    }
+    if (mode === "live-preview") {
+      const task = taskKeywordAtDocumentPosition(view.state, position, taskStates);
+      if (task) {
+        event.preventDefault();
+        event.stopPropagation();
+        wikiContextMenu = null;
+        sourceLineContextMenu = null;
+        taskContextMenu = {
+          x: event.clientX,
+          y: event.clientY,
+          task,
+        };
+        return;
+      }
 
-    const link = wikiLinkAtDocumentPosition(view.state, position);
-    if (!link) {
-      return;
+      const link = wikiLinkAtDocumentPosition(view.state, position);
+      if (link) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        taskContextMenu = null;
+        sourceLineContextMenu = null;
+        const resolved = resolveWikiTarget(link.target, pages);
+        wikiContextMenu = {
+          x: event.clientX,
+          y: event.clientY,
+          link,
+          resolvedPath: resolved?.path ?? null,
+          resolvedExists: resolved?.exists ?? false,
+        };
+        return;
+      }
     }
 
     event.preventDefault();
     event.stopPropagation();
 
+    wikiContextMenu = null;
     taskContextMenu = null;
-    const resolved = resolveWikiTarget(link.target, pages);
-    wikiContextMenu = {
+    sourceLineContextMenu = {
       x: event.clientX,
       y: event.clientY,
-      link,
-      resolvedPath: resolved?.path ?? null,
-      resolvedExists: resolved?.exists ?? false,
+      line: view.state.doc.lineAt(position).number,
     };
   }
 
@@ -598,6 +618,16 @@
     }
   }
 
+  function openSourceLineInRightPane() {
+    if (!sourceLineContextMenu) {
+      return;
+    }
+
+    const { line } = sourceLineContextMenu;
+    sourceLineContextMenu = null;
+    onOpenSourceLineInRightPane(line);
+  }
+
   function createWikiLinkPage() {
     if (!wikiContextMenu?.resolvedPath || wikiContextMenu.resolvedExists) {
       return;
@@ -611,6 +641,7 @@
   function closeWikiContextMenu() {
     wikiContextMenu = null;
     taskContextMenu = null;
+    sourceLineContextMenu = null;
   }
 
   function revealLineInEditor(lineNumber: number) {
@@ -941,6 +972,27 @@
         <span class="menu-mnemonic">C</span>reate page
       </button>
     {/if}
+  </div>
+{/if}
+
+{#if sourceLineContextMenu}
+  <div
+    class="editor-link-menu"
+    use:keepContextMenuInViewport={{ x: sourceLineContextMenu.x, y: sourceLineContextMenu.y }}
+    style:left={`${sourceLineContextMenu.x}px`}
+    style:top={`${sourceLineContextMenu.y}px`}
+    role="menu"
+    tabindex="-1"
+    bind:this={menuElement}
+  >
+    <button
+      type="button"
+      role="menuitem"
+      data-menu-key="r"
+      on:click={openSourceLineInRightPane}
+    >
+      Open line in <span class="menu-mnemonic">r</span>ight pane
+    </button>
   </div>
 {/if}
 

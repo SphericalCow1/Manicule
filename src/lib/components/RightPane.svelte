@@ -41,6 +41,18 @@
     }
   }
 
+  function openCurrentLineInEditor(line: number) {
+    if ($rightPaneStore.path) {
+      mainViewStore.set("editor");
+      void editorSessionStore.open($rightPaneStore.path, { line });
+    }
+  }
+
+  function openBacklinkLineInEditor(backlink: BacklinkView, line: number) {
+    mainViewStore.set("editor");
+    void editorSessionStore.open(backlink.sourcePath, { line });
+  }
+
   function closeErrorDialog() {
     rightPaneStore.clearError();
   }
@@ -302,6 +314,8 @@
             void toggleCheckboxForPath($rightPaneStore.path, line, checked)}
           onOpenWikiLinkInEditor={openWikiTargetInEditor}
           onOpenWikiLinkInRightPane={openWikiTarget}
+          onOpenSourceLineInEditor={openCurrentLineInEditor}
+          sourceLineMenuTargets={["editor"]}
           enableTaskContextMenu
           onTaskStatusChange={(line, currentStatus, nextStatus) =>
             void changeTaskStatusForPath($rightPaneStore.path, line, currentStatus, nextStatus)}
@@ -324,6 +338,8 @@
           onOpenWikiLinkInEditor={openWikiTargetInEditor}
           onOpenWikiLinkInRightPane={openWikiTarget}
           onOpenSourceInEditor={openBacklinkInEditor}
+          onOpenSourceLineInEditor={openBacklinkLineInEditor}
+          sourceLineMenuTargets={["editor"]}
           enableTaskContextMenu
           onCheckboxToggle={(path, line, checked) => void toggleCheckboxForPath(path, line, checked)}
           onTaskStatusChange={(path, line, currentStatus, nextStatus) =>

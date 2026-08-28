@@ -1994,19 +1994,10 @@ textarea {
   line-height: 1.55;
 }
 
-.markdown-view .markdown-line-highlight-overlay {
-  position: absolute;
-  right: 0;
-  left: 0;
-  z-index: 0;
-  border-radius: 5px;
-  background: #fff4c2;
-  pointer-events: none;
-}
-
-.markdown-view > :not(.markdown-line-highlight-overlay) {
+.markdown-view .markdown-line-highlight {
   position: relative;
-  z-index: 1;
+  border-radius: 5px;
+  background: linear-gradient(#fff4c2, #fff4c2) left top / 100% 1.55em no-repeat;
 }
 
 .markdown-view p {

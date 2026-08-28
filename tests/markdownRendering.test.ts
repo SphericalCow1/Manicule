@@ -33,3 +33,14 @@ test("renders checkbox source lines from backlink line maps", () => {
     '<ul>\n<li class="task-list-item"><input class="task-list-checkbox" type="checkbox" data-line="8" aria-label="Unchecked task" /> Parent</li>\n<li class="task-list-item"><input class="task-list-checkbox" type="checkbox" checked data-line="13" aria-label="Checked task" /> Child</li>\n</ul>\n',
   );
 });
+
+test("renders checkbox list items with source line attributes", () => {
+  assert.equal(
+    renderCheckboxItems(
+      '<ul>\n<li data-source-line="8">[ ] Parent</li>\n<li data-source-line="13">[x] Child</li>\n</ul>\n',
+      "- [ ] Parent\n- [x] Child",
+      [8, 13],
+    ),
+    '<ul>\n<li data-source-line="8" class="task-list-item"><input class="task-list-checkbox" type="checkbox" data-line="8" aria-label="Unchecked task" /> Parent</li>\n<li data-source-line="13" class="task-list-item"><input class="task-list-checkbox" type="checkbox" checked data-line="13" aria-label="Checked task" /> Child</li>\n</ul>\n',
+  );
+});
