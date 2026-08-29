@@ -175,7 +175,7 @@
     </div>
     <div class="editor-header-actions">
       <button
-        class="editor-open-right-button"
+        class="editor-open-right-button pane-transfer-button"
         type="button"
         title="Open current editor page in right pane"
         disabled={!$editorSessionStore.path}

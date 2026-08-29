@@ -409,28 +409,23 @@ textarea {
 
 .pane-transfer-button,
 .editor-save-button {
-  height: 30px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 8px;
   border: 1px solid var(--border-control);
   border-radius: 6px;
-}
-
-.pane-transfer-button {
   background: var(--control-bg);
   color: var(--text-primary);
+  font-size: 13px;
   font-weight: 600;
 }
 
 .pane-transfer-button:hover:not(:disabled),
-.pane-transfer-button:focus-visible {
+.pane-transfer-button:focus-visible,
+.editor-save-button:hover:not(:disabled),
+.editor-save-button:focus-visible {
   border-color: var(--accent-border);
   background: var(--accent-bg-subtle);
   color: var(--accent-text-strong);
-}
-
-.editor-save-button {
-  background: var(--control-primary-bg);
-  color: var(--control-primary-text);
 }
 
 .editor-save-button {
@@ -2610,7 +2605,6 @@ textarea {
   color: var(--text-primary);
 }
 
-:root[data-theme="dark"] .editor-save-button,
 :root[data-theme="dark"] .workspace-actions button,
 :root[data-theme="dark"] .form-actions button[type="submit"],
 :root[data-theme="dark"] .primary-action {

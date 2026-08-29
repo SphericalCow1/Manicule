@@ -261,6 +261,7 @@
     </div>
     <div class="right-pane-header-actions">
       <button
+        class="pane-transfer-button"
         type="button"
         title="Open current right pane page in editor"
         disabled={!$rightPaneStore.path}
