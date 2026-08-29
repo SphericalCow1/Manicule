@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.5
+
+Changes since `v0.6.0`.
+
+### Added
+
+- Added a context-menu Format submenu for selected single-line editor text.
+- Added an example workspace under `docs/example_workspace`.
+
+### Changed
+
+- Combined editor block, link, and task actions into one context menu.
+- Made the `Save`, `Open Right`, and `Open Editor` buttons compact and visually
+  consistent across both themes.
+- Updated the README with the example workspace and a simpler introduction.
+
 ## 0.6.0
 
 Changes since `v0.5.0`.

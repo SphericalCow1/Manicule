@@ -368,7 +368,7 @@ Release builds are created by GitHub Actions when a version tag matching
 `v*` is pushed. The workflow creates a draft GitHub release and uploads
 Windows, macOS, and Linux desktop artifacts.
 
-The current app version is `0.6.0`.
+The current app version is `0.6.5`.
 
 ## License
 
