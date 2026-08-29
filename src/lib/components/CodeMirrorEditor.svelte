@@ -25,6 +25,11 @@
   import { onDestroy, onMount, tick } from "svelte";
   import { keepContextMenuInViewport } from "../contextMenuPosition";
   import {
+    applyInlineMarkdownFormat,
+    canApplyInlineMarkdownFormat,
+    type InlineMarkdownFormat,
+  } from "../editorTextFormatting";
+  import {
     blockFoldingExtension,
     collapseAllBlocksBelowLevel,
     collapseBlock,
@@ -92,6 +97,12 @@
     x: number;
     y: number;
     line: number;
+  } | null = null;
+  let formatContextMenu: {
+    x: number;
+    y: number;
+    from: number;
+    to: number;
   } | null = null;
   let menuElement: HTMLElement | null = null;
   let applyingExternalValue = false;
@@ -399,7 +410,7 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (wikiContextMenu || taskContextMenu || sourceLineContextMenu) {
+    if (wikiContextMenu || taskContextMenu || sourceLineContextMenu || formatContextMenu) {
       if (clickMenuMnemonic(event, menuElement)) {
         return;
       }
@@ -422,6 +433,22 @@
 
     const position = view.posAtCoords({ x: event.clientX, y: event.clientY });
     if (position === null) {
+      return;
+    }
+
+    const selection = view.state.selection.main;
+    if (!selection.empty) {
+      event.preventDefault();
+      event.stopPropagation();
+      wikiContextMenu = null;
+      taskContextMenu = null;
+      sourceLineContextMenu = null;
+      formatContextMenu = {
+        x: event.clientX,
+        y: event.clientY,
+        from: selection.from,
+        to: selection.to,
+      };
       return;
     }
 
@@ -464,6 +491,7 @@
 
     wikiContextMenu = null;
     taskContextMenu = null;
+    formatContextMenu = null;
     sourceLineContextMenu = {
       x: event.clientX,
       y: event.clientY,
@@ -777,6 +805,39 @@
     wikiContextMenu = null;
     taskContextMenu = null;
     sourceLineContextMenu = null;
+    formatContextMenu = null;
+  }
+
+  function selectedFormatText() {
+    if (!view || !formatContextMenu) {
+      return "";
+    }
+
+    return view.state.sliceDoc(formatContextMenu.from, formatContextMenu.to);
+  }
+
+  function canFormatSelection(format: InlineMarkdownFormat) {
+    return canApplyInlineMarkdownFormat(selectedFormatText(), format);
+  }
+
+  function applyFormatToSelection(format: InlineMarkdownFormat) {
+    if (!view || !formatContextMenu) {
+      return;
+    }
+
+    const { from, to } = formatContextMenu;
+    const formatted = applyInlineMarkdownFormat(view.state.sliceDoc(from, to), format);
+    if (formatted === null) {
+      return;
+    }
+
+    view.dispatch({
+      changes: { from, to, insert: formatted },
+      selection: { anchor: from, head: from + formatted.length },
+      scrollIntoView: true,
+    });
+    formatContextMenu = null;
+    view.focus();
   }
 
   function revealLineInEditor(lineNumber: number) {
@@ -1175,6 +1236,69 @@
     >
       Open line in <span class="menu-mnemonic">r</span>ight pane
     </button>
+  </div>
+{/if}
+
+{#if formatContextMenu}
+  <div
+    class="editor-link-menu"
+    use:keepContextMenuInViewport={{ x: formatContextMenu.x, y: formatContextMenu.y }}
+    style:left={`${formatContextMenu.x}px`}
+    style:top={`${formatContextMenu.y}px`}
+    role="menu"
+    tabindex="-1"
+    bind:this={menuElement}
+  >
+    <div
+      class="editor-menu-flyout"
+      role="menuitem"
+      tabindex="0"
+    >
+      <button
+        type="button"
+        class="editor-menu-flyout-trigger"
+        data-menu-key="f"
+        on:click|stopPropagation
+      >
+        <span><span class="menu-mnemonic">F</span>ormat</span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <div class="editor-menu-flyout-panel" role="menu">
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="b"
+          on:click={() => applyFormatToSelection("bold")}
+        >
+          <span class="menu-mnemonic">B</span>old
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="i"
+          on:click={() => applyFormatToSelection("italic")}
+        >
+          <span class="menu-mnemonic">I</span>talic
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="s"
+          on:click={() => applyFormatToSelection("strikethrough")}
+        >
+          <span class="menu-mnemonic">S</span>trikethrough
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="c"
+          disabled={!canFormatSelection("inline-code")}
+          on:click={() => applyFormatToSelection("inline-code")}
+        >
+          Inline <span class="menu-mnemonic">c</span>ode
+        </button>
+      </div>
+    </div>
   </div>
 {/if}
 
