@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0
+
+Changes since `v0.5.0`.
+
+### Added
+
+- Added opening global search results in the right pane.
+- Added favorite reordering from the navigation context menu.
+- Added source-line navigation between the editor and right pane.
+- Added editor block folding, including block collapse and expand actions.
+- Added dark mode with workspace-specific persistence.
+
+### Changed
+
+- Updated the README hero image layout and repository preview image.
+- Moved the workspace path from the left pane into the window title.
+- Added a `JOURNAL` heading to the left navigation.
+- Hid quick-access row actions until hover in favorites and recent files.
+- Aligned the `Open Right` and `Open Editor` pane transfer button styles.
+- Tokenized core UI, live preview, folder colors, and task colors for
+  theme-aware rendering.
+
+### Fixed
+
+- Fixed ordered-list renumbering after inserting new list items.
+- Fixed rendered Markdown checkbox alignment and checkmark styling.
+
 ## 0.5.0
 
 Changes since `v0.4.0`.
