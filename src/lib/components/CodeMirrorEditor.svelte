@@ -79,31 +79,24 @@
   export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
   export let onCreateWikiLinkPage: (path: string) => void = () => {};
 
-  let host: HTMLDivElement;
-  let view: EditorView | null = null;
-  let wikiContextMenu: {
-    x: number;
-    y: number;
+  type ContextMenuLink = {
     link: WikiLinkAtPosition;
     resolvedPath: string | null;
     resolvedExists: boolean;
-  } | null = null;
-  let taskContextMenu: {
-    x: number;
-    y: number;
-    task: TaskKeywordAtPosition;
-  } | null = null;
-  let sourceLineContextMenu: {
+  };
+
+  type EditorContextMenu = {
     x: number;
     y: number;
     line: number;
-  } | null = null;
-  let formatContextMenu: {
-    x: number;
-    y: number;
-    from: number;
-    to: number;
-  } | null = null;
+    selection: { from: number; to: number } | null;
+    task: TaskKeywordAtPosition | null;
+    link: ContextMenuLink | null;
+  };
+
+  let host: HTMLDivElement;
+  let view: EditorView | null = null;
+  let editorContextMenu: EditorContextMenu | null = null;
   let menuElement: HTMLElement | null = null;
   let applyingExternalValue = false;
   let applyingHistoryCommand = false;
@@ -410,7 +403,7 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (wikiContextMenu || taskContextMenu || sourceLineContextMenu || formatContextMenu) {
+    if (editorContextMenu) {
       if (clickMenuMnemonic(event, menuElement)) {
         return;
       }
@@ -420,13 +413,13 @@
       return;
     }
 
-    closeWikiContextMenu();
+    closeEditorContextMenu();
     if (searchOpen) {
       closeDocumentSearch();
     }
   }
 
-  function openWikiContextMenu(event: MouseEvent) {
+  function openEditorContextMenu(event: MouseEvent) {
     if (!view) {
       return;
     }
@@ -437,65 +430,31 @@
     }
 
     const selection = view.state.selection.main;
-    if (!selection.empty) {
-      event.preventDefault();
-      event.stopPropagation();
-      wikiContextMenu = null;
-      taskContextMenu = null;
-      sourceLineContextMenu = null;
-      formatContextMenu = {
-        x: event.clientX,
-        y: event.clientY,
-        from: selection.from,
-        to: selection.to,
-      };
-      return;
-    }
+    let task: TaskKeywordAtPosition | null = null;
+    let link: ContextMenuLink | null = null;
 
     if (mode === "live-preview") {
-      const task = taskKeywordAtDocumentPosition(view.state, position, taskStates);
-      if (task) {
-        event.preventDefault();
-        event.stopPropagation();
-        wikiContextMenu = null;
-        sourceLineContextMenu = null;
-        taskContextMenu = {
-          x: event.clientX,
-          y: event.clientY,
-          task,
-        };
-        return;
-      }
-
-      const link = wikiLinkAtDocumentPosition(view.state, position);
-      if (link) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        taskContextMenu = null;
-        sourceLineContextMenu = null;
-        const resolved = resolveWikiTarget(link.target, pages);
-        wikiContextMenu = {
-          x: event.clientX,
-          y: event.clientY,
-          link,
+      task = taskKeywordAtDocumentPosition(view.state, position, taskStates);
+      const wikiLink = wikiLinkAtDocumentPosition(view.state, position);
+      if (wikiLink) {
+        const resolved = resolveWikiTarget(wikiLink.target, pages);
+        link = {
+          link: wikiLink,
           resolvedPath: resolved?.path ?? null,
           resolvedExists: resolved?.exists ?? false,
         };
-        return;
       }
     }
 
     event.preventDefault();
     event.stopPropagation();
-
-    wikiContextMenu = null;
-    taskContextMenu = null;
-    formatContextMenu = null;
-    sourceLineContextMenu = {
+    editorContextMenu = {
       x: event.clientX,
       y: event.clientY,
       line: view.state.doc.lineAt(position).number,
+      selection: selection.empty ? null : { from: selection.from, to: selection.to },
+      task,
+      link,
     };
   }
 
@@ -589,8 +548,7 @@
 
     event.preventDefault();
     event.stopPropagation();
-    wikiContextMenu = null;
-    taskContextMenu = null;
+    closeEditorContextMenu();
     onOpenWikiLinkInEditor(resolved.path);
     return true;
   }
@@ -625,35 +583,35 @@
   }
 
   function setTaskStatus(nextStatus: string) {
-    if (!view || !taskContextMenu) {
+    if (!view || !editorContextMenu?.task) {
       return;
     }
 
-    const currentStatus = taskContextMenu.task.status;
+    const currentStatus = editorContextMenu.task.status;
     view.dispatch({
       changes: {
-        from: taskContextMenu.task.from,
-        to: taskContextMenu.task.to,
+        from: editorContextMenu.task.from,
+        to: editorContextMenu.task.to,
         insert: nextStatus,
       },
-      selection: { anchor: taskContextMenu.task.from + nextStatus.length },
+      selection: { anchor: editorContextMenu.task.from + nextStatus.length },
     });
     view.focus();
-    taskContextMenu = null;
+    closeEditorContextMenu();
     if (nextStatus !== currentStatus) {
       playTaskDoneSound(nextStatus, taskStates, taskDoneSoundEnabled);
     }
   }
 
   function setTaskPriority(nextPriority: string | null) {
-    if (!view || !taskContextMenu) {
+    if (!view || !editorContextMenu?.task) {
       return;
     }
 
-    const line = view.state.doc.lineAt(taskContextMenu.task.from);
+    const line = view.state.doc.lineAt(editorContextMenu.task.from);
     const change = taskPriorityChange(line.text, line.from, nextPriority, taskStates);
     if (!change) {
-      taskContextMenu = null;
+      closeEditorContextMenu();
       return;
     }
 
@@ -662,15 +620,15 @@
       selection: { anchor: change.from + change.insert.length },
     });
     view.focus();
-    taskContextMenu = null;
+    closeEditorContextMenu();
   }
 
   function currentTaskPriority() {
-    if (!view || !taskContextMenu) {
+    if (!view || !editorContextMenu?.task) {
       return null;
     }
 
-    const line = view.state.doc.lineAt(taskContextMenu.task.from);
+    const line = view.state.doc.lineAt(editorContextMenu.task.from);
     return priorityCookieMatch(line.text, line.from, taskStates)?.priority ?? null;
   }
 
@@ -678,83 +636,78 @@
     playTaskDoneSound(nextStatus, taskStates, taskDoneSoundEnabled);
   }
 
-  function openWikiLink(target: "editor" | "right") {
-    if (!wikiContextMenu?.resolvedPath || !wikiContextMenu.resolvedExists) {
+  function openWikiLinkInRightPane() {
+    if (!editorContextMenu?.link?.resolvedPath || !editorContextMenu.link.resolvedExists) {
       return;
     }
 
-    const path = wikiContextMenu.resolvedPath;
-    wikiContextMenu = null;
-
-    if (target === "editor") {
-      onOpenWikiLinkInEditor(path);
-    } else {
-      onOpenWikiLinkInRightPane(path);
-    }
+    const path = editorContextMenu.link.resolvedPath;
+    closeEditorContextMenu();
+    onOpenWikiLinkInRightPane(path);
   }
 
   function openSourceLineInRightPane() {
-    if (!sourceLineContextMenu) {
+    if (!editorContextMenu) {
       return;
     }
 
-    const { line } = sourceLineContextMenu;
-    sourceLineContextMenu = null;
+    const { line } = editorContextMenu;
+    closeEditorContextMenu();
     onOpenSourceLineInRightPane(line);
   }
 
   function currentSourceLineBlockLevel() {
-    if (!view || !sourceLineContextMenu) {
+    if (!view || !editorContextMenu) {
       return null;
     }
 
-    return foldableBlockLevelAtLine(view.state, sourceLineContextMenu.line);
+    return foldableBlockLevelAtLine(view.state, editorContextMenu.line);
   }
 
   function currentSourceLineBlockIsCollapsible() {
     return Boolean(
       view &&
-        sourceLineContextMenu &&
-        collapsibleBlockAtLine(view.state, sourceLineContextMenu.line),
+        editorContextMenu &&
+        collapsibleBlockAtLine(view.state, editorContextMenu.line),
     );
   }
 
   function currentSourceLineBlockIsFolded() {
     return Boolean(
       view &&
-        sourceLineContextMenu &&
-        foldedBlockAtLine(view.state, sourceLineContextMenu.line),
+        editorContextMenu &&
+        foldedBlockAtLine(view.state, editorContextMenu.line),
     );
   }
 
   function toggleSourceLineBlockFold() {
-    if (!view || !sourceLineContextMenu) {
+    if (!view || !editorContextMenu) {
       return;
     }
 
-    const { line } = sourceLineContextMenu;
+    const { line } = editorContextMenu;
     if (foldedBlockAtLine(view.state, line)) {
       expandBlock(view, line);
     } else {
       collapseBlock(view, line);
     }
 
-    sourceLineContextMenu = null;
+    closeEditorContextMenu();
     view.focus();
   }
 
   function collapseSourceLineBelowLevel() {
-    if (!view || !sourceLineContextMenu) {
+    if (!view || !editorContextMenu) {
       return;
     }
 
-    const level = foldableBlockLevelAtLine(view.state, sourceLineContextMenu.line);
+    const level = foldableBlockLevelAtLine(view.state, editorContextMenu.line);
     if (level === null) {
       return;
     }
 
     collapseAllBlocksBelowLevel(view, level);
-    sourceLineContextMenu = null;
+    closeEditorContextMenu();
     view.focus();
   }
 
@@ -764,7 +717,7 @@
     }
 
     expandAllBlockFolds(view);
-    sourceLineContextMenu = null;
+    closeEditorContextMenu();
     view.focus();
   }
 
@@ -792,40 +745,41 @@
   }
 
   function createWikiLinkPage() {
-    if (!wikiContextMenu?.resolvedPath || wikiContextMenu.resolvedExists) {
+    if (!editorContextMenu?.link?.resolvedPath || editorContextMenu.link.resolvedExists) {
       return;
     }
 
-    const path = wikiContextMenu.resolvedPath;
-    wikiContextMenu = null;
+    const path = editorContextMenu.link.resolvedPath;
+    closeEditorContextMenu();
     onCreateWikiLinkPage(path);
   }
 
-  function closeWikiContextMenu() {
-    wikiContextMenu = null;
-    taskContextMenu = null;
-    sourceLineContextMenu = null;
-    formatContextMenu = null;
+  function closeEditorContextMenu() {
+    editorContextMenu = null;
   }
 
   function selectedFormatText() {
-    if (!view || !formatContextMenu) {
+    if (!view || !editorContextMenu?.selection) {
       return "";
     }
 
-    return view.state.sliceDoc(formatContextMenu.from, formatContextMenu.to);
+    return view.state.sliceDoc(editorContextMenu.selection.from, editorContextMenu.selection.to);
   }
 
   function canFormatSelection(format: InlineMarkdownFormat) {
     return canApplyInlineMarkdownFormat(selectedFormatText(), format);
   }
 
+  function hasSingleLineFormatSelection() {
+    return !/\r?\n/.test(selectedFormatText());
+  }
+
   function applyFormatToSelection(format: InlineMarkdownFormat) {
-    if (!view || !formatContextMenu) {
+    if (!view || !editorContextMenu?.selection) {
       return;
     }
 
-    const { from, to } = formatContextMenu;
+    const { from, to } = editorContextMenu.selection;
     const formatted = applyInlineMarkdownFormat(view.state.sliceDoc(from, to), format);
     if (formatted === null) {
       return;
@@ -836,7 +790,7 @@
       selection: { anchor: from, head: from + formatted.length },
       scrollIntoView: true,
     });
-    formatContextMenu = null;
+    closeEditorContextMenu();
     view.focus();
   }
 
@@ -1053,7 +1007,7 @@
 </script>
 
 <svelte:window
-  on:click={closeWikiContextMenu}
+  on:click={closeEditorContextMenu}
   on:keydown={handleWindowKeydown}
 />
 
@@ -1137,97 +1091,120 @@
     on:mousedown={handleEditorMouseDown}
     on:click={handleEditorClick}
     on:keydown={() => {}}
-    on:contextmenu={openWikiContextMenu}
+    on:contextmenu={openEditorContextMenu}
   ></div>
 </div>
 
-{#if wikiContextMenu}
-  <div
-    class="editor-link-menu"
-    use:keepContextMenuInViewport={{ x: wikiContextMenu.x, y: wikiContextMenu.y }}
-    style:left={`${wikiContextMenu.x}px`}
-    style:top={`${wikiContextMenu.y}px`}
-    role="menu"
-    tabindex="-1"
-    bind:this={menuElement}
-  >
-    <div class="editor-link-menu-title" title={wikiContextMenu.link.target}>
-      {wikiContextMenu.link.label}
-    </div>
-    <button
-      type="button"
-      role="menuitem"
-      data-menu-key="e"
-      disabled={!wikiContextMenu.resolvedPath || !wikiContextMenu.resolvedExists}
-      on:click={() => openWikiLink("editor")}
-    >
-      Open in <span class="menu-mnemonic">e</span>ditor
-    </button>
-    <button
-      type="button"
-      role="menuitem"
-      data-menu-key="r"
-      disabled={!wikiContextMenu.resolvedPath || !wikiContextMenu.resolvedExists}
-      on:click={() => openWikiLink("right")}
-    >
-      Open in <span class="menu-mnemonic">r</span>ight pane
-    </button>
-    {#if wikiContextMenu.resolvedPath && !wikiContextMenu.resolvedExists}
-      <button type="button" role="menuitem" data-menu-key="c" on:click={createWikiLinkPage}>
-        <span class="menu-mnemonic">C</span>reate page
-      </button>
-    {/if}
-  </div>
-{/if}
-
-{#if sourceLineContextMenu}
+{#if editorContextMenu}
   {@const blockLevel = currentSourceLineBlockLevel()}
   {@const blockIsCollapsible = currentSourceLineBlockIsCollapsible()}
   {@const blockIsFolded = currentSourceLineBlockIsFolded()}
+  {@const currentPriority = currentTaskPriority()}
+  {@const contextLink = editorContextMenu.link}
   <div
     class="editor-link-menu"
-    use:keepContextMenuInViewport={{ x: sourceLineContextMenu.x, y: sourceLineContextMenu.y }}
-    style:left={`${sourceLineContextMenu.x}px`}
-    style:top={`${sourceLineContextMenu.y}px`}
+    use:keepContextMenuInViewport={{ x: editorContextMenu.x, y: editorContextMenu.y }}
+    style:left={`${editorContextMenu.x}px`}
+    style:top={`${editorContextMenu.y}px`}
     role="menu"
     tabindex="-1"
     bind:this={menuElement}
   >
-    <details class="editor-submenu" open>
-      <summary>Block folding</summary>
-      {#if blockIsCollapsible}
+    {#if editorContextMenu.selection && hasSingleLineFormatSelection()}
+      <div class="editor-menu-flyout" role="menuitem" tabindex="0">
         <button
           type="button"
-          role="menuitem"
-          data-menu-key={blockIsFolded ? "e" : "c"}
-          on:click={toggleSourceLineBlockFold}
+          class="editor-menu-flyout-trigger"
+          data-menu-key="f"
+          on:click|stopPropagation
         >
-          {#if blockIsFolded}
-            <span class="menu-mnemonic">E</span>xpand block
-          {:else}
-            <span class="menu-mnemonic">C</span>ollapse block
-          {/if}
+          <span><span class="menu-mnemonic">F</span>ormat</span>
+          <span aria-hidden="true">›</span>
         </button>
-      {/if}
-      {#if blockLevel !== null}
-        <button
-          type="button"
-          role="menuitem"
-          data-menu-key="l"
-          on:click={collapseSourceLineBelowLevel}
-        >
-          Collapse all below <span class="menu-mnemonic">l</span>evel {blockLevel}
-        </button>
-      {/if}
+        <div class="editor-menu-flyout-panel" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key="b"
+            on:click={() => applyFormatToSelection("bold")}
+          >
+            <span class="menu-mnemonic">B</span>old
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key="i"
+            on:click={() => applyFormatToSelection("italic")}
+          >
+            <span class="menu-mnemonic">I</span>talic
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key="s"
+            on:click={() => applyFormatToSelection("strikethrough")}
+          >
+            <span class="menu-mnemonic">S</span>trikethrough
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key="c"
+            disabled={!canFormatSelection("inline-code")}
+            on:click={() => applyFormatToSelection("inline-code")}
+          >
+            Inline <span class="menu-mnemonic">c</span>ode
+          </button>
+        </div>
+      </div>
+    {/if}
+
+    <div class="editor-menu-flyout" role="menuitem" tabindex="0">
       <button
         type="button"
-        role="menuitem"
-        data-menu-key="a"
-        on:click={expandAllSourceLineBlocks}
+        class="editor-menu-flyout-trigger"
+        data-menu-key="c"
+        on:click|stopPropagation
       >
-        Expand <span class="menu-mnemonic">a</span>ll
+        <span><span class="menu-mnemonic">C</span>ollapse</span>
+        <span aria-hidden="true">›</span>
       </button>
-    </details>
+      <div class="editor-menu-flyout-panel" role="menu">
+        {#if blockIsCollapsible}
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key={blockIsFolded ? "e" : "c"}
+            on:click={toggleSourceLineBlockFold}
+          >
+            {#if blockIsFolded}
+              <span class="menu-mnemonic">E</span>xpand block
+            {:else}
+              <span class="menu-mnemonic">C</span>ollapse block
+            {/if}
+          </button>
+        {/if}
+        {#if blockLevel !== null}
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key="l"
+            on:click={collapseSourceLineBelowLevel}
+          >
+            Collapse all below <span class="menu-mnemonic">l</span>evel {blockLevel}
+          </button>
+        {/if}
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="a"
+          on:click={expandAllSourceLineBlocks}
+        >
+          Expand <span class="menu-mnemonic">a</span>ll
+        </button>
+      </div>
+    </div>
+
     <button
       type="button"
       role="menuitem"
@@ -1236,110 +1213,48 @@
     >
       Open line in <span class="menu-mnemonic">r</span>ight pane
     </button>
-  </div>
-{/if}
-
-{#if formatContextMenu}
-  <div
-    class="editor-link-menu"
-    use:keepContextMenuInViewport={{ x: formatContextMenu.x, y: formatContextMenu.y }}
-    style:left={`${formatContextMenu.x}px`}
-    style:top={`${formatContextMenu.y}px`}
-    role="menu"
-    tabindex="-1"
-    bind:this={menuElement}
-  >
-    <div
-      class="editor-menu-flyout"
-      role="menuitem"
-      tabindex="0"
-    >
+    {#if contextLink}
       <button
         type="button"
-        class="editor-menu-flyout-trigger"
-        data-menu-key="f"
-        on:click|stopPropagation
+        role="menuitem"
+        data-menu-key="p"
+        disabled={!contextLink.resolvedPath || !contextLink.resolvedExists}
+        on:click={openWikiLinkInRightPane}
       >
-        <span><span class="menu-mnemonic">F</span>ormat</span>
-        <span aria-hidden="true">›</span>
+        Open link in right <span class="menu-mnemonic">p</span>ane
       </button>
-      <div class="editor-menu-flyout-panel" role="menu">
-        <button
-          type="button"
-          role="menuitem"
-          data-menu-key="b"
-          on:click={() => applyFormatToSelection("bold")}
-        >
-          <span class="menu-mnemonic">B</span>old
+      {#if contextLink.resolvedPath && !contextLink.resolvedExists}
+        <button type="button" role="menuitem" data-menu-key="c" on:click={createWikiLinkPage}>
+          <span class="menu-mnemonic">C</span>reate page
         </button>
-        <button
-          type="button"
-          role="menuitem"
-          data-menu-key="i"
-          on:click={() => applyFormatToSelection("italic")}
-        >
-          <span class="menu-mnemonic">I</span>talic
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          data-menu-key="s"
-          on:click={() => applyFormatToSelection("strikethrough")}
-        >
-          <span class="menu-mnemonic">S</span>trikethrough
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          data-menu-key="c"
-          disabled={!canFormatSelection("inline-code")}
-          on:click={() => applyFormatToSelection("inline-code")}
-        >
-          Inline <span class="menu-mnemonic">c</span>ode
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+      {/if}
+    {/if}
 
-{#if taskContextMenu}
-  {@const currentPriority = currentTaskPriority()}
-  <div
-    class="editor-link-menu"
-    use:keepContextMenuInViewport={{ x: taskContextMenu.x, y: taskContextMenu.y }}
-    style:left={`${taskContextMenu.x}px`}
-    style:top={`${taskContextMenu.y}px`}
-    role="menu"
-    tabindex="-1"
-    bind:this={menuElement}
-  >
-    <details class="editor-submenu" open>
-      <summary>Task</summary>
+    {#if editorContextMenu.task}
       <div class="editor-menu-flyout" role="menuitem" tabindex="0">
-        <button type="button" class="editor-menu-flyout-trigger" data-menu-key="s">
-          <span><span class="menu-mnemonic">S</span>tatus</span>
+        <button
+          type="button"
+          class="editor-menu-flyout-trigger"
+          data-menu-key="t"
+          on:click|stopPropagation
+        >
+          <span><span class="menu-mnemonic">T</span>ask</span>
           <span aria-hidden="true">›</span>
         </button>
         <div class="editor-menu-flyout-panel" role="menu">
+          <div class="editor-menu-group-label">Status</div>
           {#each taskStates as state, index}
             <button
               type="button"
               role="menuitem"
               data-menu-key={String(index + 1)}
-              disabled={state === taskContextMenu.task.status}
+              disabled={state === editorContextMenu.task.status}
               on:click={() => setTaskStatus(state)}
             >
               <span class="menu-mnemonic">{index + 1}</span> {state}
             </button>
           {/each}
-        </div>
-      </div>
-      <div class="editor-menu-flyout" role="menuitem" tabindex="0">
-        <button type="button" class="editor-menu-flyout-trigger" data-menu-key="p">
-          <span><span class="menu-mnemonic">P</span>riority</span>
-          <span aria-hidden="true">›</span>
-        </button>
-        <div class="editor-menu-flyout-panel" role="menu">
+          <div class="editor-menu-group-label">Priority</div>
           <button
             type="button"
             role="menuitem"
@@ -1362,6 +1277,6 @@
           {/each}
         </div>
       </div>
-    </details>
+    {/if}
   </div>
 {/if}
