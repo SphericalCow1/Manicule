@@ -14,7 +14,6 @@ Changes since `v0.5.0`.
 
 ### Changed
 
-- Updated the README hero image layout and repository preview image.
 - Moved the workspace path from the left pane into the window title.
 - Added a `JOURNAL` heading to the left navigation.
 - Hid quick-access row actions until hover in favorites and recent files.
@@ -43,7 +42,6 @@ Changes since `v0.4.0`.
 
 ### Changed
 
-- Renamed visible product spelling from `SemTags` to `Semtags`.
 - Live preview now switches only the active editor line into source mode instead
   of rendering following blocks as source as well.
 - Page filter results now show matching pages before matching blocks.
@@ -62,8 +60,3 @@ Changes since `v0.4.0`.
   blocks.
 - Folder deletion is now restricted to empty folders to avoid accidental
   recursive data loss.
-
-### Notes
-
-- The Markdown workspace remains the source of truth. Runtime indexes and UI
-  configuration are still rebuildable or persisted separately from note content.
