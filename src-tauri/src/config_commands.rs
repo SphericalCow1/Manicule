@@ -7,8 +7,8 @@ use crate::workspace_config::{
     normalize_backlink_view_config, normalize_expanded_folders, normalize_folder_colors,
     normalize_folder_page_sort, normalize_manual_page_order, normalize_navigation_layout_config,
     normalize_optional_page_path, normalize_page_path_list, normalize_page_sort,
-    normalize_task_overview_config, save_workspace_config, BacklinkViewConfig,
-    NavigationLayoutConfig, TaskOverviewConfig, DEFAULT_PAGE_SORT,
+    normalize_task_overview_config, normalize_theme_mode, save_workspace_config,
+    BacklinkViewConfig, NavigationLayoutConfig, TaskOverviewConfig, DEFAULT_PAGE_SORT,
 };
 
 #[tauri::command]
@@ -45,6 +45,16 @@ pub fn save_backlink_view_config(
         workspace.config.backlink_view = backlink_view.clone();
         save_workspace_config(&workspace.root, &workspace.config)?;
         Ok(backlink_view)
+    })?
+}
+
+#[tauri::command]
+pub fn save_theme_config(theme_mode: String, state: State<'_, AppState>) -> Result<String, String> {
+    state.with_workspace_mut(|workspace| {
+        let theme_mode = normalize_theme_mode(theme_mode);
+        workspace.config.theme_mode = theme_mode.clone();
+        save_workspace_config(&workspace.root, &workspace.config)?;
+        Ok(theme_mode)
     })?
 }
 

@@ -35,6 +35,7 @@ pub struct WorkspaceStateDto {
     pub navigation_layout: NavigationLayoutConfig,
     pub task_overview: TaskOverviewConfig,
     pub backlink_view: BacklinkViewConfig,
+    pub theme_mode: String,
     pub last_editor_path: Option<String>,
     pub last_right_pane_path: Option<String>,
 }

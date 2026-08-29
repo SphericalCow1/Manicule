@@ -116,7 +116,7 @@
           </button>
           <button
             type="button"
-            class="icon-button row-action"
+            class="icon-button row-action right-pane-action"
             title="Open in right pane"
             aria-label="Open in right pane"
             on:click={() => openPageInRightPane(node.path)}

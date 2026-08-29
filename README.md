@@ -88,8 +88,12 @@ right pane keeps its previous context page from the last session.
 
 Each workspace can also contain a `.config` file. Semtags creates it if needed
 and stores workspace-specific settings there, for example task states, task
-colors, expanded folders, task filters, page sorting, session metadata, and the
-right pane page restored on the next start.
+colors, expanded folders, task filters, page sorting, theme mode, session
+metadata, and the right pane page restored on the next start.
+
+Use `View > Toggle Dark Mode` to switch the interface theme. The setting is
+stored as `themeMode` in the current workspace `.config`; Markdown files are not
+modified.
 
 ### Three-Pane Layout
 
@@ -103,6 +107,9 @@ Semtags uses three resizable panes:
 The middle and right pane can show different files. This is useful when editing
 one note while keeping another page, a project overview, or a backlink target
 open for context.
+
+Use `View > Toggle Dark Mode` to switch the complete app shell, editor, and
+rendered Markdown views between light and dark appearance.
 
 ### Pages and Wiki Links
 
@@ -307,7 +314,8 @@ Example:
   },
   "folderColors": {
     "projects": "blue"
-  }
+  },
+  "themeMode": "light"
 }
 ```
 

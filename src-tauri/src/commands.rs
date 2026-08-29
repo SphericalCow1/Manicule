@@ -78,6 +78,7 @@ pub fn open_workspace(
         navigation_layout: workspace.config.navigation_layout.clone(),
         task_overview: workspace.config.task_overview.clone(),
         backlink_view: workspace.config.backlink_view.clone(),
+        theme_mode: workspace.config.theme_mode.clone(),
         last_editor_path: workspace.config.last_editor_path.clone(),
         last_right_pane_path: workspace.config.last_right_pane_path.clone(),
     };

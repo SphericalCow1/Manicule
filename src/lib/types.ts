@@ -67,6 +67,7 @@ export type FolderColors = Record<string, TaskColorName>;
 export type TaskOverviewGroupMode = "status" | "priority" | "source" | "folder" | "linked-page";
 export type PageSortMode = "name-desc" | "name-asc" | "modified-desc" | "modified-asc";
 export type ManualPageOrder = Record<string, string[]>;
+export type ThemeMode = "light" | "dark";
 
 export type TaskOverviewConfig = {
   statusFilter: string;
@@ -127,6 +128,7 @@ export type WorkspaceState = {
   navigationLayout: NavigationLayoutConfig;
   taskOverview: TaskOverviewConfig;
   backlinkView: BacklinkViewConfig;
+  themeMode: ThemeMode;
   lastEditorPath: string | null;
   lastRightPanePath: string | null;
 };

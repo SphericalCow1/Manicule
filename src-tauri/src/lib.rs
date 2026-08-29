@@ -27,6 +27,7 @@ const MENU_CLOSE_WORKSPACE: &str = "file.close_workspace";
 const MENU_SAVE: &str = "file.save";
 const MENU_UNDO: &str = "edit.undo";
 const MENU_REDO: &str = "edit.redo";
+const MENU_TOGGLE_DARK_MODE: &str = "view.toggle_dark_mode";
 const MENU_TOGGLE_TASK_OVERVIEW: &str = "view.toggle_task_overview";
 const MENU_EDITOR_MODE_LIVE: &str = "view.editor_mode_live";
 const MENU_EDITOR_MODE_SOURCE: &str = "view.editor_mode_source";
@@ -111,6 +112,7 @@ pub fn run() {
                 MENU_SAVE => Some("menu-save"),
                 MENU_UNDO => Some("menu-undo"),
                 MENU_REDO => Some("menu-redo"),
+                MENU_TOGGLE_DARK_MODE => Some("menu-toggle-dark-mode"),
                 MENU_TOGGLE_TASK_OVERVIEW => Some("menu-toggle-task-overview"),
                 MENU_EDITOR_MODE_LIVE => Some("menu-editor-mode-live"),
                 MENU_EDITOR_MODE_SOURCE => Some("menu-editor-mode-source"),
@@ -148,6 +150,7 @@ pub fn run() {
             config_commands::save_navigation_layout_config,
             config_commands::save_task_overview_config,
             config_commands::save_backlink_view_config,
+            config_commands::save_theme_config,
             commands::list_pages,
             commands::create_page,
             commands::create_folder,
@@ -260,6 +263,8 @@ fn ensure_edit_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
 }
 
 fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri::Result<()> {
+    let toggle_dark_mode =
+        MenuItemBuilder::with_id(MENU_TOGGLE_DARK_MODE, "Toggle Dark Mode").build(handle)?;
     let toggle_task_overview =
         MenuItemBuilder::with_id(MENU_TOGGLE_TASK_OVERVIEW, "Toggle Task Overview")
             .accelerator("CmdOrCtrl+Shift+T")
@@ -306,6 +311,7 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
         .build(handle)?;
     let reset_layout =
         MenuItemBuilder::with_id(MENU_RESET_LAYOUT, "Reset Column Layout").build(handle)?;
+    let separator_after_theme = PredefinedMenuItem::separator(handle)?;
     let separator_after_mode = PredefinedMenuItem::separator(handle)?;
     let separator_after_zoom = PredefinedMenuItem::separator(handle)?;
     let separator_after_layout = PredefinedMenuItem::separator(handle)?;
@@ -313,6 +319,8 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
     if let Some(view_menu) = find_submenu(menu, "View")? {
         view_menu.insert_items(
             &[
+                &toggle_dark_mode,
+                &separator_after_theme,
                 &toggle_task_overview,
                 &live_mode,
                 &source_mode,
@@ -330,6 +338,8 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
         )?;
     } else {
         let view_menu = SubmenuBuilder::new(handle, "View")
+            .item(&toggle_dark_mode)
+            .separator()
             .item(&toggle_task_overview)
             .item(&live_mode)
             .item(&source_mode)

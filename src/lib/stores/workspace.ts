@@ -17,11 +17,13 @@ import {
   saveNavigationConfig as saveNavigationConfigCommand,
   saveNavigationLayoutConfig as saveNavigationLayoutConfigCommand,
   savePageSortConfig as savePageSortConfigCommand,
+  saveThemeConfig as saveThemeConfigCommand,
   saveTaskOverviewConfig as saveTaskOverviewConfigCommand,
   saveWorkspaceSessionConfig,
 } from "../api";
 import { DEFAULT_TASK_STATE_COLORS } from "../taskColors";
 import { DEFAULT_TASK_STATES } from "../taskKeywords";
+import { themeStore } from "./theme";
 import type {
   Diagnostic,
   BacklinkViewConfig,
@@ -33,6 +35,7 @@ import type {
   TaskOverviewConfig,
   TaskStateColors,
   TaskStatus,
+  ThemeMode,
 } from "../types";
 
 const DEFAULT_TASK_OVERVIEW_CONFIG: TaskOverviewConfig = {
@@ -48,6 +51,7 @@ const DEFAULT_NAVIGATION_LAYOUT: NavigationLayoutConfig = {
 const DEFAULT_BACKLINK_VIEW_CONFIG: BacklinkViewConfig = {
   openTasksOnly: false,
 };
+const DEFAULT_THEME_MODE: ThemeMode = "light";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -75,6 +79,7 @@ type WorkspaceStoreState = {
   navigationLayout: NavigationLayoutConfig;
   taskOverview: TaskOverviewConfig;
   backlinkView: BacklinkViewConfig;
+  themeMode: ThemeMode;
   lastEditorPath: string | null;
   lastRightPanePath: string | null;
   loading: boolean;
@@ -99,6 +104,7 @@ const initialState: WorkspaceStoreState = {
   navigationLayout: DEFAULT_NAVIGATION_LAYOUT,
   taskOverview: DEFAULT_TASK_OVERVIEW_CONFIG,
   backlinkView: DEFAULT_BACKLINK_VIEW_CONFIG,
+  themeMode: DEFAULT_THEME_MODE,
   lastEditorPath: null,
   lastRightPanePath: null,
   loading: false,
@@ -112,6 +118,7 @@ function createWorkspaceStore() {
     subscribe,
     clear() {
       set(initialState);
+      themeStore.set(DEFAULT_THEME_MODE);
     },
     clearError() {
       update((state) => ({ ...state, error: null }));
@@ -128,6 +135,8 @@ function createWorkspaceStore() {
 
       try {
         const workspace = await openWorkspaceCommand(trimmed);
+        const themeMode = workspace.themeMode ?? DEFAULT_THEME_MODE;
+        themeStore.set(themeMode);
         set({
           root: workspace.root,
           pages: workspace.pages,
@@ -149,6 +158,7 @@ function createWorkspaceStore() {
           navigationLayout: workspace.navigationLayout ?? DEFAULT_NAVIGATION_LAYOUT,
           taskOverview: workspace.taskOverview ?? DEFAULT_TASK_OVERVIEW_CONFIG,
           backlinkView: workspace.backlinkView ?? DEFAULT_BACKLINK_VIEW_CONFIG,
+          themeMode,
           lastEditorPath: workspace.lastEditorPath ?? null,
           lastRightPanePath: workspace.lastRightPanePath ?? null,
           loading: false,
@@ -426,6 +436,28 @@ function createWorkspaceStore() {
           ...state,
           error: configSaveError("backlink view settings", error),
         }));
+        return null;
+      }
+    },
+    async saveThemeMode(themeMode: ThemeMode) {
+      update((state) => ({ ...state, themeMode, error: null }));
+      themeStore.set(themeMode);
+
+      try {
+        const savedThemeMode = await saveThemeConfigCommand(themeMode);
+        update((state) => ({ ...state, themeMode: savedThemeMode, error: null }));
+        themeStore.set(savedThemeMode);
+        return savedThemeMode;
+      } catch (error) {
+        update((state) => {
+          if (!state.root) {
+            return state;
+          }
+          return {
+            ...state,
+            error: configSaveError("theme setting", error),
+          };
+        });
         return null;
       }
     },

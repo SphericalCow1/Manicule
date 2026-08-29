@@ -7,6 +7,7 @@ import { editorModeStore } from "./stores/editorMode";
 import { mainViewStore } from "./stores/mainView";
 import { rightPaneStore } from "./stores/rightPane";
 import { taskStore } from "./stores/tasks";
+import { themeStore } from "./stores/theme";
 import { workspaceStore } from "./stores/workspace";
 import { zoomStore } from "./stores/zoom";
 
@@ -108,6 +109,10 @@ export async function setupCoreEvents() {
 
   window.addEventListener("keydown", handleGlobalUndoKeydown, { capture: true });
   window.addEventListener("keydown", handleGlobalViewKeydown, { capture: true });
+
+  await onCoreEvent("menu-toggle-dark-mode", async () => {
+    await workspaceStore.saveThemeMode(themeStore.toggle());
+  });
 
   await onCoreEvent("menu-toggle-task-overview", async () => {
     await toggleTaskOverview();

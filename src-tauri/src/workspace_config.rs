@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_TASK_STATES: [&str; 4] = ["TODO", "INPROGRESS", "WAITING", "DONE"];
 pub const DEFAULT_PAGE_SORT: &str = "name-desc";
+pub const DEFAULT_THEME_MODE: &str = "light";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,6 +36,8 @@ pub struct WorkspaceConfig {
     pub task_overview: TaskOverviewConfig,
     #[serde(default)]
     pub backlink_view: BacklinkViewConfig,
+    #[serde(default = "default_theme_mode")]
+    pub theme_mode: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_editor_path: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -115,6 +118,7 @@ impl Default for WorkspaceConfig {
             navigation_layout: NavigationLayoutConfig::default(),
             task_overview: TaskOverviewConfig::default(),
             backlink_view: BacklinkViewConfig::default(),
+            theme_mode: default_theme_mode(),
             last_editor_path: None,
             last_right_pane_path: None,
         }
@@ -163,6 +167,7 @@ pub fn load_or_create_workspace_config(root: &Path) -> Result<WorkspaceConfig, S
         navigation_layout: normalize_navigation_layout_config(config.navigation_layout),
         task_overview: normalize_task_overview_config(config.task_overview),
         backlink_view: normalize_backlink_view_config(config.backlink_view),
+        theme_mode: normalize_theme_mode(config.theme_mode),
         last_editor_path: normalize_optional_page_path(config.last_editor_path),
         last_right_pane_path: normalize_optional_page_path(config.last_right_pane_path),
     })
@@ -308,6 +313,13 @@ pub fn normalize_navigation_layout_config(
 pub fn normalize_backlink_view_config(config: BacklinkViewConfig) -> BacklinkViewConfig {
     BacklinkViewConfig {
         open_tasks_only: config.open_tasks_only,
+    }
+}
+
+pub fn normalize_theme_mode(theme_mode: String) -> String {
+    match theme_mode.trim().to_ascii_lowercase().as_str() {
+        "dark" => "dark".to_string(),
+        _ => default_theme_mode(),
     }
 }
 
@@ -467,6 +479,10 @@ fn default_page_sort() -> String {
     DEFAULT_PAGE_SORT.to_string()
 }
 
+fn default_theme_mode() -> String {
+    DEFAULT_THEME_MODE.to_string()
+}
+
 fn default_folder_page_sort() -> HashMap<String, String> {
     HashMap::from([("journal".to_string(), "name-desc".to_string())])
 }
@@ -514,6 +530,7 @@ mod tests {
             Some(&"name-desc".to_string())
         );
         assert!(config.folder_colors.is_empty());
+        assert_eq!(config.theme_mode, "light");
         assert_eq!(config.last_editor_path, None);
         assert_eq!(config.last_right_pane_path, None);
         assert!(root.join(".config").is_file());
@@ -689,6 +706,32 @@ mod tests {
     }
 
     #[test]
+    fn loads_and_normalizes_theme_mode() {
+        let root = temp_workspace();
+        fs::write(
+            root.join(".config"),
+            r#"{"taskStates":["TODO","DONE"],"themeMode":" DARK "}"#,
+        )
+        .unwrap();
+
+        let config = load_or_create_workspace_config(&root).unwrap();
+
+        assert_eq!(config.theme_mode, "dark");
+
+        fs::write(
+            root.join(".config"),
+            r#"{"taskStates":["TODO","DONE"],"themeMode":"system"}"#,
+        )
+        .unwrap();
+
+        let config = load_or_create_workspace_config(&root).unwrap();
+
+        assert_eq!(config.theme_mode, "light");
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn loads_and_normalizes_task_overview_config() {
         let root = temp_workspace();
         fs::write(
@@ -784,6 +827,7 @@ mod tests {
             navigation_layout: NavigationLayoutConfig::default(),
             task_overview: TaskOverviewConfig::default(),
             backlink_view: BacklinkViewConfig::default(),
+            theme_mode: "light".to_string(),
             last_editor_path: None,
             last_right_pane_path: None,
         };
@@ -828,6 +872,7 @@ mod tests {
             backlink_view: BacklinkViewConfig {
                 open_tasks_only: true,
             },
+            theme_mode: "dark".to_string(),
             last_editor_path: Some("projects/alpha.md".to_string()),
             last_right_pane_path: Some("journal/2026-08-21.md".to_string()),
         };
@@ -837,6 +882,7 @@ mod tests {
 
         assert!(saved.contains("\"taskOverview\""));
         assert!(saved.contains("\"backlinkView\""));
+        assert!(saved.contains("\"themeMode\": \"dark\""));
         assert!(saved.contains("\"openTasksOnly\": true"));
         assert!(saved.contains("\"taskDoneSoundEnabled\": false"));
         assert!(saved.contains("\"defaultPageSort\": \"name-asc\""));

@@ -22,6 +22,7 @@ import type {
   TaskItem,
   TaskOverviewConfig,
   TaskStatus,
+  ThemeMode,
   ToggleCheckboxResult,
   UpdateTaskStatusResult,
   WorkspaceState,
@@ -103,6 +104,10 @@ export function saveBacklinkViewConfig(
   backlinkView: BacklinkViewConfig,
 ): Promise<BacklinkViewConfig> {
   return invokeTauri<BacklinkViewConfig>("save_backlink_view_config", { backlinkView });
+}
+
+export function saveThemeConfig(themeMode: ThemeMode): Promise<ThemeMode> {
+  return invokeTauri<ThemeMode>("save_theme_config", { themeMode });
 }
 
 export function savePageSortConfig(
