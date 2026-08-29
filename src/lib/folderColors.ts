@@ -20,65 +20,7 @@ type LinkColorTokens = {
 };
 
 const defaultLinkColor: TaskColorName = "blue";
-
-const palette: Record<TaskColorName, LinkColorTokens> = {
-  red: {
-    background: "#fee2e2",
-    foreground: "#991b1b",
-    border: "#fca5a5",
-    folderFill: "#fca5a5",
-    folderTab: "#fecaca",
-    folderBorder: "#b91c1c",
-  },
-  yellow: {
-    background: "#fef3c7",
-    foreground: "#854d0e",
-    border: "#facc15",
-    folderFill: "#facc15",
-    folderTab: "#fde68a",
-    folderBorder: "#a16207",
-  },
-  green: {
-    background: "#dcfce7",
-    foreground: "#166534",
-    border: "#86efac",
-    folderFill: "#86efac",
-    folderTab: "#bbf7d0",
-    folderBorder: "#15803d",
-  },
-  blue: {
-    background: "#edf5ff",
-    foreground: "#145ea8",
-    border: "#9cc7f2",
-    folderFill: "#93c5fd",
-    folderTab: "#bfdbfe",
-    folderBorder: "#2563eb",
-  },
-  grey: {
-    background: "#f1f5f9",
-    foreground: "#475569",
-    border: "#cbd5e1",
-    folderFill: "#cbd5e1",
-    folderTab: "#e2e8f0",
-    folderBorder: "#64748b",
-  },
-  orange: {
-    background: "#ffedd5",
-    foreground: "#9a3412",
-    border: "#fdba74",
-    folderFill: "#fdba74",
-    folderTab: "#fed7aa",
-    folderBorder: "#c2410c",
-  },
-  pink: {
-    background: "#f5e8ff",
-    foreground: "#7e22ce",
-    border: "#d8b4fe",
-    folderFill: "#c084fc",
-    folderTab: "#e9d5ff",
-    folderBorder: "#9333ea",
-  },
-};
+const folderColorNames = new Set<TaskColorName>(FOLDER_COLOR_OPTIONS);
 
 export function folderColorForPath(path: string, folderColors: FolderColors = {}) {
   const folderPath = folderPathForPage(path);
@@ -108,7 +50,8 @@ export function wikiLinkColorStyle(
 }
 
 export function linkChipStyle(color: TaskColorName = defaultLinkColor) {
-  const tokens = palette[color] ?? palette[defaultLinkColor];
+  const tokenColor = folderColorNames.has(color) ? color : defaultLinkColor;
+  const tokens = folderColorTokens(tokenColor);
   return `background-color: ${tokens.background}; color: ${tokens.foreground}; border-bottom-color: ${tokens.border};`;
 }
 
@@ -117,8 +60,20 @@ export function folderGlyphStyle(color: TaskColorName | null) {
     return "";
   }
 
-  const tokens = palette[color] ?? palette[defaultLinkColor];
+  const tokenColor = folderColorNames.has(color) ? color : defaultLinkColor;
+  const tokens = folderColorTokens(tokenColor);
   return `--folder-fill: ${tokens.folderFill}; --folder-tab: ${tokens.folderTab}; --folder-border: ${tokens.folderBorder};`;
+}
+
+function folderColorTokens(color: TaskColorName): LinkColorTokens {
+  return {
+    background: `var(--folder-color-${color}-chip-bg)`,
+    foreground: `var(--folder-color-${color}-chip-text)`,
+    border: `var(--folder-color-${color}-chip-border)`,
+    folderFill: `var(--folder-color-${color}-fill)`,
+    folderTab: `var(--folder-color-${color}-tab)`,
+    folderBorder: `var(--folder-color-${color}-border)`,
+  };
 }
 
 export function inheritedFolderColor(

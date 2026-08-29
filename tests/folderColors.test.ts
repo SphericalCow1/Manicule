@@ -3,7 +3,9 @@ import test from "node:test";
 
 import {
   folderColorForPath,
+  folderGlyphStyle,
   inheritedFolderColor,
+  linkChipStyle,
   linkColorForTarget,
 } from "../src/lib/folderColors.js";
 import type { PageSummary } from "../src/lib/types.js";
@@ -57,5 +59,19 @@ test("resolves wiki link target colors case insensitively", () => {
       projects: "pink",
     }),
     "pink",
+  );
+});
+
+test("builds theme-aware link chip styles", () => {
+  assert.equal(
+    linkChipStyle("orange"),
+    "background-color: var(--folder-color-orange-chip-bg); color: var(--folder-color-orange-chip-text); border-bottom-color: var(--folder-color-orange-chip-border);",
+  );
+});
+
+test("builds theme-aware folder glyph styles", () => {
+  assert.equal(
+    folderGlyphStyle("pink"),
+    "--folder-fill: var(--folder-color-pink-fill); --folder-tab: var(--folder-color-pink-tab); --folder-border: var(--folder-color-pink-border);",
   );
 });

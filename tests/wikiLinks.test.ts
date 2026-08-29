@@ -59,7 +59,7 @@ test("adds folder color styles to rendered wiki link anchors", () => {
 
   assert.equal(
     applyWikiLinkColorStyles(html, pages, { Projects: "orange" }),
-    '<p><a href="semtags:Projects%2FForecasts.md" class="wiki-link-chip" style="background-color: #ffedd5; color: #9a3412; border-bottom-color: #fdba74;">Forecast</a></p>',
+    '<p><a href="semtags:Projects%2FForecasts.md" class="wiki-link-chip" style="background-color: var(--folder-color-orange-chip-bg); color: var(--folder-color-orange-chip-text); border-bottom-color: var(--folder-color-orange-chip-border);">Forecast</a></p>',
   );
 });
 
