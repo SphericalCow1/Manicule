@@ -82,6 +82,10 @@ export function updateThemeMenuLabel(isDark: boolean): Promise<void> {
   return invokeTauri<void>("update_theme_menu_label", { isDark });
 }
 
+export function updateTaskOverviewMenuLabel(isTaskOverview: boolean): Promise<void> {
+  return invokeTauri<void>("update_task_overview_menu_label", { isTaskOverview });
+}
+
 export function openWorkspace(path: string): Promise<WorkspaceState> {
   return invokeTauri<WorkspaceState>("open_workspace", { path });
 }

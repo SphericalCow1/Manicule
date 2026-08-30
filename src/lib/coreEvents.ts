@@ -2,6 +2,7 @@ import {
   closeWorkspace,
   onCoreEvent,
   updateEditMenuLabels,
+  updateTaskOverviewMenuLabel,
   updateThemeMenuLabel,
 } from "./api";
 import { confirm as confirmDialog, message, open } from "@tauri-apps/plugin-dialog";
@@ -107,6 +108,7 @@ export async function setupCoreEvents() {
 
   setupUndoRedoMenuLabels();
   setupThemeMenuLabel();
+  setupTaskOverviewMenuLabel();
   window.addEventListener("semtags-editor-history-availability", handleEditorHistoryAvailability);
 
   await onCoreEvent("menu-undo", () => handleUndoRequest("menu"));
@@ -180,6 +182,12 @@ export async function setupCoreEvents() {
 function setupThemeMenuLabel() {
   themeStore.subscribe((mode) => {
     void updateThemeMenuLabel(mode === "dark").catch(() => {});
+  });
+}
+
+function setupTaskOverviewMenuLabel() {
+  mainViewStore.subscribe((view) => {
+    void updateTaskOverviewMenuLabel(view === "tasks").catch(() => {});
   });
 }
 

@@ -108,6 +108,19 @@ fn update_theme_menu_label(app: AppHandle, is_dark: bool) -> Result<(), String> 
     set_menu_item_text(&menu, MENU_TOGGLE_DARK_MODE, theme_menu_text(is_dark))
 }
 
+#[tauri::command]
+fn update_task_overview_menu_label(app: AppHandle, is_task_overview: bool) -> Result<(), String> {
+    let menu = app
+        .menu()
+        .ok_or_else(|| "Application menu is not available".to_string())?;
+
+    set_menu_item_text(
+        &menu,
+        MENU_TOGGLE_TASK_OVERVIEW,
+        task_overview_menu_text(is_task_overview),
+    )
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -148,6 +161,7 @@ pub fn run() {
             ping,
             update_edit_menu_labels,
             update_theme_menu_label,
+            update_task_overview_menu_label,
             commands::get_last_workspace,
             commands::open_workspace,
             commands::close_workspace,
@@ -276,7 +290,7 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
     let toggle_dark_mode =
         MenuItemBuilder::with_id(MENU_TOGGLE_DARK_MODE, theme_menu_text(false)).build(handle)?;
     let toggle_task_overview =
-        MenuItemBuilder::with_id(MENU_TOGGLE_TASK_OVERVIEW, "Toggle Task Overview")
+        MenuItemBuilder::with_id(MENU_TOGGLE_TASK_OVERVIEW, task_overview_menu_text(false))
             .accelerator("CmdOrCtrl+Shift+T")
             .build(handle)?;
     let live_mode = MenuItemBuilder::with_id(MENU_EDITOR_MODE_LIVE, "Live Preview")
@@ -430,6 +444,14 @@ fn theme_menu_text(is_dark: bool) -> &'static str {
     }
 }
 
+fn task_overview_menu_text(is_task_overview: bool) -> &'static str {
+    if is_task_overview {
+        "Show Editor"
+    } else {
+        "Show Task Overview"
+    }
+}
+
 fn set_menu_item_text<R: Runtime>(menu: &Menu<R>, id: &str, text: &str) -> Result<(), String> {
     for item in menu
         .items()
@@ -518,11 +540,17 @@ fn set_menu_item_kind_enabled<R: Runtime>(
 
 #[cfg(test)]
 mod tests {
-    use super::theme_menu_text;
+    use super::{task_overview_menu_text, theme_menu_text};
 
     #[test]
     fn theme_menu_describes_the_available_switch() {
         assert_eq!(theme_menu_text(false), "Switch to dark mode");
         assert_eq!(theme_menu_text(true), "Switch to light mode");
+    }
+
+    #[test]
+    fn task_overview_menu_describes_the_available_view() {
+        assert_eq!(task_overview_menu_text(false), "Show Task Overview");
+        assert_eq!(task_overview_menu_text(true), "Show Editor");
     }
 }
