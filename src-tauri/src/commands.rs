@@ -411,7 +411,7 @@ mod tests {
     }
 
     #[test]
-    fn build_backlink_index_finds_linked_reference() {
+    fn reindex_workspace_builds_backlink_index() {
         let root = temp_workspace();
         fs::create_dir_all(root.join("Meetings")).unwrap();
         fs::create_dir_all(root.join("Projekte")).unwrap();
@@ -421,13 +421,18 @@ mod tests {
         )
         .unwrap();
         fs::write(root.join("Projekte").join("Alpha.md"), "# Alpha").unwrap();
-        let pages = PageIndex::from_paths(vec![
-            "Meetings/Teamrunde.md".to_string(),
-            "Projekte/Alpha.md".to_string(),
-        ]);
+        let mut workspace = WorkspaceState {
+            root: root.clone(),
+            config: WorkspaceConfig::default(),
+            folders: Vec::new(),
+            pages: PageIndex::default(),
+            backlinks: BacklinkIndex::default(),
+        };
 
-        let backlinks = crate::workspace_index::build_backlink_index(&root, &pages).unwrap();
-        let linked = backlinks.backlinks_for_target_key("projekte/alpha");
+        reindex_workspace(&mut workspace).unwrap();
+        let linked = workspace
+            .backlinks
+            .backlinks_for_target_key("projekte/alpha");
 
         assert_eq!(linked.len(), 1);
         assert_eq!(linked[0].source_path, "Meetings/Teamrunde.md");
