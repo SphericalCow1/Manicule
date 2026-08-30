@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Workspace scanning now ignores symbolic links and Windows reparse points so
+  linked files outside the selected workspace are not indexed or modified.
+
 ## 0.6.5
 
 Changes since `v0.6.0`.

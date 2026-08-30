@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 
@@ -42,7 +43,7 @@ fn scan_dir(
         })?;
         let path = entry.path();
 
-        if should_skip(&path) {
+        if should_skip(&entry)? {
             continue;
         }
 
@@ -57,10 +58,47 @@ fn scan_dir(
     Ok(())
 }
 
-fn should_skip(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name == ".git" || name == "node_modules" || name == "target")
+fn should_skip(entry: &fs::DirEntry) -> Result<bool, String> {
+    if is_link_like(entry)? {
+        return Ok(true);
+    }
+
+    let name = entry.file_name();
+    Ok(name == OsStr::new(".git")
+        || name == OsStr::new("node_modules")
+        || name == OsStr::new("target"))
+}
+
+fn is_link_like(entry: &fs::DirEntry) -> Result<bool, String> {
+    let file_type = entry.file_type().map_err(|error| {
+        format!(
+            "Failed to read file type '{}': {error}",
+            entry.path().display()
+        )
+    })?;
+
+    if file_type.is_symlink() {
+        return Ok(true);
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+
+        // Directory junctions are reparse points but are not always reported as symlinks.
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
+        let metadata = fs::symlink_metadata(entry.path()).map_err(|error| {
+            format!(
+                "Failed to read file metadata '{}': {error}",
+                entry.path().display()
+            )
+        })?;
+
+        return Ok(metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0);
+    }
+
+    #[cfg(not(windows))]
+    Ok(false)
 }
 
 fn is_markdown_file(path: &Path) -> bool {
@@ -87,6 +125,8 @@ fn components_to_slash_path(path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use std::fs;
+    #[cfg(unix)]
+    use std::os::unix::fs::symlink;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -146,6 +186,31 @@ mod tests {
         assert_eq!(files, vec!["Visible.md".to_string()]);
 
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn skips_symlinked_files_directories_and_cycles() {
+        let root = temp_workspace();
+        let outside = temp_workspace();
+        fs::write(root.join("Visible.md"), "# Visible").unwrap();
+        fs::write(outside.join("External.md"), "# External").unwrap();
+        fs::create_dir_all(outside.join("ExternalFolder")).unwrap();
+        fs::write(outside.join("ExternalFolder").join("Nested.md"), "# Nested").unwrap();
+        symlink(outside.join("External.md"), root.join("External.md")).unwrap();
+        symlink(outside.join("ExternalFolder"), root.join("ExternalFolder")).unwrap();
+        symlink(&root, root.join("Loop")).unwrap();
+
+        let scan = scan_workspace(&root).unwrap();
+
+        assert_eq!(scan.markdown_files, vec!["Visible.md".to_string()]);
+        assert!(scan.folders.is_empty());
+
+        fs::remove_file(root.join("External.md")).unwrap();
+        fs::remove_file(root.join("ExternalFolder")).unwrap();
+        fs::remove_file(root.join("Loop")).unwrap();
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_dir_all(outside).unwrap();
     }
 
     fn temp_workspace() -> PathBuf {
