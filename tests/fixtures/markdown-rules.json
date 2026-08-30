@@ -1,74 +1,212 @@
 {
-  "wikiLinks": [
-    {
-      "name": "plain target",
-      "source": "See [[Projects/Alpha]] today",
-      "links": [
-        {
-          "target": "Projects/Alpha",
-          "alias": null,
-          "label": "Projects/Alpha"
-        }
-      ]
-    },
-    {
-      "name": "alias target",
-      "source": "[[Projects/Alpha|Alpha plan]]",
-      "links": [
-        {
-          "target": "Projects/Alpha",
-          "alias": "Alpha plan",
-          "label": "Alpha plan"
-        }
-      ]
-    },
-    {
-      "name": "markdown extension target",
-      "source": "[[projects/forecasts.md|Forecast]]",
-      "links": [
-        {
-          "target": "projects/forecasts.md",
-          "alias": "Forecast",
-          "label": "Forecast"
-        }
-      ]
-    },
-    {
-      "name": "invalid targets",
-      "source": "[[]] [[/Alpha]] [[../Alpha]] [[Alpha/./Beta]]",
-      "links": []
-    }
-  ],
-  "taskLines": [
-    {
-      "name": "todo list item",
-      "source": "- TODO Prepare kickoff",
-      "status": "TODO",
-      "rendered": "- **TODO** Prepare kickoff"
-    },
-    {
-      "name": "in progress ordered item",
-      "source": "1. INPROGRESS Follow up",
-      "status": "INPROGRESS",
-      "rendered": "1. **INPROGRESS** Follow up"
-    },
-    {
-      "name": "waiting checkbox",
-      "source": "- [ ] WAITING Input",
-      "status": "WAITING",
-      "rendered": "- [ ] **WAITING** Input"
-    },
-    {
-      "name": "done checkbox",
-      "source": "- [x] DONE Closed",
-      "status": "DONE",
-      "rendered": "- [x] **DONE** Closed"
-    },
-    {
-      "name": "keyword inside ordinary text",
-      "source": "- Discuss TODO handling",
-      "status": null,
-      "rendered": "- Discuss TODO handling"
-    }
-  ]
+  "shared": {
+    "defaultTaskStates": ["TODO", "INPROGRESS", "WAITING", "DONE"],
+    "wikiLinks": [
+      {
+        "name": "plain target",
+        "source": "See [[Projects/Alpha]] today",
+        "links": [
+          {
+            "target": "Projects/Alpha",
+            "alias": null,
+            "label": "Projects/Alpha"
+          }
+        ]
+      },
+      {
+        "name": "alias target",
+        "source": "[[Projects/Alpha|Alpha plan]]",
+        "links": [
+          {
+            "target": "Projects/Alpha",
+            "alias": "Alpha plan",
+            "label": "Alpha plan"
+          }
+        ]
+      },
+      {
+        "name": "empty alias",
+        "source": "[[Projects/Alpha| ]]",
+        "links": [
+          {
+            "target": "Projects/Alpha",
+            "alias": null,
+            "label": "Projects/Alpha"
+          }
+        ]
+      },
+      {
+        "name": "markdown extension target",
+        "source": "[[projects/forecasts.md|Forecast]]",
+        "links": [
+          {
+            "target": "projects/forecasts.md",
+            "alias": "Forecast",
+            "label": "Forecast"
+          }
+        ]
+      },
+      {
+        "name": "non-ASCII target",
+        "source": "See [[Projekte/Übersicht]]",
+        "links": [
+          {
+            "target": "Projekte/Übersicht",
+            "alias": null,
+            "label": "Projekte/Übersicht"
+          }
+        ]
+      },
+      {
+        "name": "invalid targets",
+        "source": "[[]] [[/Alpha]] [[../Alpha]] [[Alpha/./Beta]]",
+        "links": []
+      }
+    ],
+    "wikiTargetKeys": [
+      {
+        "name": "ASCII path",
+        "target": "Projects/Alpha",
+        "key": "projects/alpha"
+      },
+      {
+        "name": "markdown extension",
+        "target": "Projects/Alpha.md",
+        "key": "projects/alpha"
+      },
+      {
+        "name": "non-ASCII path",
+        "target": "Projekte/Übersicht",
+        "key": "projekte/übersicht"
+      },
+      {
+        "name": "parent traversal",
+        "target": "../Alpha",
+        "key": null
+      }
+    ],
+    "taskLines": [
+      {
+        "name": "todo list item",
+        "source": "- TODO Prepare kickoff",
+        "taskStates": null,
+        "status": "TODO",
+        "priority": null
+      },
+      {
+        "name": "spaced priority cookie",
+        "source": "- TODO [#A] Prepare kickoff",
+        "taskStates": null,
+        "status": "TODO",
+        "priority": "A"
+      },
+      {
+        "name": "attached priority cookie",
+        "source": "- WAITING[#B] Input",
+        "taskStates": null,
+        "status": "WAITING",
+        "priority": "B"
+      },
+      {
+        "name": "done checkbox",
+        "source": "- [x] DONE Closed",
+        "taskStates": null,
+        "status": "DONE",
+        "priority": null
+      },
+      {
+        "name": "in progress ordered item",
+        "source": "1. INPROGRESS Follow up",
+        "taskStates": null,
+        "status": "INPROGRESS",
+        "priority": null
+      },
+      {
+        "name": "custom task state",
+        "source": "- BLOCKED Waiting for approval",
+        "taskStates": ["TODO", "BLOCKED", "DONE"],
+        "status": "BLOCKED",
+        "priority": null
+      },
+      {
+        "name": "keyword inside ordinary text",
+        "source": "- Discuss TODO handling",
+        "taskStates": null,
+        "status": null,
+        "priority": null
+      }
+    ],
+    "blockLines": [
+      {
+        "name": "unordered list item",
+        "source": "- Plain block",
+        "prefix": "- ",
+        "indent": 0,
+        "checked": null
+      },
+      {
+        "name": "tab-indented checkbox",
+        "source": "\t- [ ] TODO Nested",
+        "prefix": "\t- [ ] ",
+        "indent": 4,
+        "checked": false
+      },
+      {
+        "name": "ordered checked item",
+        "source": "  12) [x] DONE Closed",
+        "prefix": "  12) [x] ",
+        "indent": 2,
+        "checked": true
+      },
+      {
+        "name": "plus marker",
+        "source": "+ Other block",
+        "prefix": "+ ",
+        "indent": 0,
+        "checked": null
+      },
+      {
+        "name": "plain text",
+        "source": "Plain paragraph",
+        "prefix": null,
+        "indent": 0,
+        "checked": null
+      }
+    ],
+    "blockDocuments": [
+      {
+        "name": "nested task blocks",
+        "source": "- TODO Parent\n  - TODO Child\n    - Grandchild\n- Sibling",
+        "topLevelBlocks": 2,
+        "firstBlockEnd": 3,
+        "firstBlockChildren": 1
+      },
+      {
+        "name": "tab-indented child",
+        "source": "- Parent\n\t- WAITING Child\n- Sibling",
+        "topLevelBlocks": 2,
+        "firstBlockEnd": 2,
+        "firstBlockChildren": 1
+      }
+    ]
+  },
+  "frontendOnly": {
+    "taskRendering": [
+      {
+        "name": "todo list item",
+        "source": "- TODO Prepare kickoff",
+        "rendered": "- **TODO** Prepare kickoff"
+      },
+      {
+        "name": "waiting checkbox",
+        "source": "- [ ] WAITING Input",
+        "rendered": "- [ ] **WAITING** Input"
+      },
+      {
+        "name": "keyword inside ordinary text",
+        "source": "- Discuss TODO handling",
+        "rendered": "- Discuss TODO handling"
+      }
+    ]
+  }
 }

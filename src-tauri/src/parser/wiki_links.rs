@@ -131,6 +131,11 @@ mod tests {
 
     #[derive(Deserialize)]
     struct MarkdownRulesFixture {
+        shared: SharedRulesFixture,
+    }
+
+    #[derive(Deserialize)]
+    struct SharedRulesFixture {
         #[serde(rename = "wikiLinks")]
         wiki_links: Vec<WikiLinkFixture>,
     }
@@ -218,7 +223,7 @@ mod tests {
             serde_json::from_str(include_str!("../../../tests/fixtures/markdown-rules.json"))
                 .unwrap();
 
-        for fixture in fixtures.wiki_links {
+        for fixture in fixtures.shared.wiki_links {
             let links = parse_wiki_links(&fixture.source);
 
             assert_eq!(links.len(), fixture.links.len(), "{}", fixture.name);

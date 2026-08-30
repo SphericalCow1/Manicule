@@ -10,6 +10,8 @@
   page and backlink indexes together.
 - Frontend error handling now uses one conversion path for JavaScript, Tauri,
   and structured application errors.
+- Rust and TypeScript Markdown parsers now share fixtures for links, normalized
+  targets, task priorities, custom task states, list markers, tabs, and checkboxes.
 
 ## 0.6.5
 

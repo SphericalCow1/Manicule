@@ -52,7 +52,7 @@ export function renumberOrderedListLinesAfterInsertion(lines: string[], inserted
 
     const item = listItemInfo(lineText);
     if (!item) {
-      if (countIndent(lineText) <= inserted.indent) {
+      if (blockIndentWidth(lineText) <= inserted.indent) {
         break;
       }
       continue;
@@ -564,7 +564,7 @@ function lineColumnToPosition(lines: string[], lineNumber: number, column: numbe
 
 function listItemInfo(lineText: string) {
   const match = listMarkerMatch(lineText);
-  return match ? { indent: countIndent(match[1]) } : null;
+  return match ? { indent: blockIndentWidth(match[1]) } : null;
 }
 
 function listBlockIndents(lines: string[]) {
@@ -585,7 +585,7 @@ function orderedListItemInfo(lineText: string) {
   }
 
   return {
-    indent: countIndent(match[1]),
+    indent: blockIndentWidth(match[1]),
     number: Number(ordered[1]),
     delimiter: ordered[2],
     markerFrom: match[1].length,
@@ -614,7 +614,7 @@ function orderedListRenumberChanges(
 
     const item = listItemInfo(line.text);
     if (!item) {
-      if (countIndent(line.text) <= inserted.indent) {
+      if (blockIndentWidth(line.text) <= inserted.indent) {
         break;
       }
       continue;
@@ -648,7 +648,7 @@ function listMarkerMatch(lineText: string) {
   return /^(\s*)((?:[-*+])|(?:\d+[.)]))\s+(\[[ xX]\]\s+)?/.exec(lineText);
 }
 
-function countIndent(lineText: string) {
+export function blockIndentWidth(lineText: string) {
   let indent = 0;
   for (const char of lineText) {
     if (char === " ") {

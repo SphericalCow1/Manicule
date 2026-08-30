@@ -255,15 +255,50 @@ mod tests {
 
     #[derive(Deserialize)]
     struct MarkdownRulesFixture {
+        shared: SharedRulesFixture,
+    }
+
+    #[derive(Deserialize)]
+    struct SharedRulesFixture {
+        #[serde(rename = "defaultTaskStates")]
+        default_task_states: Vec<String>,
         #[serde(rename = "taskLines")]
         task_lines: Vec<TaskLineFixture>,
+        #[serde(rename = "blockLines")]
+        block_lines: Vec<BlockLineFixture>,
+        #[serde(rename = "blockDocuments")]
+        block_documents: Vec<BlockDocumentFixture>,
     }
 
     #[derive(Deserialize)]
     struct TaskLineFixture {
         name: String,
         source: String,
+        #[serde(rename = "taskStates")]
+        task_states: Option<Vec<String>>,
         status: Option<String>,
+        priority: Option<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct BlockLineFixture {
+        name: String,
+        source: String,
+        prefix: Option<String>,
+        indent: usize,
+        checked: Option<bool>,
+    }
+
+    #[derive(Deserialize)]
+    struct BlockDocumentFixture {
+        name: String,
+        source: String,
+        #[serde(rename = "topLevelBlocks")]
+        top_level_blocks: usize,
+        #[serde(rename = "firstBlockEnd")]
+        first_block_end: usize,
+        #[serde(rename = "firstBlockChildren")]
+        first_block_children: usize,
     }
 
     #[test]
@@ -401,12 +436,97 @@ mod tests {
         let fixtures: MarkdownRulesFixture =
             serde_json::from_str(include_str!("../../../tests/fixtures/markdown-rules.json"))
                 .unwrap();
+        let defaults = crate::workspace_config::WorkspaceConfig::default().task_states;
 
-        for fixture in fixtures.task_lines {
+        assert_eq!(defaults, fixtures.shared.default_task_states);
+
+        for fixture in fixtures.shared.task_lines {
+            let task_states = fixture.task_states.as_ref().unwrap_or(&defaults);
+            let blocks = parse_blocks_with_task_states(&fixture.source, task_states);
+            let block = &blocks[0];
+
+            assert_eq!(
+                block.task_status.as_deref(),
+                fixture.status.as_deref(),
+                "{} status",
+                fixture.name
+            );
+            assert_eq!(
+                block.task_priority.as_deref(),
+                fixture.priority.as_deref(),
+                "{} priority",
+                fixture.name
+            );
+        }
+    }
+
+    #[test]
+    fn parses_shared_block_line_fixtures() {
+        let fixtures: MarkdownRulesFixture =
+            serde_json::from_str(include_str!("../../../tests/fixtures/markdown-rules.json"))
+                .unwrap();
+
+        for fixture in fixtures.shared.block_lines {
+            let expanded = expand_tabs(&fixture.source);
+            let item = parse_list_item(&expanded);
+
+            assert_eq!(
+                item.is_some(),
+                fixture.prefix.is_some(),
+                "{} list marker",
+                fixture.name
+            );
+            assert_eq!(
+                count_indent(&expanded),
+                fixture.indent,
+                "{} indent",
+                fixture.name
+            );
+            assert_eq!(
+                item.and_then(|item| checkbox_state(item.text)),
+                fixture.checked,
+                "{} checkbox",
+                fixture.name
+            );
+        }
+    }
+
+    #[test]
+    fn parses_shared_nested_block_fixtures() {
+        let fixtures: MarkdownRulesFixture =
+            serde_json::from_str(include_str!("../../../tests/fixtures/markdown-rules.json"))
+                .unwrap();
+
+        for fixture in fixtures.shared.block_documents {
             let blocks = parse_blocks(&fixture.source);
-            let actual = blocks[0].task_status.as_deref();
 
-            assert_eq!(actual, fixture.status.as_deref(), "{}", fixture.name);
+            assert_eq!(
+                blocks.len(),
+                fixture.top_level_blocks,
+                "{} roots",
+                fixture.name
+            );
+            assert_eq!(
+                blocks[0].line_end, fixture.first_block_end,
+                "{} first block end",
+                fixture.name
+            );
+            assert_eq!(
+                blocks[0].children.len(),
+                fixture.first_block_children,
+                "{} first block children",
+                fixture.name
+            );
+        }
+    }
+
+    fn checkbox_state(text: &str) -> Option<bool> {
+        if text.starts_with("[ ] ") {
+            Some(false)
+        } else if text.starts_with("[x] ") || text.starts_with("[X] ") {
+            Some(true)
+        } else {
+            None
         }
     }
 

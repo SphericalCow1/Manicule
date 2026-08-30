@@ -439,6 +439,29 @@ Frontend tests:
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 
+Shared Markdown contract fixtures:
+
+- `tests/fixtures/markdown-rules.json` is the executable contract for Markdown
+  rules implemented by both Rust and TypeScript. Its `shared` section covers
+  source-level behavior such as wiki-link normalization, task and priority
+  recognition, list and checkbox prefixes, indentation, and block structure.
+- Define or update the expected fixture before changing a shared Markdown rule.
+  Then update both implementations and keep
+  `tests/markdownRulesFixtures.test.ts` plus the Rust fixture consumers in
+  `parser/blocks.rs`, `parser/wiki_links.rs`, and `workspace/paths.rs` green.
+- Presentation-only expectations belong in `frontendOnly`. Do not add rendered
+  labels, HTML, CSS, or CodeMirror decoration details to `shared` merely to make
+  Rust reproduce frontend presentation behavior.
+- Keep representative examples directly in the fixture. Use parameterized
+  generated cases for large or deeply nested documents so the JSON remains
+  readable and both test suites construct equivalent input.
+- When Rust and TypeScript intentionally differ, document the architectural
+  reason and place the expectation on the owning side instead of weakening a
+  shared assertion.
+- Changes to the fixture require both `npm run test:frontend` and `cargo test`
+  from `src-tauri`; run `npm run check`, `cargo fmt --check`, and
+  `git diff --check` before committing.
+
 Backend tests:
 
 - Rust tests live next to the modules they validate.

@@ -91,6 +91,25 @@ fn normalize_relative_file_path(value: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    struct MarkdownRulesFixture {
+        shared: SharedRulesFixture,
+    }
+
+    #[derive(Deserialize)]
+    struct SharedRulesFixture {
+        #[serde(rename = "wikiTargetKeys")]
+        wiki_target_keys: Vec<WikiTargetKeyFixture>,
+    }
+
+    #[derive(Deserialize)]
+    struct WikiTargetKeyFixture {
+        name: String,
+        target: String,
+        key: Option<String>,
+    }
 
     #[test]
     fn normalizes_link_targets_case_insensitively() {
@@ -98,6 +117,22 @@ mod tests {
             page_key_from_link_target("Projekte/Projekt Alpha"),
             Some("projekte/projekt alpha".to_string())
         );
+    }
+
+    #[test]
+    fn normalizes_shared_wiki_target_key_fixtures() {
+        let fixtures: MarkdownRulesFixture =
+            serde_json::from_str(include_str!("../../../tests/fixtures/markdown-rules.json"))
+                .unwrap();
+
+        for fixture in fixtures.shared.wiki_target_keys {
+            assert_eq!(
+                page_key_from_link_target(&fixture.target),
+                fixture.key,
+                "{}",
+                fixture.name
+            );
+        }
     }
 
     #[test]
