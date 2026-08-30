@@ -1,3 +1,5 @@
+import { listItemTextFrom, parseListItemPrefix } from "./markdownPatterns.js";
+
 export const DEFAULT_TASK_STATES = ["TODO", "INPROGRESS", "WAITING", "DONE"];
 
 export type TaskKeywordMatch = {
@@ -37,27 +39,34 @@ export function taskKeywordMatch(
   lineFrom = 0,
   taskStates = DEFAULT_TASK_STATES,
 ): TaskKeywordMatch | null {
-  const escapedStates = taskStates
+  const states = taskStates
     .map((state) => state.trim())
     .filter(Boolean)
-    .sort((left, right) => right.length - left.length)
-    .map(escapeRegExp);
+    .sort((left, right) => right.length - left.length);
 
-  if (escapedStates.length === 0) {
+  if (states.length === 0) {
     return null;
   }
 
-  const pattern = new RegExp(
-    `^(\\s*(?:(?:[-*+])|(?:\\d+[.)]))\\s+(?:\\[[ xX]\\]\\s+)?)(${escapedStates.join("|")})(?=\\s|\\[#|$)`,
-  );
-  const match = pattern.exec(lineText);
-
-  if (!match) {
+  const prefix = parseListItemPrefix(lineText);
+  if (!prefix) {
     return null;
   }
 
-  const from = lineFrom + match[1].length;
-  const status = match[2];
+  const statusFrom = listItemTextFrom(prefix);
+  const status = states.find((candidate) => {
+    if (!lineText.startsWith(candidate, statusFrom)) {
+      return false;
+    }
+
+    const remaining = lineText.slice(statusFrom + candidate.length);
+    return remaining === "" || remaining.startsWith("[#") || /^\s/.test(remaining);
+  });
+  if (!status) {
+    return null;
+  }
+
+  const from = lineFrom + statusFrom;
 
   return {
     from,
@@ -134,8 +143,4 @@ export function taskPriorityChange(
 
 export function isDoneTaskState(status: string, taskStates = DEFAULT_TASK_STATES) {
   return status === taskStates[taskStates.length - 1];
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

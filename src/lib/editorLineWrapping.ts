@@ -1,9 +1,15 @@
 import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
+import { listItemTextFrom, parseListItemPrefix } from "./markdownPatterns.js";
 
 export function listContinuationIndent(lineText: string) {
-  const match = /^(\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?)(?=\S)/.exec(lineText);
-  return match ? match[1].length : 0;
+  const prefix = parseListItemPrefix(lineText);
+  if (!prefix) {
+    return 0;
+  }
+
+  const contentFrom = listItemTextFrom(prefix);
+  return lineText.slice(contentFrom).length > 0 ? contentFrom : 0;
 }
 
 export const listWrapIndentExtension = StateField.define<DecorationSet>({

@@ -17,6 +17,8 @@
 - File moves and renames validate readable content before changing its physical
   path, with additional regression coverage for watcher events, partial link
   rewrites, external task changes, and non-ASCII paths.
+- Frontend Markdown consumers now share one parser for list and checkbox
+  prefixes across editing, rendering, wrapping, tasks, and undo validation.
 
 ## 0.6.5
 

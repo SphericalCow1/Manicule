@@ -1,25 +1,32 @@
 import { EditorSelection, Prec, type ChangeSpec, type EditorState } from "@codemirror/state";
 import { keymap, type Command } from "@codemirror/view";
+import { listItemTextFrom, parseListItemPrefix } from "./markdownPatterns.js";
 import { DEFAULT_TASK_STATES, taskKeywordMatch } from "./taskKeywords.js";
 
 const blockIndent = "  ";
 
 export function listContinuationPrefix(lineText: string) {
-  const match = listMarkerMatch(lineText);
-  if (!match) {
+  const prefix = parseListItemPrefix(lineText);
+  if (!prefix) {
     return null;
   }
 
-  return `${match[1]}${nextListMarker(match[2])} ${match[3] ?? ""}`;
+  const checkbox = prefix.checkbox?.trailingWhitespace
+    ? `${prefix.checkbox.marker}${prefix.checkbox.trailingWhitespace}`
+    : "";
+  return `${prefix.indentation}${nextListMarker(prefix.marker)} ${checkbox}`;
 }
 
 export function listBlockPrefix(lineText: string) {
-  const match = listMarkerMatch(lineText);
-  if (!match) {
+  const prefix = parseListItemPrefix(lineText);
+  if (!prefix) {
     return null;
   }
 
-  return `${match[1]}${match[2]} ${match[3] ?? ""}`;
+  const checkbox = prefix.checkbox?.trailingWhitespace
+    ? `${prefix.checkbox.marker}${prefix.checkbox.trailingWhitespace}`
+    : "";
+  return `${prefix.indentation}${prefix.marker} ${checkbox}`;
 }
 
 export function insertedListBlockPrefix(lines: string[], lineNumber: number) {
@@ -122,9 +129,10 @@ export function nextTaskLineText(lineText: string, taskStates = DEFAULT_TASK_STA
     return `${lineText.slice(0, statusMatch.from)}${nextStatus}${lineText.slice(statusMatch.to)}`;
   }
 
-  const listMatch = /^(\s*(?:[-*+]|\d+[.)])\s+)(.*)$/.exec(lineText);
-  if (listMatch) {
-    return `${listMatch[1]}${states[0]} ${listMatch[2]}`;
+  const listItem = parseListItemPrefix(lineText);
+  if (listItem) {
+    const contentFrom = listItemTextFrom(listItem);
+    return `${lineText.slice(0, contentFrom)}${states[0]} ${lineText.slice(contentFrom)}`;
   }
 
   return null;
@@ -563,8 +571,8 @@ function lineColumnToPosition(lines: string[], lineNumber: number, column: numbe
 }
 
 function listItemInfo(lineText: string) {
-  const match = listMarkerMatch(lineText);
-  return match ? { indent: blockIndentWidth(match[1]) } : null;
+  const prefix = parseListItemPrefix(lineText);
+  return prefix ? { indent: blockIndentWidth(prefix.indentation) } : null;
 }
 
 function listBlockIndents(lines: string[]) {
@@ -578,18 +586,18 @@ function listBlockIndents(lines: string[]) {
 }
 
 function orderedListItemInfo(lineText: string) {
-  const match = listMarkerMatch(lineText);
-  const ordered = match ? /^(\d+)([.)])$/.exec(match[2]) : null;
-  if (!match || !ordered) {
+  const prefix = parseListItemPrefix(lineText);
+  const ordered = prefix ? /^(\d+)([.)])$/.exec(prefix.marker) : null;
+  if (!prefix || !ordered) {
     return null;
   }
 
   return {
-    indent: blockIndentWidth(match[1]),
+    indent: blockIndentWidth(prefix.indentation),
     number: Number(ordered[1]),
     delimiter: ordered[2],
-    markerFrom: match[1].length,
-    markerTo: match[1].length + match[2].length,
+    markerFrom: prefix.markerFrom,
+    markerTo: prefix.markerTo,
   };
 }
 
@@ -642,10 +650,6 @@ function orderedListRenumberChanges(
   }
 
   return changes;
-}
-
-function listMarkerMatch(lineText: string) {
-  return /^(\s*)((?:[-*+])|(?:\d+[.)]))\s+(\[[ xX]\]\s+)?/.exec(lineText);
 }
 
 export function blockIndentWidth(lineText: string) {

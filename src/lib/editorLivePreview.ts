@@ -7,6 +7,7 @@ import {
 } from "./taskKeywords.js";
 import { taskColorStyle } from "./taskColors.js";
 import { wikiLinkColorStyle } from "./folderColors.js";
+import { parseCheckboxListItem } from "./markdownPatterns.js";
 import { wikiLinkDisplayLabel } from "./wikiLinks.js";
 import type { FolderColors, PageSummary, TaskStateColors } from "./types.js";
 
@@ -156,13 +157,13 @@ function checkboxAtLinePosition(
   lineFrom: number,
   position: number,
 ): CheckboxAtPosition | null {
-  const match = /^(\s*(?:[-*+]|\d+[.)])\s+)(\[[ xX]\])/.exec(lineText);
-  if (!match) {
+  const parsed = parseCheckboxListItem(lineText);
+  if (!parsed) {
     return null;
   }
 
-  const from = lineFrom + match[1].length;
-  const to = from + match[2].length;
+  const from = lineFrom + parsed.checkbox.from;
+  const to = lineFrom + parsed.checkbox.to;
   if (position < from || position > to) {
     return null;
   }
@@ -170,7 +171,7 @@ function checkboxAtLinePosition(
   return {
     from,
     to,
-    checked: match[2].toLowerCase() === "[x]",
+    checked: parsed.checkbox.checked,
   };
 }
 
@@ -429,14 +430,14 @@ function addCheckboxDecorations(
   lineFrom: number,
   decorations: PreviewDecoration[],
 ) {
-  const match = /^(\s*(?:[-*+]|\d+[.)])\s+)(\[[ xX]\])/.exec(lineText);
-  if (!match) {
+  const parsed = parseCheckboxListItem(lineText);
+  if (!parsed) {
     return;
   }
 
-  const markerStart = match[1].length;
-  const markerEnd = markerStart + match[2].length;
-  const checked = match[2].toLowerCase() === "[x]";
+  const markerStart = parsed.checkbox.from;
+  const markerEnd = parsed.checkbox.to;
+  const checked = parsed.checkbox.checked;
 
   decorations.push({
     from: lineFrom + markerStart,

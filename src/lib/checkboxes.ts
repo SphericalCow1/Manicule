@@ -1,3 +1,5 @@
+import { parseCheckboxListItem } from "./markdownPatterns.js";
+
 export type CheckboxToggleResult =
   | {
       changed: true;
@@ -10,16 +12,15 @@ export type CheckboxToggleResult =
       checked: boolean | null;
     };
 
-const checkboxLinePattern = /^(\s*(?:[-*+]|\d+[.)])\s+)\[([ xX])\]/;
-
 export function checkboxLines(content: string) {
   return content
     .split(/\r?\n/)
     .map((line, index) => ({ line, lineNumber: index + 1 }))
-    .filter(({ line }) => checkboxLinePattern.test(line))
-    .map(({ line, lineNumber }) => ({
+    .map(({ line, lineNumber }) => ({ lineNumber, parsed: parseCheckboxListItem(line) }))
+    .filter(({ parsed }) => parsed !== null)
+    .map(({ lineNumber, parsed }) => ({
       lineNumber,
-      checked: checkboxLinePattern.exec(line)?.[2].toLowerCase() === "x",
+      checked: parsed!.checkbox.checked,
     }));
 }
 
@@ -35,14 +36,13 @@ export function toggleCheckboxLine(content: string, lineNumber: number): Checkbo
   }
 
   const line = content.slice(range.from, range.to);
-  const match = checkboxLinePattern.exec(line);
-  if (!match) {
+  const parsed = parseCheckboxListItem(line);
+  if (!parsed) {
     return { changed: false, content, checked: null };
   }
 
-  const checked = match[2].toLowerCase() !== "x";
-  const replacement = `${match[1]}[${checked ? "x" : " "}]`;
-  const updatedLine = `${replacement}${line.slice(match[0].length)}`;
+  const checked = !parsed.checkbox.checked;
+  const updatedLine = `${line.slice(0, parsed.checkbox.from)}[${checked ? "x" : " "}]${line.slice(parsed.checkbox.to)}`;
 
   return {
     changed: true,
@@ -67,18 +67,17 @@ export function setCheckboxLine(
   }
 
   const line = content.slice(range.from, range.to);
-  const match = checkboxLinePattern.exec(line);
-  if (!match) {
+  const parsed = parseCheckboxListItem(line);
+  if (!parsed) {
     return { changed: false, content, checked: null };
   }
 
-  const currentChecked = match[2].toLowerCase() === "x";
+  const currentChecked = parsed.checkbox.checked;
   if (currentChecked === checked) {
     return { changed: false, content, checked };
   }
 
-  const replacement = `${match[1]}[${checked ? "x" : " "}]`;
-  const updatedLine = `${replacement}${line.slice(match[0].length)}`;
+  const updatedLine = `${line.slice(0, parsed.checkbox.from)}[${checked ? "x" : " "}]${line.slice(parsed.checkbox.to)}`;
 
   return {
     changed: true,

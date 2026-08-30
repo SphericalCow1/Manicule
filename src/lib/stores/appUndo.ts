@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 import { getPageView, toggleCheckbox, updateTaskPriority, updateTaskStatus } from "../api";
 import { toErrorMessage } from "../errors";
+import { parseCheckboxListItem } from "../markdownPatterns";
 import { priorityCookieMatch, taskKeywordMatch } from "../taskKeywords";
 import { editorSessionStore } from "./editorSession";
 import { rightPaneStore } from "./rightPane";
@@ -390,11 +391,11 @@ async function refreshDerivedViews() {
 async function checkboxStateFromDisk(path: string, line: number) {
   const page = await getPageView(path);
   const lineText = page.content.split(/\r?\n/)[line - 1] ?? "";
-  const match = /^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]/.exec(lineText);
-  if (!match) {
+  const parsed = parseCheckboxListItem(lineText);
+  if (!parsed) {
     throw new Error(`Line ${line} is not a recognized checkbox item.`);
   }
-  return match[1].toLowerCase() === "x";
+  return parsed.checkbox.checked;
 }
 
 async function taskStatusFromDisk(path: string, line: number, taskStates: string[]) {
