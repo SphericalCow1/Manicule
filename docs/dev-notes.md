@@ -361,11 +361,18 @@ enabled states reflect the current undo/redo action.
 ## Watcher And External Changes
 
 The backend starts a workspace watcher from `src-tauri/src/watcher.rs` when a
-workspace opens. It emits frontend events when Markdown files or workspace
-configuration change on disk.
+workspace opens. It emits frontend events when Markdown files change on disk.
+The workspace `.config` file is loaded when the workspace opens and is persisted
+through dedicated Tauri commands; external `.config` changes are not watched or
+merged while the workspace is open.
 
 The frontend responds by refreshing workspace data or warning about changed
 files depending on the active editing state.
+
+Watching `.config` later would require an explicit reload/merge policy and
+suppression of events caused by Semtags' own config writes. It should therefore
+be introduced as a separate feature rather than added to the Markdown watcher
+implicitly.
 
 ## Navigation And Ordering
 
