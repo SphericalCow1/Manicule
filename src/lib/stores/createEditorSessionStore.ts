@@ -3,6 +3,7 @@ import {
   setCheckboxLine as setCheckboxLineInContent,
   toggleCheckboxLine as toggleCheckboxLineInContent,
 } from "../checkboxes.js";
+import { toErrorMessage } from "../errors.js";
 import { taskKeywordMatch, taskPriorityChange } from "../taskKeywords.js";
 import type { PageContent, SavePageResult } from "../types";
 
@@ -159,7 +160,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
       update((state) => ({
         ...state,
         loading: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: toErrorMessage(error),
       }));
     }
   }
@@ -274,7 +275,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         return {
           ...value,
           saving: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         };
       });
       pendingSave = false;

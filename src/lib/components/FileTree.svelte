@@ -3,6 +3,7 @@
   import { confirm as confirmDialog, open } from "@tauri-apps/plugin-dialog";
   import { journalPathForDateInput, journalPathForDay, type JournalDay } from "../journals";
   import { saveExpandedFolders, searchPages } from "../api";
+  import { toErrorMessage } from "../errors";
   import { taskStore } from "../stores/tasks";
   import { workspaceStore } from "../stores/workspace";
   import { editorSessionStore } from "../stores/editorSession";
@@ -287,7 +288,7 @@
       workspacePath = selected;
       await workspaceStore.open(selected);
     } catch (error) {
-      browseError = error instanceof Error ? error.message : String(error);
+      browseError = toErrorMessage(error);
     }
   }
 
@@ -305,9 +306,7 @@
       });
     } catch (error) {
       showPopupError(
-        `Confirmation dialog could not be opened: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Confirmation dialog could not be opened: ${toErrorMessage(error)}`,
       );
       return false;
     }
@@ -797,7 +796,7 @@
       }
 
       searchResults = [];
-      searchError = error instanceof Error ? error.message : String(error);
+      searchError = toErrorMessage(error);
       searchResultContextMenu = null;
     } finally {
       if (requestId === searchSequence) {
@@ -1519,7 +1518,7 @@
     try {
       await saveExpandedFolders([...expandedFolders]);
     } catch (error) {
-      browseError = error instanceof Error ? error.message : String(error);
+      browseError = toErrorMessage(error);
     }
   }
 

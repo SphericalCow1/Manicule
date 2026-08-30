@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import { listTasks, updateTaskPriority, updateTaskStatus } from "../api";
+import { toErrorMessage } from "../errors";
 import type { TaskItem, TaskStatus } from "../types";
 
 type TaskStoreState = {
@@ -35,7 +36,7 @@ function createTaskStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
       }
     },
@@ -55,7 +56,7 @@ function createTaskStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -76,7 +77,7 @@ function createTaskStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }

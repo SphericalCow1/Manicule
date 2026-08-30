@@ -21,6 +21,7 @@ import {
   saveTaskOverviewConfig as saveTaskOverviewConfigCommand,
   saveWorkspaceSessionConfig,
 } from "../api";
+import { toErrorMessage } from "../errors";
 import { DEFAULT_TASK_STATE_COLORS } from "../taskColors";
 import { DEFAULT_TASK_STATES } from "../taskKeywords";
 import { themeStore } from "./theme";
@@ -53,12 +54,8 @@ const DEFAULT_BACKLINK_VIEW_CONFIG: BacklinkViewConfig = {
 };
 const DEFAULT_THEME_MODE: ThemeMode = "light";
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function configSaveError(label: string, error: unknown) {
-  return `Could not save ${label} to .config: ${errorMessage(error)}`;
+  return `Could not save ${label} to .config: ${toErrorMessage(error)}`;
 }
 
 type WorkspaceStoreState = {
@@ -168,7 +165,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
       }
     },
@@ -185,7 +182,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return false;
       }
@@ -215,7 +212,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -243,7 +240,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -270,7 +267,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -301,7 +298,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -324,7 +321,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -347,7 +344,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -370,7 +367,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -393,7 +390,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
         return null;
       }
@@ -405,7 +402,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
       }
     },

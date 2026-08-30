@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import { getPageView } from "../api";
+import { toErrorMessage } from "../errors";
 import type { PageView } from "../types";
 
 type RightPaneState = {
@@ -81,7 +82,7 @@ function createRightPaneStore() {
       update((state) => ({
         ...state,
         loading: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: toErrorMessage(error),
       }));
     }
   }
@@ -127,7 +128,7 @@ function createRightPaneStore() {
         }
         update((state) => ({
           ...state,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         }));
       }
     },

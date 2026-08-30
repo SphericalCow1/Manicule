@@ -8,6 +8,8 @@
   linked files outside the selected workspace are not indexed or modified.
 - Full workspace reindexing now reads each Markdown file once while building the
   page and backlink indexes together.
+- Frontend error handling now uses one conversion path for JavaScript, Tauri,
+  and structured application errors.
 
 ## 0.6.5
 

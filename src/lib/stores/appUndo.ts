@@ -1,5 +1,6 @@
 import { get, writable } from "svelte/store";
 import { getPageView, toggleCheckbox, updateTaskPriority, updateTaskStatus } from "../api";
+import { toErrorMessage } from "../errors";
 import { priorityCookieMatch, taskKeywordMatch } from "../taskKeywords";
 import { editorSessionStore } from "./editorSession";
 import { rightPaneStore } from "./rightPane";
@@ -176,7 +177,7 @@ async function applyLast(
       withLabels({
         ...current,
         running: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: toErrorMessage(error),
       }),
     );
     return false;

@@ -3,6 +3,7 @@
   import ErrorDialog from "./ErrorDialog.svelte";
   import LinkedReferences from "./LinkedReferences.svelte";
   import { getPageView } from "../api";
+  import { toErrorMessage } from "../errors";
   import { editorSessionStore } from "../stores/editorSession";
   import { editorModeStore } from "../stores/editorMode";
   import { appUndoStore } from "../stores/appUndo";
@@ -61,7 +62,7 @@
         return;
       }
       pageView = null;
-      pageViewError = error instanceof Error ? error.message : String(error);
+      pageViewError = toErrorMessage(error);
     } finally {
       if (requestId === pageViewRequestSequence) {
         pageViewLoading = false;
