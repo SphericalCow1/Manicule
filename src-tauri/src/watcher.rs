@@ -69,3 +69,57 @@ fn is_relevant_event(result: notify::Result<notify::Event>) -> bool {
             .is_some_and(|extension| extension.eq_ignore_ascii_case("md"))
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io;
+    use std::path::PathBuf;
+
+    use notify::event::{CreateKind, DataChange, ModifyKind, RemoveKind, RenameMode};
+    use notify::{Error, Event, EventKind};
+
+    use super::is_relevant_event;
+
+    #[test]
+    fn classifies_markdown_create_modify_remove_and_rename_events_as_relevant() {
+        for event in [
+            event(EventKind::Create(CreateKind::File), &["notes/new.md"]),
+            event(
+                EventKind::Modify(ModifyKind::Data(DataChange::Any)),
+                &["notes/changed.MD"],
+            ),
+            event(EventKind::Remove(RemoveKind::File), &["notes/deleted.md"]),
+            event(
+                EventKind::Modify(ModifyKind::Name(RenameMode::Both)),
+                &["notes/old.md", "archive/new.md"],
+            ),
+        ] {
+            assert!(is_relevant_event(Ok(event)));
+        }
+    }
+
+    #[test]
+    fn ignores_non_markdown_config_and_failed_watcher_events() {
+        assert!(!is_relevant_event(Ok(event(
+            EventKind::Modify(ModifyKind::Any),
+            &["notes/readme.txt", ".config"],
+        ))));
+        assert!(!is_relevant_event(Err(Error::io(io::Error::other(
+            "watch failed",
+        )))));
+    }
+
+    #[test]
+    fn treats_any_markdown_path_in_a_multi_path_event_as_relevant() {
+        assert!(is_relevant_event(Ok(event(
+            EventKind::Modify(ModifyKind::Any),
+            &["notes/readme.txt", "notes/page.md"],
+        ))));
+    }
+
+    fn event(kind: EventKind, paths: &[&str]) -> Event {
+        let mut event = Event::new(kind);
+        event.paths = paths.iter().map(PathBuf::from).collect();
+        event
+    }
+}

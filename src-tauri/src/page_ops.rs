@@ -217,6 +217,9 @@ pub(crate) fn move_page_in_workspace(
         return Err("Page does not exist".to_string());
     }
 
+    let content = fs::read_to_string(&source_absolute_path)
+        .map_err(|error| format!("Failed to read page '{}': {error}", resolved_path))?;
+
     if let Some(parent) = target_absolute_path.parent() {
         fs::create_dir_all(parent)
             .map_err(|error| format!("Failed to create target directory: {error}"))?;
@@ -228,8 +231,6 @@ pub(crate) fn move_page_in_workspace(
 
     workspace.pages.remove_path(&resolved_path);
     workspace.backlinks.remove_page(&resolved_path);
-    let content = fs::read_to_string(&target_absolute_path)
-        .map_err(|error| format!("Failed to read moved page '{}': {error}", target_path))?;
     let page = workspace
         .pages
         .insert_page(target_path.clone(), &content)
@@ -319,14 +320,15 @@ pub(crate) fn rename_page_in_workspace(
         return Err("Page does not exist".to_string());
     }
 
+    let content = fs::read_to_string(&source_absolute_path)
+        .map_err(|error| format!("Failed to read page '{}': {error}", resolved_path))?;
+
     fs::rename(&source_absolute_path, &target_absolute_path).map_err(|error| {
         format!("Failed to rename page '{resolved_path}' to '{target_path}': {error}")
     })?;
 
     workspace.pages.remove_path(&resolved_path);
     workspace.backlinks.remove_page(&resolved_path);
-    let content = fs::read_to_string(&target_absolute_path)
-        .map_err(|error| format!("Failed to read renamed page '{}': {error}", target_path))?;
     let page = workspace
         .pages
         .insert_page(target_path.clone(), &content)
@@ -643,6 +645,59 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn partial_link_rewrite_failure_reindexes_changed_and_unchanged_pages() {
+        let root = temp_workspace();
+        fs::write(root.join("Alpha.md"), "# Alpha").unwrap();
+        let first_source = root.join("A-source.md");
+        let second_source = root.join("B-source.md");
+        fs::write(&first_source, "- First [[Alpha]]").unwrap();
+        fs::write(&second_source, "- Second [[Alpha]]").unwrap();
+
+        let mut workspace = WorkspaceState {
+            root: root.clone(),
+            config: WorkspaceConfig::default(),
+            folders: Vec::new(),
+            pages: PageIndex::default(),
+            backlinks: BacklinkIndex::default(),
+        };
+        reindex_workspace(&mut workspace).unwrap();
+        fs::set_permissions(&second_source, fs::Permissions::from_mode(0o444)).unwrap();
+
+        let result = rewrite_links_to_targets_with_recovery(
+            &mut workspace,
+            &[("alpha".to_string(), "archive/Alpha.md".to_string())],
+        );
+
+        fs::set_permissions(&second_source, fs::Permissions::from_mode(0o644)).unwrap();
+
+        let error = result.unwrap_err();
+        assert!(error.contains("Failed to update links in 'B-source.md'"));
+        assert!(error.contains("Workspace index was rebuilt"));
+        assert_eq!(
+            fs::read_to_string(&first_source).unwrap(),
+            "- First [[archive/Alpha]]"
+        );
+        assert_eq!(
+            fs::read_to_string(&second_source).unwrap(),
+            "- Second [[Alpha]]"
+        );
+        assert_eq!(
+            workspace
+                .backlinks
+                .backlinks_for_target_key("archive/alpha")
+                .len(),
+            1
+        );
+        assert_eq!(
+            workspace.backlinks.backlinks_for_target_key("alpha").len(),
+            1
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn delete_folder_removes_empty_folder_and_reindexes_workspace() {
         let root = temp_workspace();
@@ -731,6 +786,121 @@ mod tests {
             .pages
             .get_by_path("archive/projects/Alpha.md")
             .is_some());
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn move_and_rename_page_rewrite_links_for_non_ascii_paths() {
+        let root = temp_workspace();
+        fs::create_dir_all(root.join("projekte")).unwrap();
+        fs::write(root.join("projekte/übersicht.md"), "# Übersicht").unwrap();
+        fs::write(root.join("Quelle.md"), "- Siehe [[PROJEKTE/ÜBERSICHT]]").unwrap();
+        let mut workspace = WorkspaceState {
+            root: root.clone(),
+            config: WorkspaceConfig::default(),
+            folders: Vec::new(),
+            pages: PageIndex::default(),
+            backlinks: BacklinkIndex::default(),
+        };
+        reindex_workspace(&mut workspace).unwrap();
+
+        move_page_in_workspace(
+            &mut workspace,
+            "projekte/übersicht.md".to_string(),
+            "archiv".to_string(),
+        )
+        .unwrap();
+        rename_page_in_workspace(
+            &mut workspace,
+            "archiv/übersicht.md".to_string(),
+            "rückblick".to_string(),
+        )
+        .unwrap();
+
+        assert!(root.join("archiv/rückblick.md").is_file());
+        assert_eq!(
+            fs::read_to_string(root.join("Quelle.md")).unwrap(),
+            "- Siehe [[archiv/rückblick]]"
+        );
+        assert!(workspace.pages.get_by_path("archiv/rückblick.md").is_some());
+        assert_eq!(
+            workspace
+                .backlinks
+                .backlinks_for_target_key("archiv/rückblick")
+                .len(),
+            1
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn failed_page_rename_keeps_files_index_and_config_unchanged() {
+        let root = temp_workspace();
+        fs::write(root.join("Alpha.md"), "# Alpha").unwrap();
+        fs::write(root.join("Existing.md"), "# Existing").unwrap();
+        let mut config = WorkspaceConfig::default();
+        config.page_favorites = vec!["Alpha.md".to_string()];
+        config.last_editor_path = Some("Alpha.md".to_string());
+        let mut workspace = WorkspaceState {
+            root: root.clone(),
+            config,
+            folders: Vec::new(),
+            pages: PageIndex::default(),
+            backlinks: BacklinkIndex::default(),
+        };
+        reindex_workspace(&mut workspace).unwrap();
+        let pages_before = workspace.pages.pages();
+        let config_before = workspace.config.clone();
+
+        let result = rename_page_in_workspace(
+            &mut workspace,
+            "Alpha.md".to_string(),
+            "existing".to_string(),
+        );
+
+        assert_eq!(
+            result.unwrap_err(),
+            "A page with this path already exists, ignoring case."
+        );
+        assert!(root.join("Alpha.md").is_file());
+        assert!(root.join("Existing.md").is_file());
+        assert_eq!(workspace.pages.pages(), pages_before);
+        assert_eq!(workspace.config, config_before);
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unreadable_page_is_not_moved_before_validation() {
+        let root = temp_workspace();
+        let source = root.join("Alpha.md");
+        fs::write(&source, "# Alpha").unwrap();
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o000)).unwrap();
+        let mut workspace = WorkspaceState {
+            root: root.clone(),
+            config: WorkspaceConfig::default(),
+            folders: Vec::new(),
+            pages: PageIndex::from_paths(vec!["Alpha.md".to_string()]),
+            backlinks: BacklinkIndex::default(),
+        };
+
+        let result = move_page_in_workspace(
+            &mut workspace,
+            "Alpha.md".to_string(),
+            "archive".to_string(),
+        );
+
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o644)).unwrap();
+
+        assert!(result
+            .unwrap_err()
+            .contains("Failed to read page 'Alpha.md'"));
+        assert!(source.is_file());
+        assert!(!root.join("archive/Alpha.md").exists());
+        assert!(workspace.pages.get_by_path("Alpha.md").is_some());
 
         fs::remove_dir_all(root).unwrap();
     }

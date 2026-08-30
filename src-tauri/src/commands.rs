@@ -1057,6 +1057,31 @@ mod tests {
     }
 
     #[test]
+    fn task_status_update_preserves_external_content_changes() {
+        let root = temp_workspace();
+        let page_path = root.join("Inbox.md");
+        fs::write(&page_path, "# Inbox\n\n- TODO Plan\n- Original detail").unwrap();
+        let mut workspace = test_workspace_state(
+            root.clone(),
+            PageIndex::from_paths(vec!["Inbox.md".to_string()]),
+        );
+        fs::write(
+            &page_path,
+            "# Inbox\n\n- TODO Plan\n- Externally changed detail",
+        )
+        .unwrap();
+
+        update_task_status_in_workspace(&mut workspace, "Inbox.md", 3, "TODO", "DONE").unwrap();
+
+        assert_eq!(
+            fs::read_to_string(&page_path).unwrap(),
+            "# Inbox\n\n- DONE Plan\n- Externally changed detail"
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn update_task_status_rejects_stale_expected_status() {
         let root = temp_workspace();
         fs::write(root.join("Inbox.md"), "- INPROGRESS Prepare kickoff").unwrap();

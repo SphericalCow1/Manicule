@@ -12,6 +12,11 @@
   and structured application errors.
 - Rust and TypeScript Markdown parsers now share fixtures for links, normalized
   targets, task priorities, custom task states, list markers, tabs, and checkboxes.
+- Folder scanning now preserves physical folders whose names differ only by case
+  while sorting them deterministically with the same lowercase model as page keys.
+- File moves and renames validate readable content before changing its physical
+  path, with additional regression coverage for watcher events, partial link
+  rewrites, external task changes, and non-ASCII paths.
 
 ## 0.6.5
 
