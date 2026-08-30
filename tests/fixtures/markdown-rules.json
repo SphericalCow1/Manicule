@@ -80,6 +80,21 @@
         "key": "projekte/übersicht"
       },
       {
+        "name": "uppercase non-ASCII path",
+        "target": "Projekte/ÜBERSICHT",
+        "key": "projekte/übersicht"
+      },
+      {
+        "name": "sharp s is not fully case folded",
+        "target": "Projekte/Straße",
+        "key": "projekte/straße"
+      },
+      {
+        "name": "uppercase ss remains distinct from sharp s",
+        "target": "Projekte/STRASSE",
+        "key": "projekte/strasse"
+      },
+      {
         "name": "parent traversal",
         "target": "../Alpha",
         "key": null

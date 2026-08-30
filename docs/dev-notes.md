@@ -380,6 +380,12 @@ The left pane builds its tree from the page and folder lists returned by the
 backend. Ordering combines default sort mode, per-folder sort mode, manual order
 configuration, and recent/favorite metadata.
 
+Page and wiki-link keys are matched with Unicode lowercasing. This is not
+locale-specific comparison or full Unicode case folding. Physical folders that
+differ only by case are kept as separate scanner entries and sorted by the
+lowercase key with the exact path as a deterministic tie-breaker; Semtags does
+not silently discard either filesystem entry.
+
 Navigation helper logic lives mostly in:
 
 - `src/lib/navigationTree.ts`

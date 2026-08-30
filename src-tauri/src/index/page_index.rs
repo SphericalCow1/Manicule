@@ -277,6 +277,22 @@ mod tests {
     }
 
     #[test]
+    fn detects_unicode_lowercase_collisions() {
+        let index = PageIndex::from_paths(vec![
+            "Projekte/Übersicht.md".to_string(),
+            "projekte/übersicht.md".to_string(),
+        ]);
+
+        let diagnostics = index.collision_diagnostics();
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, "page_key_collision");
+        assert_eq!(
+            diagnostics[0].path.as_deref(),
+            Some("Projekte/Übersicht.md, projekte/übersicht.md")
+        );
+    }
+
+    #[test]
     fn resolves_paths_case_insensitively() {
         let index = PageIndex::from_paths(vec!["Projekte/Projekt Alpha.md".to_string()]);
 

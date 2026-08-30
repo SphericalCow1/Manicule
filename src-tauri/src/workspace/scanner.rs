@@ -2,6 +2,8 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 
+use crate::workspace::paths::case_insensitive_key;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceScan {
     pub markdown_files: Vec<String>,
@@ -17,12 +19,15 @@ pub fn scan_workspace(root: &Path) -> Result<WorkspaceScan, String> {
     let mut folders = Vec::new();
     scan_dir(root, root, &mut files, &mut folders)?;
     files.sort();
-    folders.sort_by(|left, right| left.to_lowercase().cmp(&right.to_lowercase()));
-    folders.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
+    sort_folder_paths(&mut folders);
     Ok(WorkspaceScan {
         markdown_files: files,
         folders,
     })
+}
+
+fn sort_folder_paths(folders: &mut [String]) {
+    folders.sort_by_cached_key(|path| (case_insensitive_key(path), path.clone()));
 }
 
 fn scan_dir(
@@ -186,6 +191,30 @@ mod tests {
         assert_eq!(files, vec!["Visible.md".to_string()]);
 
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn sorts_case_insensitively_without_hiding_physical_folders() {
+        let mut folders = vec![
+            "zeta".to_string(),
+            "übersicht".to_string(),
+            "Alpha".to_string(),
+            "Übersicht".to_string(),
+            "alpha".to_string(),
+        ];
+
+        sort_folder_paths(&mut folders);
+
+        assert_eq!(
+            folders,
+            vec![
+                "Alpha".to_string(),
+                "alpha".to_string(),
+                "zeta".to_string(),
+                "Übersicht".to_string(),
+                "übersicht".to_string(),
+            ]
+        );
     }
 
     #[cfg(unix)]

@@ -25,7 +25,11 @@ pub fn resolve_workspace_relative_path(root: &Path, relative_path: &str) -> Opti
 }
 
 fn normalize_relative_page_key(value: &str) -> Option<String> {
-    normalize_relative_page_path(value).map(|path| path.to_lowercase())
+    normalize_relative_page_path(value).map(|path| case_insensitive_key(&path))
+}
+
+pub(crate) fn case_insensitive_key(value: &str) -> String {
+    value.to_lowercase()
 }
 
 fn normalize_relative_page_path(value: &str) -> Option<String> {
