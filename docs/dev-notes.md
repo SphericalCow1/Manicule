@@ -22,6 +22,99 @@ At a high level the application is split into these layers:
   task overview, and undo orchestration
 - CodeMirror editor: Markdown editing surface and editor-local undo history
 
+The runtime relationship between these layers:
+
+```mermaid
+flowchart TB
+    subgraph Frontend["Frontend (WebView)"]
+        Comp["Svelte components"]
+        Store["Svelte stores"]
+        CM["CodeMirror editor"]
+        MD["markdown-it renderer"]
+        Api["src/lib/api.ts"]
+    end
+
+    subgraph Backend["Backend (Rust)"]
+        Cmd["Tauri commands"]
+        State["AppState / WorkspaceState"]
+        Parse["Parser"]
+        Idx["Page and backlink indexes"]
+        IO["File operations"]
+        Watch["Filesystem watcher"]
+        Cfg["Config persistence"]
+    end
+
+    Disk[("Markdown workspace on disk")]
+
+    CM --> Comp
+    MD --> Comp
+    Comp --> Store
+    Store --> Api
+    Api --> Cmd
+    Cmd --> State
+    Cmd --> IO
+    Cmd --> Cfg
+    IO --> Disk
+    Cfg --> Disk
+    Disk --> Parse
+    Parse --> Idx
+    Idx --> State
+    Disk --> Watch
+    Watch --> Store
+```
+
+Arrows show the intended direction of calls and data flow. The frontend reaches
+the workspace only through Tauri commands, while the watcher pushes external
+change events back into the frontend stores.
+
+## Technology Stack
+
+The stack is intentionally small. There is no database, no server component, and
+no network dependency at runtime.
+
+Frontend runtime dependencies:
+
+- Svelte 5 as UI framework
+- TypeScript as implementation language
+- CodeMirror 6 (`state`, `view`, `commands`, `lang-markdown`, `autocomplete`)
+  as the editing surface
+- `markdown-it` 14 for rendered Markdown in read-only views
+- `@tauri-apps/api` and `@tauri-apps/plugin-dialog` for the command bridge and
+  native dialogs
+
+Backend runtime dependencies (`src-tauri/Cargo.toml`, Rust edition 2021):
+
+- `tauri` 2 for the desktop shell and command layer
+- `tauri-plugin-dialog` 2 for native file dialogs
+- `serde` and `serde_json` for DTO and config serialization
+- `notify` 8 for workspace filesystem watching
+
+Build and check tooling:
+
+- Vite 6 with `@sveltejs/vite-plugin-svelte`
+- `svelte-check` and TypeScript for static validation
+- Node.js built-in test runner for frontend unit tests
+- Cargo for backend build, tests, and the benchmark example
+
+The project is licensed under AGPL-3.0-only. Frontend and backend crate versions
+are kept in sync between `package.json` and `src-tauri/Cargo.toml`.
+
+## Desktop Shell Configuration
+
+The shell is configured in `src-tauri/tauri.conf.json`:
+
+- product name `Semtags`, bundle identifier `dev.semtags.app`
+- default window 1280x800 with a 960x600 minimum, resizable
+- `beforeDevCommand` and `beforeBuildCommand` delegate to the npm scripts
+- dev URL `http://localhost:1420`, production assets from `../dist`
+
+The Vite dev server in `vite.config.ts` uses a strict port on `127.0.0.1:1420`
+and ignores `src-tauri/**` so Rust rebuilds do not trigger frontend reloads.
+
+Cargo declares two targets in `src-tauri/Cargo.toml`: the `Semtags` binary from
+`src/main.rs` and the `semtags_lib` library from `src/lib.rs`. Command
+permissions are granted through `src-tauri/capabilities/default.json`.
+
 ## Runtime Boundary
 
 The frontend never accesses workspace files directly. All filesystem operations
@@ -54,6 +147,32 @@ Important backend structures:
 
 Workspace state is rebuilt from disk when opening a workspace and after larger
 file operations that can affect many paths.
+
+## Backend Module Map
+
+Top-level modules in `src-tauri/src`:
+
+- `main.rs`, `lib.rs`: application bootstrap, plugin setup, native menu, and
+  command registration
+- `commands.rs`: page, navigation, task, and search commands
+- `config_commands.rs`: user and workspace configuration commands
+- `app_state.rs`: process-wide guarded application state
+- `dto.rs`: serializable types crossing the command boundary
+- `workspace_index.rs`: full workspace scan and index construction
+- `page_io.rs`: page content read and write with conflict metadata
+- `page_ops.rs`: create, delete, move, rename, and link rewriting
+- `page_view.rs`: rendered page payloads for the panes
+- `query.rs`: search and task query behavior
+- `navigation_order.rs`: sort modes and manual ordering rules
+- `watcher.rs`: `notify`-based external change detection
+- `user_config.rs`, `workspace_config.rs`: configuration persistence
+
+Sub-packages:
+
+- `parser/`: `blocks.rs`, `wiki_links.rs`
+- `index/`: `page_index.rs`, `backlink_index.rs`
+- `workspace/`: `scanner.rs` for recursive discovery, `paths.rs` for
+  normalization and path-traversal prevention
 
 ## Workspace Scanning And Indexing
 
@@ -154,27 +273,57 @@ Main application shell:
 - `src/App.svelte`: three-pane layout, native menu event wiring, workspace
   session restore, column resizing, zoom handling, dialogs
 
+The shell derives a CSS grid from the current column widths, clamps them against
+per-pane minimum widths, and persists them in `localStorage` under
+`semtags:layout:columns`. Pane file selection is persisted separately through the
+workspace config, debounced before saving. On workspace change the shell ensures
+today's journal page exists and opens it in the middle pane.
+
 Primary components:
 
 - `FileTree.svelte`: left navigation pane
+- `NavigationTree.svelte`: recursive folder and page tree rendering
+- `WorkspaceHeader.svelte`: workspace header and workspace-level actions
+- `QuickAccess.svelte`: favorites, recent pages, and search entry points
 - `EditorPane.svelte`: middle editor pane
 - `RightPane.svelte`: right rendered context pane
 - `TaskOverview.svelte`: task overview surface
+- `TaskListPanel.svelte`: task list rendering inside the overview
 - `LinkedReferences.svelte`: backlink rendering
 - `MarkdownView.svelte`: rendered Markdown blocks, task controls, links, and
   checkboxes
 - `CodeMirrorEditor.svelte`: CodeMirror integration
+- `ContextMenuShell.svelte`, `NavigationContextMenu.svelte`: context menu
+  infrastructure and navigation-specific menu entries
+- `ErrorDialog.svelte`: error and conflict reporting
 
 Stores:
 
 - `workspace.ts`: opened workspace metadata and workspace config mirrors
 - `editorSession.ts`: middle-pane editor file, content, save state, and
   navigation history
+- `createEditorSessionStore.ts`: shared factory behind the editor session and
+  right-pane session behavior
 - `rightPane.ts`: right-pane file, rendered view, and navigation history
 - `mainView.ts`: editor versus task overview mode
+- `editorMode.ts`: source versus live preview editing mode
 - `tasks.ts`: task overview data and updates
 - `appUndo.ts`: global undo/redo actions outside CodeMirror-local editing
+- `theme.ts`: light and dark appearance state
 - `zoom.ts`: UI zoom factor
+
+Domain logic is kept in framework-free TypeScript modules under `src/lib` so it
+can be unit tested without rendering components:
+
+- linking and navigation: `wikiLinks.ts`, `wikiLinkCompletion.ts`,
+  `backlinkGroups.ts`, `navigationTree.ts`, `journals.ts`
+- tasks and presentation: `taskKeywords.ts`, `taskColors.ts`, `checkboxes.ts`,
+  `folderColors.ts`, `taskCompletionSound.ts`
+- editor behavior: `editorLivePreview.ts`, `editorBlockCommands.ts`,
+  `editorBlockFolding.ts`, `editorLineWrapping.ts`, `editorTextFormatting.ts`
+- rendering and infrastructure: `markdownRendering.ts`, `markdownSourceLines.ts`,
+  `api.ts`, `types.ts`, `coreEvents.ts`, `keyboardShortcuts.ts`,
+  `menuMnemonics.ts`, `contextMenuPosition.ts`, `dialogFocus.ts`
 
 ## Rendering Model
 
@@ -240,9 +389,15 @@ Frontend build tooling:
 - Vite
 - Svelte
 - TypeScript
-- `npm run test:frontend` for TypeScript unit tests
+- `npm run dev` starts the Vite dev server on `127.0.0.1:1420`
+- `npm run test:frontend` compiles `tsconfig.test.json` into `.tmp-tests` and
+  runs the compiled tests with the Node.js built-in test runner
 - `npm run check` for Svelte and TypeScript validation
 - `npm run build` for production frontend build validation
+
+TypeScript configuration is split across `tsconfig.json` for application code,
+`tsconfig.node.json` for build tooling, and `tsconfig.test.json` for the test
+compilation step.
 
 Backend build tooling:
 
