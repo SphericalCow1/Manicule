@@ -859,7 +859,12 @@
     openSearchResult(result);
   }
 
-  function openTaskOverview() {
+  function toggleTaskOverview() {
+    if ($mainViewStore === "tasks") {
+      mainViewStore.set("editor");
+      return;
+    }
+
     mainViewStore.set("tasks");
     void taskStore.refresh();
   }
@@ -2114,7 +2119,7 @@
     {openJournalDate}
     taskLoading={$taskStore.loading}
     taskCount={$taskStore.tasks.length}
-    {openTaskOverview}
+    {toggleTaskOverview}
   />
 
   {#if $workspaceStore.pages.length === 0}

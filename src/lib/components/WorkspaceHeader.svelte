@@ -13,7 +13,7 @@
   export let openJournalDate: (date: string) => void | Promise<void>;
   export let taskLoading = false;
   export let taskCount = 0;
-  export let openTaskOverview: () => void;
+  export let toggleTaskOverview: () => void;
 
   let datePickerOpen = false;
   let pickerMonth = startOfMonth(new Date());
@@ -78,7 +78,7 @@
     </div>
   {/if}
   {#if root}
-    <TaskListPanel loading={taskLoading} {taskCount} {openTaskOverview} />
+    <TaskListPanel loading={taskLoading} {taskCount} {toggleTaskOverview} />
   {/if}
 </div>
 
