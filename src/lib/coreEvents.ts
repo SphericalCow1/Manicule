@@ -1,4 +1,9 @@
-import { closeWorkspace, onCoreEvent, updateEditMenuLabels } from "./api";
+import {
+  closeWorkspace,
+  onCoreEvent,
+  updateEditMenuLabels,
+  updateThemeMenuLabel,
+} from "./api";
 import { confirm as confirmDialog, message, open } from "@tauri-apps/plugin-dialog";
 import { get } from "svelte/store";
 import { appUndoStore } from "./stores/appUndo";
@@ -101,6 +106,7 @@ export async function setupCoreEvents() {
   });
 
   setupUndoRedoMenuLabels();
+  setupThemeMenuLabel();
   window.addEventListener("semtags-editor-history-availability", handleEditorHistoryAvailability);
 
   await onCoreEvent("menu-undo", () => handleUndoRequest("menu"));
@@ -168,6 +174,12 @@ export async function setupCoreEvents() {
 
   await onCoreEvent("menu-keyboard-shortcuts", async () => {
     window.dispatchEvent(new CustomEvent("semtags-show-keyboard-shortcuts"));
+  });
+}
+
+function setupThemeMenuLabel() {
+  themeStore.subscribe((mode) => {
+    void updateThemeMenuLabel(mode === "dark").catch(() => {});
   });
 }
 

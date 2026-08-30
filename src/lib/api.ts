@@ -78,6 +78,10 @@ export function updateEditMenuLabels(
   });
 }
 
+export function updateThemeMenuLabel(isDark: boolean): Promise<void> {
+  return invokeTauri<void>("update_theme_menu_label", { isDark });
+}
+
 export function openWorkspace(path: string): Promise<WorkspaceState> {
   return invokeTauri<WorkspaceState>("open_workspace", { path });
 }

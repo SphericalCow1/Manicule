@@ -99,6 +99,15 @@ fn update_edit_menu_labels(
     Ok(())
 }
 
+#[tauri::command]
+fn update_theme_menu_label(app: AppHandle, is_dark: bool) -> Result<(), String> {
+    let menu = app
+        .menu()
+        .ok_or_else(|| "Application menu is not available".to_string())?;
+
+    set_menu_item_text(&menu, MENU_TOGGLE_DARK_MODE, theme_menu_text(is_dark))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -138,6 +147,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ping,
             update_edit_menu_labels,
+            update_theme_menu_label,
             commands::get_last_workspace,
             commands::open_workspace,
             commands::close_workspace,
@@ -264,7 +274,7 @@ fn ensure_edit_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
 
 fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri::Result<()> {
     let toggle_dark_mode =
-        MenuItemBuilder::with_id(MENU_TOGGLE_DARK_MODE, "Toggle Dark Mode").build(handle)?;
+        MenuItemBuilder::with_id(MENU_TOGGLE_DARK_MODE, theme_menu_text(false)).build(handle)?;
     let toggle_task_overview =
         MenuItemBuilder::with_id(MENU_TOGGLE_TASK_OVERVIEW, "Toggle Task Overview")
             .accelerator("CmdOrCtrl+Shift+T")
@@ -412,6 +422,14 @@ fn menu_action_text(action: &str, label: Option<&str>) -> String {
     }
 }
 
+fn theme_menu_text(is_dark: bool) -> &'static str {
+    if is_dark {
+        "Switch to light mode"
+    } else {
+        "Switch to dark mode"
+    }
+}
+
 fn set_menu_item_text<R: Runtime>(menu: &Menu<R>, id: &str, text: &str) -> Result<(), String> {
     for item in menu
         .items()
@@ -496,4 +514,15 @@ fn set_menu_item_kind_enabled<R: Runtime>(
     }
 
     Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::theme_menu_text;
+
+    #[test]
+    fn theme_menu_describes_the_available_switch() {
+        assert_eq!(theme_menu_text(false), "Switch to dark mode");
+        assert_eq!(theme_menu_text(true), "Switch to light mode");
+    }
 }
