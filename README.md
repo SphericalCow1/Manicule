@@ -18,11 +18,11 @@ workflow.
 
 ## Product Vision
 
-Semtags is built for personal knowledge management in project and task management contexts. It follows a simple product promise:
+Semtags is built for personal knowledge management in project and task management contexts. It follows a simple approach:
 
 > Capture first. Structure later. Files forever.
 
-The app is meant to be the fastest place to write down project thoughts,
+The app is meant to be a place to quickly write down project thoughts,
 meeting notes, decisions, risks, follow-ups, and open questions without deciding
 up front where each fragment belongs.
 
@@ -49,7 +49,9 @@ editor pane:
   - TODO agree new rollout date
 ```
 
-The user does not need to create a project page first. The link is enough.
+Entities (like people or projects) can be referenced as links, if the user wants to gather information related to this entity later.
+
+It is not necessary to create a project page first. The link is enough.
 Opening `[[projects/Rollout]]` later shows the linked references from journals,
 project notes, and other pages with parent and child context.
 
@@ -64,6 +66,7 @@ instead of:
 ```text
 Create database -> define schema -> create document -> fill fields
 ```
+
 
 ## Main Concepts
 
@@ -81,13 +84,10 @@ After the workspace is loaded, the middle pane always opens today's journal at
 right pane keeps its previous context page from the last session.
 
 Each workspace can also contain a `.config` file. Semtags creates it if needed
-and stores workspace-specific settings there, for example task states, task
-colors, expanded folders, task filters, page sorting, theme mode, session
-metadata, and the right pane page restored on the next start.
+and stores workspace-specific settings there, for example task colors, expanded 
+folders.
 
-Use `View > Toggle Dark Mode` to switch the interface theme. The setting is
-stored as `themeMode` in the current workspace `.config`; Markdown files are not
-modified.
+Use `View > Toggle Dark Mode` to choose the interface theme from light or dark.
 
 ### Three-Pane Layout
 
@@ -101,9 +101,6 @@ Semtags uses three resizable panes:
 The middle and right pane can show different files. This is useful when editing
 one note while keeping another page, a project overview, or a backlink target
 open for context.
-
-Use `View > Toggle Dark Mode` to switch the complete app shell, editor, and
-rendered Markdown views between light and dark appearance.
 
 ### Pages and Wiki Links
 
