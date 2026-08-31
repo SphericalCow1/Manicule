@@ -2,6 +2,7 @@ import { writable } from "svelte/store";
 import { getPageView } from "../api.js";
 import { toErrorMessage } from "../errors.js";
 import type { PageView } from "../types.js";
+import { createNavigationHistory } from "./navigationHistory.js";
 
 type RightPaneState = {
   path: string | null;
@@ -30,12 +31,17 @@ type RightPaneOpenOptions = {
   line?: number;
 };
 
-function createRightPaneStore() {
+export type RightPaneDependencies = {
+  getPageView: (path: string) => Promise<PageView>;
+};
+
+const defaultDependencies: RightPaneDependencies = { getPageView };
+
+export function createRightPaneStore(dependencies: RightPaneDependencies = defaultDependencies) {
   const { subscribe, set, update } = writable<RightPaneState>(initialState);
   let currentState = initialState;
   let requestSequence = 0;
-  let backStack: string[] = [];
-  let forwardStack: string[] = [];
+  const navigationHistory = createNavigationHistory();
 
   subscribe((state) => {
     currentState = state;
@@ -49,7 +55,7 @@ function createRightPaneStore() {
         revealToken: options.line ? state.revealToken + 1 : state.revealToken,
         error: null,
       }));
-      return;
+      return true;
     }
 
     const requestId = ++requestSequence;
@@ -57,33 +63,35 @@ function createRightPaneStore() {
     update((state) => ({ ...state, path, loading: true, error: null }));
 
     try {
-      const pageView = await getPageView(path);
+      const pageView = await dependencies.getPageView(path);
       if (requestId !== requestSequence) {
-        return;
+        return false;
       }
       if (options.recordHistory !== false && previousPath && previousPath !== path) {
-        backStack = [...backStack, previousPath];
-        forwardStack = [];
+        navigationHistory.record(previousPath, path);
       }
+      const historyAvailability = navigationHistory.availability();
       set({
         path,
         pageView,
         revealLine: options.line ?? null,
         revealToken: options.line ? currentState.revealToken + 1 : currentState.revealToken,
         loading: false,
-        canGoBack: backStack.length > 0,
-        canGoForward: forwardStack.length > 0,
+        ...historyAvailability,
         error: null,
       });
+      return true;
     } catch (error) {
       if (requestId !== requestSequence) {
-        return;
+        return false;
       }
       update((state) => ({
         ...state,
+        path: previousPath,
         loading: false,
         error: toErrorMessage(error),
       }));
+      return false;
     }
   }
 
@@ -91,8 +99,7 @@ function createRightPaneStore() {
     subscribe,
     clear() {
       requestSequence += 1;
-      backStack = [];
-      forwardStack = [];
+      navigationHistory.clear();
       set(initialState);
     },
     clearError() {
@@ -108,7 +115,7 @@ function createRightPaneStore() {
       const requestId = ++requestSequence;
 
       try {
-        const pageView = await getPageView(path);
+        const pageView = await dependencies.getPageView(path);
         if (requestId !== requestSequence) {
           return;
         }
@@ -118,8 +125,7 @@ function createRightPaneStore() {
           pageView,
           revealLine: state.revealLine,
           revealToken: state.revealToken,
-          canGoBack: backStack.length > 0,
-          canGoForward: forwardStack.length > 0,
+          ...navigationHistory.availability(),
           error: null,
         }));
       } catch (error) {
@@ -138,40 +144,19 @@ function createRightPaneStore() {
       }
 
       requestSequence += 1;
-      backStack = [];
-      forwardStack = [];
+      navigationHistory.clear();
       set(initialState);
     },
     async goBack() {
-      const targetPath = backStack.at(-1);
-      const previousPath = currentState.path;
-      if (!targetPath || !previousPath) {
-        return;
-      }
-
-      await open(targetPath, { recordHistory: false });
-      if (currentState.path !== targetPath) {
-        return;
-      }
-
-      backStack = backStack.slice(0, -1);
-      forwardStack = [...forwardStack, previousPath];
+      await navigationHistory.goBack(currentState.path, (targetPath) =>
+        open(targetPath, { recordHistory: false }),
+      );
       syncHistoryFlags();
     },
     async goForward() {
-      const targetPath = forwardStack.at(-1);
-      const previousPath = currentState.path;
-      if (!targetPath || !previousPath) {
-        return;
-      }
-
-      await open(targetPath, { recordHistory: false });
-      if (currentState.path !== targetPath) {
-        return;
-      }
-
-      forwardStack = forwardStack.slice(0, -1);
-      backStack = [...backStack, previousPath];
+      await navigationHistory.goForward(currentState.path, (targetPath) =>
+        open(targetPath, { recordHistory: false }),
+      );
       syncHistoryFlags();
     },
   };
@@ -179,8 +164,7 @@ function createRightPaneStore() {
   function syncHistoryFlags() {
     update((state) => ({
       ...state,
-      canGoBack: backStack.length > 0,
-      canGoForward: forwardStack.length > 0,
+      ...navigationHistory.availability(),
     }));
   }
 }

@@ -389,6 +389,47 @@ test("clears editor forward history after new navigation", async () => {
   assert.equal(get(store).canGoForward, false);
 });
 
+test("keeps editor history unchanged when back navigation fails", async () => {
+  const failingPaths = new Set<string>();
+  const store = createEditorSessionStore({
+    openPage: async (path) => {
+      if (failingPaths.has(path)) {
+        throw new Error(`cannot open ${path}`);
+      }
+      return {
+        path,
+        content: `${path} content`,
+        modifiedAt: "m0",
+        contentHash: path,
+      };
+    },
+    savePage: async () => ({
+      status: "saved",
+      path: "unused.md",
+      modifiedAt: "m1",
+      contentHash: "h1",
+    }),
+    refreshRightPane: async () => {},
+    autoSaveDelayMs: 10,
+  });
+
+  await store.open("A.md");
+  await store.open("B.md");
+  failingPaths.add("A.md");
+  await store.goBack();
+
+  assert.equal(get(store).path, "B.md");
+  assert.equal(get(store).canGoBack, true);
+  assert.equal(get(store).canGoForward, false);
+  assert.equal(get(store).error, "cannot open A.md");
+
+  failingPaths.clear();
+  await store.goBack();
+  assert.equal(get(store).path, "A.md");
+  assert.equal(get(store).canGoBack, false);
+  assert.equal(get(store).canGoForward, true);
+});
+
 test("updates task status lines in editor content", async () => {
   const store = createEditorSessionStore({
     openPage: async () => page("- TODO First\r\n  - WAITING Second\r\n", "h0"),

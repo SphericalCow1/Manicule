@@ -6,6 +6,7 @@ import {
 import { toErrorMessage } from "../errors.js";
 import { taskKeywordMatch, taskPriorityChange } from "../taskKeywords.js";
 import type { PageContent, SavePageResult } from "../types";
+import { createNavigationHistory } from "./navigationHistory.js";
 
 export type EditorSessionState = {
   path: string | null;
@@ -66,8 +67,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSave = false;
   let openSequence = 0;
-  let backStack: string[] = [];
-  let forwardStack: string[] = [];
+  const navigationHistory = createNavigationHistory();
 
   subscribe((state) => {
     currentState = state;
@@ -95,7 +95,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         revealToken: options.line ? state.revealToken + 1 : state.revealToken,
         error: null,
       }));
-      return;
+      return true;
     }
 
     if (currentState.saving) {
@@ -103,7 +103,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         ...state,
         error: "Wait for the current save to finish before opening another page.",
       }));
-      return;
+      return false;
     }
 
     if (currentState.conflict) {
@@ -111,14 +111,14 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         ...state,
         error: "Resolve the current file conflict before opening another page.",
       }));
-      return;
+      return false;
     }
 
     if (currentState.dirty) {
       await save();
 
       if (currentState.dirty || currentState.conflict || currentState.error) {
-        return;
+        return false;
       }
     }
 
@@ -131,12 +131,12 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
     try {
       const page = await dependencies.openPage(path);
       if (requestId !== openSequence) {
-        return;
+        return false;
       }
       if (options.recordHistory !== false && previousPath && previousPath !== page.path) {
-        backStack = [...backStack, previousPath];
-        forwardStack = [];
+        navigationHistory.record(previousPath, page.path);
       }
+      const historyAvailability = navigationHistory.availability();
       set({
         path: page.path,
         content: page.content,
@@ -149,19 +149,20 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         dirty: false,
         conflict: false,
         diskContent: null,
-        canGoBack: backStack.length > 0,
-        canGoForward: forwardStack.length > 0,
+        ...historyAvailability,
         error: null,
       });
+      return true;
     } catch (error) {
       if (requestId !== openSequence) {
-        return;
+        return false;
       }
       update((state) => ({
         ...state,
         loading: false,
         error: toErrorMessage(error),
       }));
+      return false;
     }
   }
 
@@ -292,44 +293,23 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
   }
 
   async function goBack() {
-    const targetPath = backStack.at(-1);
-    const previousPath = currentState.path;
-    if (!targetPath || !previousPath) {
-      return;
-    }
-
-    await open(targetPath, { recordHistory: false });
-    if (currentState.path !== targetPath) {
-      return;
-    }
-
-    backStack = backStack.slice(0, -1);
-    forwardStack = [...forwardStack, previousPath];
+    await navigationHistory.goBack(currentState.path, (targetPath) =>
+      open(targetPath, { recordHistory: false }),
+    );
     syncHistoryFlags();
   }
 
   async function goForward() {
-    const targetPath = forwardStack.at(-1);
-    const previousPath = currentState.path;
-    if (!targetPath || !previousPath) {
-      return;
-    }
-
-    await open(targetPath, { recordHistory: false });
-    if (currentState.path !== targetPath) {
-      return;
-    }
-
-    forwardStack = forwardStack.slice(0, -1);
-    backStack = [...backStack, previousPath];
+    await navigationHistory.goForward(currentState.path, (targetPath) =>
+      open(targetPath, { recordHistory: false }),
+    );
     syncHistoryFlags();
   }
 
   function syncHistoryFlags() {
     update((state) => ({
       ...state,
-      canGoBack: backStack.length > 0,
-      canGoForward: forwardStack.length > 0,
+      ...navigationHistory.availability(),
     }));
   }
 
@@ -459,8 +439,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
       clearSaveTimer();
       pendingSave = false;
       openSequence += 1;
-      backStack = [];
-      forwardStack = [];
+      navigationHistory.clear();
       set(initialState);
     },
     clearIfPath(path: string) {
@@ -470,8 +449,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
 
       clearSaveTimer();
       pendingSave = false;
-      backStack = [];
-      forwardStack = [];
+      navigationHistory.clear();
       set(initialState);
     },
     reloadFromDisk,

@@ -39,6 +39,8 @@ Changes since `v0.6.5`.
 - Wiki-link navigation and missing-page creation now share one operation layer
   across the editor, rendered panes, backlinks, and Task Overview, with the
   destination pane passed explicitly.
+- Middle- and right-pane navigation now share one back/forward history helper
+  while retaining pane-specific loading, editor safeguards, and line targeting.
 
 ### Fixed
 
@@ -54,6 +56,8 @@ Changes since `v0.6.5`.
 - Native workspace dialogs, workspace closing, undo/redo warnings, event setup,
   and window-title failures no longer disappear as unhandled promise
   rejections.
+- Failed right-pane navigation now keeps the previously rendered page and no
+  longer consumes a back/forward history entry.
 
 ### Tests
 
@@ -66,6 +70,8 @@ Changes since `v0.6.5`.
   and store-handled outcomes do not produce duplicate popups.
 - Added coverage for shared link path normalization, pane routing, navigation
   options, and create-refresh-open ordering.
+- Added coverage for shared navigation transitions and failed editor/right-pane
+  back navigation.
 
 ## 0.6.5
 

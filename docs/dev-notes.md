@@ -313,6 +313,8 @@ Stores:
   actions and infrastructure calls
 - `linkOperations.ts`: shared wiki-link target normalization, pane routing, and
   create-and-open sequencing
+- `navigationHistory.ts`: shared back/forward stack transitions and derived
+  navigation availability
 - `mutationOperations.ts`: shared checkbox, task status, and task priority
   orchestration for rendered views and Task Overview
 - `theme.ts`: light and dark appearance state
@@ -437,6 +439,13 @@ editor view when requested, forwards line and history options, and sequences
 missing-page creation before source refresh and navigation. Components retain
 ownership of confirmation UI and pane-specific refresh behavior.
 
+The middle and right pane share only their back/forward stack mechanics through
+`src/lib/stores/navigationHistory.ts`. Each pane still owns loading, content,
+line targeting, request cancellation, and errors; the editor additionally owns
+dirty state, saves, and conflict handling. A stack transition is committed only
+after the owning store reports that its target opened successfully. Failed
+navigation therefore preserves both the current page and the previous history.
+
 Backlink display can use page order information so linked references follow the
 same navigational structure as the left pane.
 
@@ -491,7 +500,9 @@ Frontend tests:
   version metadata. Direct async action errors are covered for contextual,
   single reporting without re-reporting store-handled outcomes. Link-operation
   tests cover pane routing, navigation options, canonical created paths, and
-  unsuccessful page creation.
+  unsuccessful page creation. Shared navigation-history tests cover stack
+  transitions, availability flags, duplicate suppression, forward-history
+  invalidation, clearing, and failed pane navigation.
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 

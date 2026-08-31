@@ -17,8 +17,8 @@ export type CreateLinkOptions = LinkOpenOptions & {
 
 export type LinkOperationDependencies = {
   showEditor: () => void;
-  openEditor: (path: string, options: LinkOpenOptions) => Promise<void>;
-  openRightPane: (path: string, options: LinkOpenOptions) => Promise<void>;
+  openEditor: (path: string, options: LinkOpenOptions) => Promise<unknown>;
+  openRightPane: (path: string, options: LinkOpenOptions) => Promise<unknown>;
   createPage: (path: string) => Promise<PageSummary | null | undefined>;
 };
 
