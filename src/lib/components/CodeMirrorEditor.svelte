@@ -57,6 +57,7 @@
   import { playTaskDoneSound } from "../taskCompletionSound";
   import { matchWikiLinkCompletion, wikiLinkSuggestions } from "../wikiLinkCompletion";
   import { resolveWikiTarget } from "../wikiLinks";
+  import type { LinkTargetPane } from "../stores/linkOperations";
   import type { FolderColors, PageSummary, TaskStateColors } from "../types";
 
   export let value = "";
@@ -74,8 +75,7 @@
   export let onSave: (content: string) => void = () => {};
   export let onEditorHistoryChange: (path: string | null) => void = () => {};
   export let onEditorHistoryDiscard: (path: string | null) => void = () => {};
-  export let onOpenWikiLinkInEditor: (path: string) => void = () => {};
-  export let onOpenWikiLinkInRightPane: (path: string) => void = () => {};
+  export let onOpenWikiLink: (path: string, targetPane: LinkTargetPane) => void = () => {};
   export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
   export let onCreateWikiLinkPage: (path: string) => void = () => {};
 
@@ -549,7 +549,7 @@
     event.preventDefault();
     event.stopPropagation();
     closeEditorContextMenu();
-    onOpenWikiLinkInEditor(resolved.path);
+    onOpenWikiLink(resolved.path, "editor");
     return true;
   }
 
@@ -643,7 +643,7 @@
 
     const path = editorContextMenu.link.resolvedPath;
     closeEditorContextMenu();
-    onOpenWikiLinkInRightPane(path);
+    onOpenWikiLink(path, "right");
   }
 
   function openSourceLineInRightPane() {

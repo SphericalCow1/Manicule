@@ -311,6 +311,8 @@ Stores:
 - `appUndo.ts`: global undo/redo actions outside CodeMirror-local editing
 - `appErrors.ts`: app-wide popup reporting for otherwise-unhandled direct user
   actions and infrastructure calls
+- `linkOperations.ts`: shared wiki-link target normalization, pane routing, and
+  create-and-open sequencing
 - `mutationOperations.ts`: shared checkbox, task status, and task priority
   orchestration for rendered views and Task Overview
 - `theme.ts`: light and dark appearance state
@@ -427,6 +429,14 @@ Navigation helper logic lives mostly in:
 - `src/lib/components/NavigationTree.svelte`
 - `src-tauri/src/navigation_order.rs`
 
+Wiki-link navigation from CodeMirror, rendered Markdown, backlinks, and Task
+Overview routes through `src/lib/stores/linkOperations.ts`. Callers pass the
+target pane explicitly, so middle- and right-pane defaults remain visible at
+the UI boundary. The operation normalizes the Markdown path, activates the
+editor view when requested, forwards line and history options, and sequences
+missing-page creation before source refresh and navigation. Components retain
+ownership of confirmation UI and pane-specific refresh behavior.
+
 Backlink display can use page order information so linked references follow the
 same navigational structure as the left pane.
 
@@ -479,7 +489,9 @@ Frontend tests:
   live preview behavior, editor sessions, application undo ordering, shared
   mutation orchestration, task completion sound gating, line wrapping, and
   version metadata. Direct async action errors are covered for contextual,
-  single reporting without re-reporting store-handled outcomes.
+  single reporting without re-reporting store-handled outcomes. Link-operation
+  tests cover pane routing, navigation options, canonical created paths, and
+  unsuccessful page creation.
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 

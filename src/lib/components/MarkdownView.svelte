@@ -16,6 +16,7 @@
     taskKeywordMatch,
   } from "../taskKeywords";
   import { applyWikiLinkColorStyles, renderWikiLinks } from "../wikiLinks";
+  import type { LinkTargetPane } from "../stores/linkOperations";
   import type { FolderColors, PageSummary, TaskStateColors } from "../types";
 
   export let content = "";
@@ -29,8 +30,7 @@
   export let onWikiLink: (target: string) => void = () => {};
   export let onMissingWikiLink: (target: string) => void = () => {};
   export let onCheckboxToggle: (line: number, checked: boolean) => void = () => {};
-  export let onOpenWikiLinkInEditor: (target: string) => void = () => {};
-  export let onOpenWikiLinkInRightPane: (target: string) => void = () => {};
+  export let onOpenWikiLink: (target: string, targetPane: LinkTargetPane) => void = () => {};
   export let onOpenSourceLineInEditor: (line: number) => void = () => {};
   export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
   export let sourceLineMenuTargets: Array<"editor" | "right"> = [];
@@ -361,11 +361,7 @@
     const target = linkContextMenu.target;
     linkContextMenu = null;
 
-    if (targetPane === "editor") {
-      onOpenWikiLinkInEditor(target);
-    } else {
-      onOpenWikiLinkInRightPane(target);
-    }
+    onOpenWikiLink(target, targetPane);
   }
 
   function createContextLinkPage() {

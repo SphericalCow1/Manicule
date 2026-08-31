@@ -34,6 +34,9 @@ Changes since `v0.6.5`.
   refresh, and completion sound.
 - Direct native and infrastructure actions now use one app-wide popup error
   path, while store-owned errors remain on their existing component paths.
+- Wiki-link navigation and missing-page creation now share one operation layer
+  across the editor, rendered panes, backlinks, and Task Overview, with the
+  destination pane passed explicitly.
 
 ### Fixed
 
@@ -59,6 +62,8 @@ Changes since `v0.6.5`.
   locations, editor conflict guards, and rejected backend operations.
 - Added coverage that rejected direct actions are reported once with context
   and store-handled outcomes do not produce duplicate popups.
+- Added coverage for shared link path normalization, pane routing, navigation
+  options, and create-refresh-open ordering.
 
 ## 0.6.5
 

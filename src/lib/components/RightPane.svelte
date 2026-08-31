@@ -2,8 +2,7 @@
   import ErrorDialog from "./ErrorDialog.svelte";
   import MarkdownView from "./MarkdownView.svelte";
   import LinkedReferences from "./LinkedReferences.svelte";
-  import { editorSessionStore } from "../stores/editorSession";
-  import { mainViewStore } from "../stores/mainView";
+  import { linkOperations, type LinkTargetPane } from "../stores/linkOperations";
   import { mutationOperations } from "../stores/mutationOperations";
   import { rightPaneStore } from "../stores/rightPane";
   import { workspaceStore } from "../stores/workspace";
@@ -19,37 +18,28 @@
     mutationError = null;
   }
 
-  function openWikiTarget(target: string) {
-    void rightPaneStore.open(target.endsWith(".md") ? target : `${target}.md`);
-  }
-
-  function openWikiTargetInEditor(target: string) {
-    mainViewStore.set("editor");
-    void editorSessionStore.open(target.endsWith(".md") ? target : `${target}.md`);
+  function openWikiTarget(target: string, targetPane: LinkTargetPane) {
+    void linkOperations.open(target, targetPane);
   }
 
   function openBacklinkInEditor(backlink: BacklinkView) {
-    mainViewStore.set("editor");
-    void editorSessionStore.open(backlink.sourcePath, { line: backlink.lineStart });
+    void linkOperations.open(backlink.sourcePath, "editor", { line: backlink.lineStart });
   }
 
   function openCurrentInEditor() {
     if ($rightPaneStore.path) {
-      mainViewStore.set("editor");
-      void editorSessionStore.open($rightPaneStore.path);
+      void linkOperations.open($rightPaneStore.path, "editor");
     }
   }
 
   function openCurrentLineInEditor(line: number) {
     if ($rightPaneStore.path) {
-      mainViewStore.set("editor");
-      void editorSessionStore.open($rightPaneStore.path, { line });
+      void linkOperations.open($rightPaneStore.path, "editor", { line });
     }
   }
 
   function openBacklinkLineInEditor(backlink: BacklinkView, line: number) {
-    mainViewStore.set("editor");
-    void editorSessionStore.open(backlink.sourcePath, { line });
+    void linkOperations.open(backlink.sourcePath, "editor", { line });
   }
 
   function closeErrorDialog() {
@@ -73,21 +63,12 @@
       return;
     }
 
-    const page = await workspaceStore.createPage(missingLinkPath);
-    if (!page) {
-      return;
-    }
-
-    const createdPath = page.path;
-    missingLinkPath = null;
-    await rightPaneStore.refresh();
-
-    if (openTarget === "editor") {
-      mainViewStore.set("editor");
-      await editorSessionStore.open(createdPath);
-    } else {
-      await rightPaneStore.open(createdPath);
-    }
+    await linkOperations.createAndOpen(missingLinkPath, openTarget, {
+      afterCreate: async () => {
+        missingLinkPath = null;
+        await rightPaneStore.refresh();
+      },
+    });
   }
 
   async function toggleCheckboxForPath(path: string | null, line: number, previousChecked: boolean) {
@@ -201,12 +182,11 @@
           folderColors={$workspaceStore.folderColors}
           highlightedLine={$rightPaneStore.revealLine}
           highlightToken={$rightPaneStore.revealToken}
-          onWikiLink={openWikiTarget}
+          onWikiLink={(target) => openWikiTarget(target, "right")}
           onMissingWikiLink={requestMissingPage}
           onCheckboxToggle={(line, checked) =>
             void toggleCheckboxForPath($rightPaneStore.path, line, checked)}
-          onOpenWikiLinkInEditor={openWikiTargetInEditor}
-          onOpenWikiLinkInRightPane={openWikiTarget}
+          onOpenWikiLink={openWikiTarget}
           onOpenSourceLineInEditor={openCurrentLineInEditor}
           sourceLineMenuTargets={["editor"]}
           enableTaskContextMenu
@@ -226,10 +206,9 @@
           folderColors={$workspaceStore.folderColors}
           openTasksOnly={$workspaceStore.backlinkView.openTasksOnly}
           onOpenTasksOnlyChange={saveBacklinkOpenTasksOnly}
-          onWikiLink={openWikiTarget}
+          onWikiLink={(target) => openWikiTarget(target, "right")}
           onMissingWikiLink={requestMissingPage}
-          onOpenWikiLinkInEditor={openWikiTargetInEditor}
-          onOpenWikiLinkInRightPane={openWikiTarget}
+          onOpenWikiLink={openWikiTarget}
           onOpenSourceInEditor={openBacklinkInEditor}
           onOpenSourceLineInEditor={openBacklinkLineInEditor}
           sourceLineMenuTargets={["editor"]}

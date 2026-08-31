@@ -7,7 +7,7 @@
   import { editorSessionStore } from "../stores/editorSession";
   import { editorModeStore } from "../stores/editorMode";
   import { appUndoStore } from "../stores/appUndo";
-  import { rightPaneStore } from "../stores/rightPane";
+  import { linkOperations, type LinkTargetPane } from "../stores/linkOperations";
   import { workspaceStore } from "../stores/workspace";
   import type { BacklinkView, PageView } from "../types";
 
@@ -30,11 +30,7 @@
   }
 
   async function createWikiLinkPage(path: string) {
-    const page = await workspaceStore.createPage(path);
-
-    if (page) {
-      await editorSessionStore.open(page.path);
-    }
+    await linkOperations.createAndOpen(path, "editor");
   }
 
   async function loadEditorPageView(path: string | null) {
@@ -70,32 +66,28 @@
     }
   }
 
-  function openWikiTargetInRightPane(target: string) {
-    void rightPaneStore.open(target.endsWith(".md") ? target : `${target}.md`);
-  }
-
-  function openWikiTargetInEditor(target: string) {
-    void editorSessionStore.open(target.endsWith(".md") ? target : `${target}.md`);
+  function openWikiTarget(target: string, targetPane: LinkTargetPane) {
+    void linkOperations.open(target, targetPane);
   }
 
   function openBacklinkInEditor(backlink: BacklinkView) {
-    void editorSessionStore.open(backlink.sourcePath, { line: backlink.lineStart });
+    void linkOperations.open(backlink.sourcePath, "editor", { line: backlink.lineStart });
   }
 
   function openCurrentInRightPane() {
     if ($editorSessionStore.path) {
-      void rightPaneStore.open($editorSessionStore.path);
+      void linkOperations.open($editorSessionStore.path, "right");
     }
   }
 
   function openCurrentLineInRightPane(line: number) {
     if ($editorSessionStore.path) {
-      void rightPaneStore.open($editorSessionStore.path, { line });
+      void linkOperations.open($editorSessionStore.path, "right", { line });
     }
   }
 
   function openBacklinkLineInRightPane(backlink: BacklinkView, line: number) {
-    void rightPaneStore.open(backlink.sourcePath, { line });
+    void linkOperations.open(backlink.sourcePath, "right", { line });
   }
 
   function saveBacklinkOpenTasksOnly(openTasksOnly: boolean) {
@@ -122,20 +114,12 @@
       return;
     }
 
-    const page = await workspaceStore.createPage(missingLinkPath);
-    if (!page) {
-      return;
-    }
-
-    const createdPath = page.path;
-    missingLinkPath = null;
-    await loadEditorPageView($editorSessionStore.path);
-
-    if (openTarget === "editor") {
-      await editorSessionStore.open(createdPath);
-    } else {
-      await rightPaneStore.open(createdPath);
-    }
+    await linkOperations.createAndOpen(missingLinkPath, openTarget, {
+      afterCreate: async () => {
+        missingLinkPath = null;
+        await loadEditorPageView($editorSessionStore.path);
+      },
+    });
   }
 
 </script>
@@ -213,8 +197,7 @@
       onSave={(content) => void editorSessionStore.save(content)}
       onEditorHistoryChange={(path) => appUndoStore.recordEditorChange(path)}
       onEditorHistoryDiscard={(path) => appUndoStore.discardEditorHistory(path)}
-      onOpenWikiLinkInEditor={(path) => void editorSessionStore.open(path)}
-      onOpenWikiLinkInRightPane={(path) => void rightPaneStore.open(path)}
+      onOpenWikiLink={openWikiTarget}
       onOpenSourceLineInRightPane={openCurrentLineInRightPane}
       onCreateWikiLinkPage={(path) => void createWikiLinkPage(path)}
     />
@@ -246,10 +229,9 @@
         folderColors={$workspaceStore.folderColors}
         openTasksOnly={$workspaceStore.backlinkView.openTasksOnly}
         onOpenTasksOnlyChange={saveBacklinkOpenTasksOnly}
-        onWikiLink={openWikiTargetInRightPane}
+        onWikiLink={(target) => openWikiTarget(target, "right")}
         onMissingWikiLink={requestMissingPage}
-        onOpenWikiLinkInEditor={openWikiTargetInEditor}
-        onOpenWikiLinkInRightPane={openWikiTargetInRightPane}
+        onOpenWikiLink={openWikiTarget}
         onOpenSourceInEditor={openBacklinkInEditor}
         onOpenSourceLineInRightPane={openBacklinkLineInRightPane}
         sourceLineMenuTargets={["right"]}

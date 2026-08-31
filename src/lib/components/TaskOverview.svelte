@@ -5,10 +5,8 @@
   import { keepContextMenuInViewport } from "../contextMenuPosition";
   import { clickMenuMnemonic } from "../menuMnemonics";
   import { taskColorStyle } from "../taskColors";
-  import { editorSessionStore } from "../stores/editorSession";
-  import { mainViewStore } from "../stores/mainView";
+  import { linkOperations } from "../stores/linkOperations";
   import { mutationOperations } from "../stores/mutationOperations";
-  import { rightPaneStore } from "../stores/rightPane";
   import { taskStore } from "../stores/tasks";
   import { workspaceStore } from "../stores/workspace";
   import { applyWikiLinkColorStyles, compactPageLabel, renderWikiLinks } from "../wikiLinks";
@@ -228,7 +226,7 @@
     if (href?.startsWith("semtags:")) {
       event.preventDefault();
       event.stopPropagation();
-      void rightPaneStore.open(decodeURIComponent(href.slice("semtags:".length)));
+      void linkOperations.open(decodeURIComponent(href.slice("semtags:".length)), "right");
       return;
     }
 
@@ -328,12 +326,11 @@
   }
 
   function editTask(task: TaskItem) {
-    mainViewStore.set("editor");
-    void editorSessionStore.open(task.path, { line: task.line });
+    void linkOperations.open(task.path, "editor", { line: task.line });
   }
 
   function openTask(task: TaskItem) {
-    void rightPaneStore.open(task.path, { line: task.line });
+    void linkOperations.open(task.path, "right", { line: task.line });
   }
 
   function editTaskFromButton(task: TaskItem, event: MouseEvent) {

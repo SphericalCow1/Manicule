@@ -2,6 +2,7 @@
   import { filterBacklinks } from "../backlinkGroups";
   import type { BacklinkView, FolderColors, PageSummary, TaskStateColors, TaskStatus } from "../types";
   import { compactPageFolderLabel } from "../wikiLinks";
+  import type { LinkTargetPane } from "../stores/linkOperations";
   import MarkdownView from "./MarkdownView.svelte";
 
   export let backlinks: BacklinkView[] = [];
@@ -15,8 +16,7 @@
   export let onOpenTasksOnlyChange: (openTasksOnly: boolean) => void = () => {};
   export let onWikiLink: (target: string) => void;
   export let onMissingWikiLink: (path: string) => void;
-  export let onOpenWikiLinkInEditor: (target: string) => void = () => {};
-  export let onOpenWikiLinkInRightPane: (target: string) => void = () => {};
+  export let onOpenWikiLink: (target: string, targetPane: LinkTargetPane) => void = () => {};
   export let onOpenSourceInEditor: (backlink: BacklinkView) => void;
   export let onOpenSourceLineInEditor: (backlink: BacklinkView, line: number) => void = () => {};
   export let onOpenSourceLineInRightPane: (backlink: BacklinkView, line: number) => void = () => {};
@@ -168,8 +168,7 @@
                 onMissingWikiLink={onMissingWikiLink}
                 onCheckboxToggle={(line, checked) =>
                   onCheckboxToggle(backlink.sourcePath, line, checked)}
-                onOpenWikiLinkInEditor={onOpenWikiLinkInEditor}
-                onOpenWikiLinkInRightPane={onOpenWikiLinkInRightPane}
+                {onOpenWikiLink}
                 onOpenSourceLineInEditor={(line) => onOpenSourceLineInEditor(backlink, line)}
                 onOpenSourceLineInRightPane={(line) =>
                   onOpenSourceLineInRightPane(backlink, line)}
