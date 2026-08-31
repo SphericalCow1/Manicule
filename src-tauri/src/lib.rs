@@ -29,8 +29,7 @@ const MENU_UNDO: &str = "edit.undo";
 const MENU_REDO: &str = "edit.redo";
 const MENU_TOGGLE_DARK_MODE: &str = "view.toggle_dark_mode";
 const MENU_TOGGLE_TASK_OVERVIEW: &str = "view.toggle_task_overview";
-const MENU_EDITOR_MODE_LIVE: &str = "view.editor_mode_live";
-const MENU_EDITOR_MODE_SOURCE: &str = "view.editor_mode_source";
+const MENU_TOGGLE_EDITOR_MODE: &str = "view.toggle_editor_mode";
 const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1: &str = "view.collapse_blocks_below_level_1";
 const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_2: &str = "view.collapse_blocks_below_level_2";
 const MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_3: &str = "view.collapse_blocks_below_level_3";
@@ -121,6 +120,19 @@ fn update_task_overview_menu_label(app: AppHandle, is_task_overview: bool) -> Re
     )
 }
 
+#[tauri::command]
+fn update_editor_mode_menu_label(app: AppHandle, is_live_preview: bool) -> Result<(), String> {
+    let menu = app
+        .menu()
+        .ok_or_else(|| "Application menu is not available".to_string())?;
+
+    set_menu_item_text(
+        &menu,
+        MENU_TOGGLE_EDITOR_MODE,
+        editor_mode_menu_text(is_live_preview),
+    )
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -136,8 +148,7 @@ pub fn run() {
                 MENU_REDO => Some("menu-redo"),
                 MENU_TOGGLE_DARK_MODE => Some("menu-toggle-dark-mode"),
                 MENU_TOGGLE_TASK_OVERVIEW => Some("menu-toggle-task-overview"),
-                MENU_EDITOR_MODE_LIVE => Some("menu-editor-mode-live"),
-                MENU_EDITOR_MODE_SOURCE => Some("menu-editor-mode-source"),
+                MENU_TOGGLE_EDITOR_MODE => Some("menu-toggle-editor-mode"),
                 MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1 => Some("menu-collapse-blocks-below-level-1"),
                 MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_2 => Some("menu-collapse-blocks-below-level-2"),
                 MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_3 => Some("menu-collapse-blocks-below-level-3"),
@@ -162,6 +173,7 @@ pub fn run() {
             update_edit_menu_labels,
             update_theme_menu_label,
             update_task_overview_menu_label,
+            update_editor_mode_menu_label,
             commands::get_last_workspace,
             commands::open_workspace,
             commands::close_workspace,
@@ -293,12 +305,10 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
         MenuItemBuilder::with_id(MENU_TOGGLE_TASK_OVERVIEW, task_overview_menu_text(false))
             .accelerator("CmdOrCtrl+Shift+T")
             .build(handle)?;
-    let live_mode = MenuItemBuilder::with_id(MENU_EDITOR_MODE_LIVE, "Live Preview")
-        .accelerator("CmdOrCtrl+Shift+L")
-        .build(handle)?;
-    let source_mode = MenuItemBuilder::with_id(MENU_EDITOR_MODE_SOURCE, "Source Markdown")
-        .accelerator("CmdOrCtrl+Shift+M")
-        .build(handle)?;
+    let toggle_editor_mode =
+        MenuItemBuilder::with_id(MENU_TOGGLE_EDITOR_MODE, editor_mode_menu_text(true))
+            .accelerator("CmdOrCtrl+Shift+L")
+            .build(handle)?;
     let collapse_below_level_1 =
         MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1, "Level 1")
             .accelerator("CmdOrCtrl+1")
@@ -346,8 +356,7 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
                 &toggle_dark_mode,
                 &separator_after_theme,
                 &toggle_task_overview,
-                &live_mode,
-                &source_mode,
+                &toggle_editor_mode,
                 &separator_after_mode,
                 &collapse_blocks_submenu,
                 &expand_all_blocks,
@@ -365,8 +374,7 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
             .item(&toggle_dark_mode)
             .separator()
             .item(&toggle_task_overview)
-            .item(&live_mode)
-            .item(&source_mode)
+            .item(&toggle_editor_mode)
             .separator()
             .item(&collapse_blocks_submenu)
             .item(&expand_all_blocks)
@@ -449,6 +457,14 @@ fn task_overview_menu_text(is_task_overview: bool) -> &'static str {
         "Show Editor"
     } else {
         "Show Task Overview"
+    }
+}
+
+fn editor_mode_menu_text(is_live_preview: bool) -> &'static str {
+    if is_live_preview {
+        "Plain markdown edit"
+    } else {
+        "Live preview edit"
     }
 }
 
@@ -540,7 +556,7 @@ fn set_menu_item_kind_enabled<R: Runtime>(
 
 #[cfg(test)]
 mod tests {
-    use super::{task_overview_menu_text, theme_menu_text};
+    use super::{editor_mode_menu_text, task_overview_menu_text, theme_menu_text};
 
     #[test]
     fn theme_menu_describes_the_available_switch() {
@@ -552,5 +568,11 @@ mod tests {
     fn task_overview_menu_describes_the_available_view() {
         assert_eq!(task_overview_menu_text(false), "Show Task Overview");
         assert_eq!(task_overview_menu_text(true), "Show Editor");
+    }
+
+    #[test]
+    fn editor_mode_menu_describes_the_available_mode() {
+        assert_eq!(editor_mode_menu_text(true), "Plain markdown edit");
+        assert_eq!(editor_mode_menu_text(false), "Live preview edit");
     }
 }

@@ -86,6 +86,10 @@ export function updateTaskOverviewMenuLabel(isTaskOverview: boolean): Promise<vo
   return invokeTauri<void>("update_task_overview_menu_label", { isTaskOverview });
 }
 
+export function updateEditorModeMenuLabel(isLivePreview: boolean): Promise<void> {
+  return invokeTauri<void>("update_editor_mode_menu_label", { isLivePreview });
+}
+
 export function openWorkspace(path: string): Promise<WorkspaceState> {
   return invokeTauri<WorkspaceState>("open_workspace", { path });
 }

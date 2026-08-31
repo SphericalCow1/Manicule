@@ -7,3 +7,4 @@
 - [x] Make the task overview button label and action follow the active main view.
 - [x] Align quick-access right-pane actions with the file browser hover treatment.
 - [x] Prevent right-pane content refreshes from replaying line highlights.
+- [x] Combine live preview and plain Markdown editing into one menu toggle.

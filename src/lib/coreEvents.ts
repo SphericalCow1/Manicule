@@ -1,6 +1,7 @@
 import {
   closeWorkspace,
   onCoreEvent,
+  updateEditorModeMenuLabel,
   updateEditMenuLabels,
   updateTaskOverviewMenuLabel,
   updateThemeMenuLabel,
@@ -117,6 +118,7 @@ export async function setupCoreEvents() {
   setupUndoRedoMenuLabels();
   setupThemeMenuLabel();
   setupTaskOverviewMenuLabel();
+  setupEditorModeMenuLabel();
   window.addEventListener("semtags-editor-history-availability", handleEditorHistoryAvailability);
 
   await onCoreEvent(
@@ -140,12 +142,8 @@ export async function setupCoreEvents() {
     await toggleTaskOverview();
   });
 
-  await onCoreEvent("menu-editor-mode-live", async () => {
-    editorModeStore.set("live-preview");
-  });
-
-  await onCoreEvent("menu-editor-mode-source", async () => {
-    editorModeStore.set("source");
+  await onCoreEvent("menu-toggle-editor-mode", async () => {
+    editorModeStore.toggle();
   });
 
   await onCoreEvent("menu-reset-layout", async () => {
@@ -202,6 +200,12 @@ function setupThemeMenuLabel() {
 function setupTaskOverviewMenuLabel() {
   mainViewStore.subscribe((view) => {
     void updateTaskOverviewMenuLabel(view === "tasks").catch(() => {});
+  });
+}
+
+function setupEditorModeMenuLabel() {
+  editorModeStore.subscribe((mode) => {
+    void updateEditorModeMenuLabel(mode === "live-preview").catch(() => {});
   });
 }
 
@@ -285,7 +289,7 @@ function handleGlobalViewKeydown(event: KeyboardEvent) {
   }
 
   const key = event.key.toLowerCase();
-  if (!["e", "t", "l", "m"].includes(key)) {
+  if (!["e", "t", "l"].includes(key)) {
     return;
   }
 
@@ -307,11 +311,8 @@ function handleGlobalViewKeydown(event: KeyboardEvent) {
   }
 
   if (key === "l") {
-    editorModeStore.set("live-preview");
-    return;
+    editorModeStore.toggle();
   }
-
-  editorModeStore.set("source");
 }
 
 async function toggleTaskOverview() {
