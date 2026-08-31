@@ -148,7 +148,7 @@
           {#if favorite.kind === "page"}
             <button
               type="button"
-              class="icon-button"
+              class="icon-button right-pane-action"
               title="Open in right pane"
               aria-label="Open in right pane"
               disabled={!favoriteExists(favorite)}
@@ -178,7 +178,7 @@
           </button>
           <button
             type="button"
-            class="icon-button"
+            class="icon-button right-pane-action"
             title="Open in right pane"
             aria-label="Open in right pane"
             on:click={() => openPageInRightPane(path)}

@@ -1043,12 +1043,15 @@ textarea {
   padding: 0;
 }
 
-.page-actions .right-pane-action {
+.page-actions .right-pane-action,
+.quick-row .right-pane-action {
   color: var(--navigator-right-pane-action-text);
 }
 
 .page-actions .right-pane-action:hover,
-.page-actions .right-pane-action:focus-visible {
+.page-actions .right-pane-action:focus-visible,
+.quick-row .right-pane-action:hover,
+.quick-row .right-pane-action:focus-visible {
   border-color: var(--navigator-right-pane-marker);
   background: var(--navigator-right-pane-action-bg);
   color: var(--navigator-right-pane-action-text);
