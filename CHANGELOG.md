@@ -19,6 +19,8 @@
   rewrites, external task changes, and non-ASCII paths.
 - Frontend Markdown consumers now share one parser for list and checkbox
   prefixes across editing, rendering, wrapping, tasks, and undo validation.
+- Shared parser contracts now cover CRLF, mixed indentation, conflicting
+  priority cookies, nested emphasis, and large deeply nested blocks.
 
 ## 0.6.5
 

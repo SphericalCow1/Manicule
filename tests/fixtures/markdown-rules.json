@@ -144,6 +144,13 @@
         "priority": null
       },
       {
+        "name": "multiple priority cookies use the first cookie",
+        "source": "- TODO [#A] [#B] Conflicting priorities",
+        "taskStates": null,
+        "status": "TODO",
+        "priority": "A"
+      },
+      {
         "name": "keyword inside ordinary text",
         "source": "- Discuss TODO handling",
         "taskStates": null,
@@ -202,6 +209,27 @@
         "topLevelBlocks": 2,
         "firstBlockEnd": 2,
         "firstBlockChildren": 1
+      },
+      {
+        "name": "mixed tab and space indentation",
+        "source": "- Parent\n \t- Child\n   \t- Grandchild\n- Sibling",
+        "topLevelBlocks": 2,
+        "firstBlockEnd": 3,
+        "firstBlockChildren": 1
+      },
+      {
+        "name": "CRLF nested blocks",
+        "source": "- Parent\r\n  - Child\r\n- Sibling",
+        "topLevelBlocks": 2,
+        "firstBlockEnd": 2,
+        "firstBlockChildren": 1
+      }
+    ],
+    "generatedBlockDocuments": [
+      {
+        "name": "large deeply nested block",
+        "depth": 64,
+        "continuationLines": 512
       }
     ]
   },
@@ -221,6 +249,13 @@
         "name": "keyword inside ordinary text",
         "source": "- Discuss TODO handling",
         "rendered": "- Discuss TODO handling"
+      }
+    ],
+    "emphasis": [
+      {
+        "name": "emphasis nested inside strong text",
+        "source": "**Bold *nested* text**",
+        "spans": [{ "start": 7, "end": 14 }]
       }
     ]
   }

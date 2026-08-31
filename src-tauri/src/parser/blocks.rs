@@ -268,6 +268,8 @@ mod tests {
         block_lines: Vec<BlockLineFixture>,
         #[serde(rename = "blockDocuments")]
         block_documents: Vec<BlockDocumentFixture>,
+        #[serde(rename = "generatedBlockDocuments")]
+        generated_block_documents: Vec<GeneratedBlockDocumentFixture>,
     }
 
     #[derive(Deserialize)]
@@ -299,6 +301,14 @@ mod tests {
         first_block_end: usize,
         #[serde(rename = "firstBlockChildren")]
         first_block_children: usize,
+    }
+
+    #[derive(Deserialize)]
+    struct GeneratedBlockDocumentFixture {
+        name: String,
+        depth: usize,
+        #[serde(rename = "continuationLines")]
+        continuation_lines: usize,
     }
 
     #[test]
@@ -518,6 +528,49 @@ mod tests {
                 fixture.name
             );
         }
+    }
+
+    #[test]
+    fn parses_generated_large_and_deeply_nested_block_documents() {
+        let fixtures: MarkdownRulesFixture =
+            serde_json::from_str(include_str!("../../../tests/fixtures/markdown-rules.json"))
+                .unwrap();
+
+        for fixture in fixtures.shared.generated_block_documents {
+            let source = generated_block_document(fixture.depth, fixture.continuation_lines);
+            let blocks = parse_blocks(&source);
+            let mut current = &blocks[0];
+
+            assert_eq!(blocks.len(), 1, "{} roots", fixture.name);
+            assert_eq!(
+                current.line_end,
+                fixture.depth + fixture.continuation_lines,
+                "{} root end",
+                fixture.name
+            );
+            for level in 1..fixture.depth {
+                assert_eq!(current.children.len(), 1, "{} level {level}", fixture.name);
+                current = &current.children[0];
+            }
+            assert_eq!(
+                current.line_end,
+                fixture.depth + fixture.continuation_lines,
+                "{} deepest end",
+                fixture.name
+            );
+        }
+    }
+
+    fn generated_block_document(depth: usize, continuation_lines: usize) -> String {
+        let mut lines: Vec<String> = (0..depth)
+            .map(|level| format!("{}- Level {}", "  ".repeat(level), level + 1))
+            .collect();
+        let continuation_indent = "  ".repeat(depth);
+        lines.extend(
+            (1..=continuation_lines)
+                .map(|index| format!("{continuation_indent}Continuation {index}")),
+        );
+        lines.join("\n")
     }
 
     fn checkbox_state(text: &str) -> Option<bool> {

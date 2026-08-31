@@ -10,6 +10,7 @@ import {
   listBlockPrefix,
 } from "../src/lib/editorBlockCommands.js";
 import { wikiLinkAtPosition } from "../src/lib/editorLivePreview.js";
+import { emphasisSpans } from "../src/lib/editorLivePreview.js";
 import {
   DEFAULT_TASK_STATES,
   priorityCookieMatch,
@@ -61,12 +62,22 @@ type MarkdownRulesFixture = {
       firstBlockEnd: number;
       firstBlockChildren: number;
     }[];
+    generatedBlockDocuments: {
+      name: string;
+      depth: number;
+      continuationLines: number;
+    }[];
   };
   frontendOnly: {
     taskRendering: {
       name: string;
       source: string;
       rendered: string;
+    }[];
+    emphasis: {
+      name: string;
+      source: string;
+      spans: { start: number; end: number }[];
     }[];
   };
 };
@@ -148,7 +159,7 @@ test("parses shared list and checkbox fixtures consistently", () => {
 
 test("finds shared nested block ranges consistently", () => {
   for (const fixture of fixtures.shared.blockDocuments) {
-    const lines = fixture.source.split("\n");
+    const lines = fixture.source.split(/\r?\n/);
     const firstBlock = blockRangeForLines(lines, 1);
     const topLevelStarts = lines.filter(
       (line) => listBlockPrefix(line) !== null && blockIndentWidth(line) === 0,
@@ -170,8 +181,36 @@ test("finds shared nested block ranges consistently", () => {
   }
 });
 
+test("handles generated large and deeply nested block documents", () => {
+  for (const fixture of fixtures.shared.generatedBlockDocuments) {
+    const lines = generatedBlockLines(fixture.depth, fixture.continuationLines);
+    const firstBlock = blockRangeForLines(lines, 1);
+
+    assert.equal(firstBlock.endLine, lines.length, fixture.name);
+    assert.equal(blockRangeForLines(lines, fixture.depth).endLine, lines.length, fixture.name);
+  }
+});
+
 test("renders frontend-only task fixtures", () => {
   for (const fixture of fixtures.frontendOnly.taskRendering) {
     assert.equal(renderTaskKeywords(fixture.source), fixture.rendered, fixture.name);
   }
 });
+
+test("recognizes frontend-only nested emphasis fixtures", () => {
+  for (const fixture of fixtures.frontendOnly.emphasis) {
+    assert.deepEqual(emphasisSpans(fixture.source), fixture.spans, fixture.name);
+  }
+});
+
+function generatedBlockLines(depth: number, continuationLines: number) {
+  const lines = Array.from(
+    { length: depth },
+    (_, level) => `${"  ".repeat(level)}- Level ${level + 1}`,
+  );
+  const continuationIndent = "  ".repeat(depth);
+  for (let index = 1; index <= continuationLines; index += 1) {
+    lines.push(`${continuationIndent}Continuation ${index}`);
+  }
+  return lines;
+}
