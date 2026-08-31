@@ -1,7 +1,7 @@
-import { openPage, savePage } from "../api";
-import { createEditorSessionStore } from "./createEditorSessionStore";
-import { rightPaneStore } from "./rightPane";
-import { workspaceStore } from "./workspace";
+import { openPage, savePage } from "../api.js";
+import { createEditorSessionStore } from "./createEditorSessionStore.js";
+import { rightPaneStore } from "./rightPane.js";
+import { workspaceStore } from "./workspace.js";
 
 export const editorSessionStore = createEditorSessionStore({
   openPage,

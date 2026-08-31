@@ -99,15 +99,17 @@
       isolateMiddleEditorHistory();
       const changed = editorSessionStore.toggleCheckboxLine(line);
       if (changed) {
-        await editorSessionStore.save();
-        appUndoStore.push({
-          kind: "checkbox",
-          path,
-          line,
-          beforeChecked: previousChecked,
-          afterChecked: !previousChecked,
-        });
-        isolateMiddleEditorHistory();
+        const saved = await editorSessionStore.save();
+        if (saved) {
+          appUndoStore.push({
+            kind: "checkbox",
+            path,
+            line,
+            beforeChecked: previousChecked,
+            afterChecked: !previousChecked,
+          });
+          isolateMiddleEditorHistory();
+        }
       }
       await rightPaneStore.refresh();
       return;
@@ -143,20 +145,22 @@
         $workspaceStore.taskStates,
       );
       if (changed) {
-        await editorSessionStore.save();
-        appUndoStore.push({
-          kind: "task-status",
-          path,
-          line,
-          beforeStatus: currentStatus,
-          afterStatus: nextStatus,
-        });
-        isolateMiddleEditorHistory();
-        playTaskDoneSound(
-          nextStatus,
-          $workspaceStore.taskStates,
-          $workspaceStore.taskDoneSoundEnabled,
-        );
+        const saved = await editorSessionStore.save();
+        if (saved) {
+          appUndoStore.push({
+            kind: "task-status",
+            path,
+            line,
+            beforeStatus: currentStatus,
+            afterStatus: nextStatus,
+          });
+          isolateMiddleEditorHistory();
+          playTaskDoneSound(
+            nextStatus,
+            $workspaceStore.taskStates,
+            $workspaceStore.taskDoneSoundEnabled,
+          );
+        }
       }
       await rightPaneStore.refresh();
       void taskStore.refresh();
@@ -202,15 +206,17 @@
         $workspaceStore.taskStates,
       );
       if (changed) {
-        await editorSessionStore.save();
-        appUndoStore.push({
-          kind: "task-priority",
-          path,
-          line,
-          beforePriority: currentPriority,
-          afterPriority: nextPriority,
-        });
-        isolateMiddleEditorHistory();
+        const saved = await editorSessionStore.save();
+        if (saved) {
+          appUndoStore.push({
+            kind: "task-priority",
+            path,
+            line,
+            beforePriority: currentPriority,
+            afterPriority: nextPriority,
+          });
+          isolateMiddleEditorHistory();
+        }
       }
       await rightPaneStore.refresh();
       void taskStore.refresh();

@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
-import { listTasks, updateTaskPriority, updateTaskStatus } from "../api";
-import { toErrorMessage } from "../errors";
-import type { TaskItem, TaskStatus } from "../types";
+import { listTasks, updateTaskPriority, updateTaskStatus } from "../api.js";
+import { toErrorMessage } from "../errors.js";
+import type { TaskItem, TaskStatus } from "../types.js";
 
 type TaskStoreState = {
   tasks: TaskItem[];

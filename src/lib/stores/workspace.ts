@@ -20,11 +20,11 @@ import {
   saveThemeConfig as saveThemeConfigCommand,
   saveTaskOverviewConfig as saveTaskOverviewConfigCommand,
   saveWorkspaceSessionConfig,
-} from "../api";
-import { toErrorMessage } from "../errors";
-import { DEFAULT_TASK_STATE_COLORS } from "../taskColors";
-import { DEFAULT_TASK_STATES } from "../taskKeywords";
-import { themeStore } from "./theme";
+} from "../api.js";
+import { toErrorMessage } from "../errors.js";
+import { DEFAULT_TASK_STATE_COLORS } from "../taskColors.js";
+import { DEFAULT_TASK_STATES } from "../taskKeywords.js";
+import { themeStore } from "./theme.js";
 import type {
   Diagnostic,
   BacklinkViewConfig,
@@ -37,7 +37,7 @@ import type {
   TaskStateColors,
   TaskStatus,
   ThemeMode,
-} from "../types";
+} from "../types.js";
 
 const DEFAULT_TASK_OVERVIEW_CONFIG: TaskOverviewConfig = {
   statusFilter: "OPEN",

@@ -294,7 +294,12 @@
         updatingTaskKey = null;
         return;
       }
-      await editorSessionStore.save();
+      const saved = await editorSessionStore.save();
+      if (!saved) {
+        localError = $editorSessionStore.error ?? "Task status could not be saved.";
+        updatingTaskKey = null;
+        return;
+      }
       await taskStore.refresh();
       await rightPaneStore.refresh();
       isolateMiddleEditorHistory();
@@ -363,7 +368,12 @@
         updatingTaskKey = null;
         return;
       }
-      await editorSessionStore.save();
+      const saved = await editorSessionStore.save();
+      if (!saved) {
+        localError = $editorSessionStore.error ?? "Task priority could not be saved.";
+        updatingTaskKey = null;
+        return;
+      }
       await taskStore.refresh();
       await rightPaneStore.refresh();
       isolateMiddleEditorHistory();

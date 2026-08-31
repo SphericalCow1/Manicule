@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
-import { getPageView } from "../api";
-import { toErrorMessage } from "../errors";
-import type { PageView } from "../types";
+import { getPageView } from "../api.js";
+import { toErrorMessage } from "../errors.js";
+import type { PageView } from "../types.js";
 
 type RightPaneState = {
   path: string | null;

@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import type { ThemeMode } from "../types";
+import type { ThemeMode } from "../types.js";
 
 function applyTheme(mode: ThemeMode) {
   if (typeof document === "undefined") {

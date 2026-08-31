@@ -34,6 +34,15 @@ Changes since `v0.6.5`.
 
 - Right-pane content refreshes no longer replay an existing source-line
   highlight or scroll the highlighted line back into view.
+- Rendered-view checkbox and task changes now enter global undo history, and
+  trigger completion sound where applicable, only after an editor-backed save
+  succeeds.
+
+### Tests
+
+- Added behavioral coverage for mixed editor and rendered-view undo ordering,
+  open-editor and disk-backed task mutations, save conflicts, and completion
+  sound gating.
 
 ## 0.6.5
 

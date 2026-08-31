@@ -175,6 +175,41 @@ test("queues a follow-up autosave when content changes during an in-flight save"
   assert.equal(get(store).contentHash, "h2");
 });
 
+test("reports a save conflict as unsuccessful", async () => {
+  const store = savingStore(async () => ({
+    status: "conflict",
+    path: "Inbox.md",
+    currentModifiedAt: "m-external",
+    currentContentHash: "h-external",
+    diskContent: "external change",
+  }));
+
+  await store.open("Inbox.md");
+  store.setContent("local change");
+  const saved = await store.save();
+
+  assert.equal(saved, false);
+  assert.equal(get(store).conflict, true);
+  assert.equal(get(store).dirty, true);
+  assert.equal(get(store).diskContent, "external change");
+  assert.equal(get(store).error, "File changed on disk. Reload from disk or overwrite disk.");
+});
+
+test("reports a rejected save as unsuccessful", async () => {
+  const store = savingStore(async () => {
+    throw new Error("disk unavailable");
+  });
+
+  await store.open("Inbox.md");
+  store.setContent("local change");
+  const saved = await store.save();
+
+  assert.equal(saved, false);
+  assert.equal(get(store).dirty, true);
+  assert.equal(get(store).conflict, false);
+  assert.equal(get(store).error, "disk unavailable");
+});
+
 test("records a requested source line when opening from a backlink", async () => {
   const store = createEditorSessionStore({
     openPage: async () => page("source", "h0"),

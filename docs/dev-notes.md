@@ -355,6 +355,13 @@ Application-level changes outside direct editor typing are recorded in
 changes, and task priority changes made from rendered views or the task
 overview.
 
+The application-level undo store exposes injectable effect dependencies for
+tests. `tests/appUndo.test.ts` is the behavioral contract for ordering mixed
+editor and rendered-view changes, routing mutations through an open editor or
+directly to disk, and retaining an operation when its save fails. Refactors of
+task or checkbox orchestration should keep these tests unchanged unless the
+user-visible undo policy is intentionally changed.
+
 The native Edit menu is synchronized from the frontend so menu labels and
 enabled states reflect the current undo/redo action.
 
@@ -441,7 +448,8 @@ Frontend tests:
 - Covered areas include wiki-link completion, Markdown rendering helpers,
   backlink grouping, navigation tree building, folder colors, task keyword
   parsing, checkboxes, journal path handling, editor block commands, editor
-  live preview behavior, editor sessions, line wrapping, and version metadata.
+  live preview behavior, editor sessions, application undo ordering, task
+  completion sound gating, line wrapping, and version metadata.
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 

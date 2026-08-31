@@ -26,7 +26,7 @@ import type {
   ToggleCheckboxResult,
   UpdateTaskStatusResult,
   WorkspaceState,
-} from "./types";
+} from "./types.js";
 
 const TAURI_REQUIRED_MESSAGE =
   "Workspace access is only available in the Tauri desktop app. Start it with `npm run tauri dev`.";

@@ -80,7 +80,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
     }
   }
 
-  function scheduleAutoSave(save: () => Promise<void>) {
+  function scheduleAutoSave(save: () => Promise<unknown>) {
     clearSaveTimer();
     saveTimer = setTimeout(() => {
       void save();
@@ -185,7 +185,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
 
     if (state.saving) {
       pendingSave = true;
-      return;
+      return false;
     }
 
     clearSaveTimer();
@@ -198,7 +198,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
       !state.modifiedAt ||
       !state.contentHash
     ) {
-      return;
+      return false;
     }
 
     const savePath = state.path;
@@ -247,7 +247,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
 
         await dependencies.refreshPages?.();
         await dependencies.refreshRightPane();
-        return;
+        return true;
       }
 
       update((value) => {
@@ -266,6 +266,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         };
       });
       pendingSave = false;
+      return false;
     } catch (error) {
       update((value) => {
         if (value.path !== savePath) {
@@ -279,6 +280,7 @@ export function createEditorSessionStore(dependencies: EditorSessionDependencies
         };
       });
       pendingSave = false;
+      return false;
     }
   }
 
