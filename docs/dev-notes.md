@@ -309,6 +309,8 @@ Stores:
 - `editorMode.ts`: source versus live preview editing mode
 - `tasks.ts`: task overview data and updates
 - `appUndo.ts`: global undo/redo actions outside CodeMirror-local editing
+- `mutationOperations.ts`: shared checkbox, task status, and task priority
+  orchestration for rendered views and Task Overview
 - `theme.ts`: light and dark appearance state
 - `zoom.ts`: UI zoom factor
 
@@ -361,6 +363,13 @@ editor and rendered-view changes, routing mutations through an open editor or
 directly to disk, and retaining an operation when its save fails. Refactors of
 task or checkbox orchestration should keep these tests unchanged unless the
 user-visible undo policy is intentionally changed.
+
+Forward mutations initiated outside CodeMirror go through
+`src/lib/stores/mutationOperations.ts`. This layer decides whether the target
+is the open editor page or a disk-backed page, isolates editor history, waits
+for save success, records one global undo operation, refreshes derived views,
+and gates the task completion sound. Svelte components retain presentation and
+menu state but do not duplicate this orchestration.
 
 The native Edit menu is synchronized from the frontend so menu labels and
 enabled states reflect the current undo/redo action.
@@ -448,8 +457,9 @@ Frontend tests:
 - Covered areas include wiki-link completion, Markdown rendering helpers,
   backlink grouping, navigation tree building, folder colors, task keyword
   parsing, checkboxes, journal path handling, editor block commands, editor
-  live preview behavior, editor sessions, application undo ordering, task
-  completion sound gating, line wrapping, and version metadata.
+  live preview behavior, editor sessions, application undo ordering, shared
+  mutation orchestration, task completion sound gating, line wrapping, and
+  version metadata.
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 

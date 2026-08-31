@@ -29,6 +29,9 @@ Changes since `v0.6.5`.
   already open.
 - Favorites and Recents now use the same right-pane action emphasis as the file
   browser.
+- Checkbox, task-status, and task-priority changes from rendered views and Task
+  Overview now use one shared mutation policy for editor routing, saving, undo,
+  refresh, and completion sound.
 
 ### Fixed
 
@@ -37,12 +40,18 @@ Changes since `v0.6.5`.
 - Rendered-view checkbox and task changes now enter global undo history, and
   trigger completion sound where applicable, only after an editor-backed save
   succeeds.
+- Rendered-view mutations now consistently reject an in-progress save or an
+  unresolved editor conflict, while preserving unsaved editor text through the
+  shared editor-backed mutation path.
+- Checkbox changes now refresh the task list as well as the rendered right pane.
 
 ### Tests
 
 - Added behavioral coverage for mixed editor and rendered-view undo ordering,
   open-editor and disk-backed task mutations, save conflicts, and completion
   sound gating.
+- Added direct coverage for shared mutation routing, canonical backend task
+  locations, editor conflict guards, and rejected backend operations.
 
 ## 0.6.5
 

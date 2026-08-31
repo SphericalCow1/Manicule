@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
-import { listTasks, updateTaskPriority, updateTaskStatus } from "../api.js";
+import { listTasks } from "../api.js";
 import { toErrorMessage } from "../errors.js";
-import type { TaskItem, TaskStatus } from "../types.js";
+import type { TaskItem } from "../types.js";
 
 type TaskStoreState = {
   tasks: TaskItem[];
@@ -38,48 +38,6 @@ function createTaskStore() {
           loading: false,
           error: toErrorMessage(error),
         }));
-      }
-    },
-    async updateStatus(task: TaskItem, newStatus: TaskStatus) {
-      if (task.status === newStatus) {
-        return null;
-      }
-
-      update((state) => ({ ...state, loading: true, error: null }));
-
-      try {
-        const result = await updateTaskStatus(task.path, task.line, task.status, newStatus);
-        const tasks = await listTasks();
-        set({ tasks, loading: false, error: null });
-        return result.task;
-      } catch (error) {
-        update((state) => ({
-          ...state,
-          loading: false,
-          error: toErrorMessage(error),
-        }));
-        return null;
-      }
-    },
-    async updatePriority(task: TaskItem, priority: string | null) {
-      if (task.priority === priority) {
-        return null;
-      }
-
-      update((state) => ({ ...state, loading: true, error: null }));
-
-      try {
-        const result = await updateTaskPriority(task.path, task.line, priority);
-        const tasks = await listTasks();
-        set({ tasks, loading: false, error: null });
-        return result.task;
-      } catch (error) {
-        update((state) => ({
-          ...state,
-          loading: false,
-          error: toErrorMessage(error),
-        }));
-        return null;
       }
     },
   };

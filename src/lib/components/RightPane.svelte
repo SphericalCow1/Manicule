@@ -2,22 +2,21 @@
   import ErrorDialog from "./ErrorDialog.svelte";
   import MarkdownView from "./MarkdownView.svelte";
   import LinkedReferences from "./LinkedReferences.svelte";
-  import { toggleCheckbox, updateTaskPriority, updateTaskStatus } from "../api";
-  import { appUndoStore } from "../stores/appUndo";
   import { editorSessionStore } from "../stores/editorSession";
   import { mainViewStore } from "../stores/mainView";
+  import { mutationOperations } from "../stores/mutationOperations";
   import { rightPaneStore } from "../stores/rightPane";
-  import { taskStore } from "../stores/tasks";
-  import { playTaskDoneSound } from "../taskCompletionSound";
   import { workspaceStore } from "../stores/workspace";
   import type { BacklinkView } from "../types";
 
   let lastPagePath: string | null = null;
   let missingLinkPath: string | null = null;
+  let mutationError: string | null = null;
 
   $: if ($rightPaneStore.path !== lastPagePath) {
     lastPagePath = $rightPaneStore.path;
     missingLinkPath = null;
+    mutationError = null;
   }
 
   function openWikiTarget(target: string) {
@@ -54,6 +53,7 @@
   }
 
   function closeErrorDialog() {
+    mutationError = null;
     rightPaneStore.clearError();
   }
 
@@ -91,39 +91,8 @@
   }
 
   async function toggleCheckboxForPath(path: string | null, line: number, previousChecked: boolean) {
-    if (!path) {
-      return;
-    }
-
-    if ($editorSessionStore.path === path) {
-      isolateMiddleEditorHistory();
-      const changed = editorSessionStore.toggleCheckboxLine(line);
-      if (changed) {
-        const saved = await editorSessionStore.save();
-        if (saved) {
-          appUndoStore.push({
-            kind: "checkbox",
-            path,
-            line,
-            beforeChecked: previousChecked,
-            afterChecked: !previousChecked,
-          });
-          isolateMiddleEditorHistory();
-        }
-      }
-      await rightPaneStore.refresh();
-      return;
-    }
-
-    const result = await toggleCheckbox(path, line);
-    appUndoStore.push({
-      kind: "checkbox",
-      path: result.path,
-      line: result.line,
-      beforeChecked: previousChecked,
-      afterChecked: result.checked,
-    });
-    await rightPaneStore.refresh();
+    const result = await mutationOperations.toggleCheckbox(path, line, previousChecked);
+    mutationError = result.error;
   }
 
   async function changeTaskStatusForPath(
@@ -132,56 +101,13 @@
     currentStatus: string,
     nextStatus: string,
   ) {
-    if (!path || currentStatus === nextStatus) {
-      return;
-    }
-
-    if ($editorSessionStore.path === path) {
-      isolateMiddleEditorHistory();
-      const changed = editorSessionStore.setTaskStatusLine(
-        line,
-        currentStatus,
-        nextStatus,
-        $workspaceStore.taskStates,
-      );
-      if (changed) {
-        const saved = await editorSessionStore.save();
-        if (saved) {
-          appUndoStore.push({
-            kind: "task-status",
-            path,
-            line,
-            beforeStatus: currentStatus,
-            afterStatus: nextStatus,
-          });
-          isolateMiddleEditorHistory();
-          playTaskDoneSound(
-            nextStatus,
-            $workspaceStore.taskStates,
-            $workspaceStore.taskDoneSoundEnabled,
-          );
-        }
-      }
-      await rightPaneStore.refresh();
-      void taskStore.refresh();
-      return;
-    }
-
-    const result = await updateTaskStatus(path, line, currentStatus, nextStatus);
-    appUndoStore.push({
-      kind: "task-status",
-      path: result.task.path,
-      line: result.task.line,
-      beforeStatus: currentStatus,
-      afterStatus: nextStatus,
-    });
-    await rightPaneStore.refresh();
-    void taskStore.refresh();
-    playTaskDoneSound(
+    const result = await mutationOperations.setTaskStatus(
+      path,
+      line,
+      currentStatus,
       nextStatus,
-      $workspaceStore.taskStates,
-      $workspaceStore.taskDoneSoundEnabled,
     );
+    mutationError = result.error;
   }
 
   async function changeTaskPriorityForPath(
@@ -190,53 +116,13 @@
     currentPriority: string | null,
     nextPriority: string | null,
   ) {
-    if (!path) {
-      return;
-    }
-
-    if (currentPriority === nextPriority) {
-      return;
-    }
-
-    if ($editorSessionStore.path === path) {
-      isolateMiddleEditorHistory();
-      const changed = editorSessionStore.setTaskPriorityLine(
-        line,
-        nextPriority,
-        $workspaceStore.taskStates,
-      );
-      if (changed) {
-        const saved = await editorSessionStore.save();
-        if (saved) {
-          appUndoStore.push({
-            kind: "task-priority",
-            path,
-            line,
-            beforePriority: currentPriority,
-            afterPriority: nextPriority,
-          });
-          isolateMiddleEditorHistory();
-        }
-      }
-      await rightPaneStore.refresh();
-      void taskStore.refresh();
-      return;
-    }
-
-    const result = await updateTaskPriority(path, line, nextPriority);
-    appUndoStore.push({
-      kind: "task-priority",
-      path: result.task.path,
-      line: result.task.line,
-      beforePriority: currentPriority,
-      afterPriority: nextPriority,
-    });
-    await rightPaneStore.refresh();
-    void taskStore.refresh();
-  }
-
-  function isolateMiddleEditorHistory() {
-    window.dispatchEvent(new CustomEvent("semtags-editor-isolate-history"));
+    const result = await mutationOperations.setTaskPriority(
+      path,
+      line,
+      currentPriority,
+      nextPriority,
+    );
+    mutationError = result.error;
   }
 </script>
 
@@ -282,7 +168,7 @@
   </div>
   <ErrorDialog
     title="Right Pane Error"
-    message={$rightPaneStore.error}
+    message={mutationError ?? $rightPaneStore.error}
     onClose={closeErrorDialog}
   />
 

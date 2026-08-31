@@ -14,7 +14,7 @@ type EditorChangeOperation = {
   updatedAt: number;
 };
 
-type TaskStatusOperation = {
+export type TaskStatusOperation = {
   kind: "task-status";
   path: string;
   line: number;
@@ -22,7 +22,7 @@ type TaskStatusOperation = {
   afterStatus: string;
 };
 
-type TaskPriorityOperation = {
+export type TaskPriorityOperation = {
   kind: "task-priority";
   path: string;
   line: number;
@@ -30,7 +30,7 @@ type TaskPriorityOperation = {
   afterPriority: string | null;
 };
 
-type CheckboxOperation = {
+export type CheckboxOperation = {
   kind: "checkbox";
   path: string;
   line: number;
@@ -40,6 +40,11 @@ type CheckboxOperation = {
 
 type AppUndoOperation =
   | EditorChangeOperation
+  | TaskStatusOperation
+  | TaskPriorityOperation
+  | CheckboxOperation;
+
+export type AppUndoMutationOperation =
   | TaskStatusOperation
   | TaskPriorityOperation
   | CheckboxOperation;
@@ -125,7 +130,7 @@ export function createAppUndoStore(dependencies: AppUndoDependencies = defaultDe
     clear() {
       set(initialState);
     },
-    push(operation: Exclude<AppUndoOperation, EditorChangeOperation>) {
+    push(operation: AppUndoMutationOperation) {
       update((state) =>
         withLabels({
           ...state,

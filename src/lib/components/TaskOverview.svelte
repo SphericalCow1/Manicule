@@ -4,11 +4,10 @@
   import ErrorDialog from "./ErrorDialog.svelte";
   import { keepContextMenuInViewport } from "../contextMenuPosition";
   import { clickMenuMnemonic } from "../menuMnemonics";
-  import { playTaskDoneSound } from "../taskCompletionSound";
   import { taskColorStyle } from "../taskColors";
-  import { appUndoStore } from "../stores/appUndo";
   import { editorSessionStore } from "../stores/editorSession";
   import { mainViewStore } from "../stores/mainView";
+  import { mutationOperations } from "../stores/mutationOperations";
   import { rightPaneStore } from "../stores/rightPane";
   import { taskStore } from "../stores/tasks";
   import { workspaceStore } from "../stores/workspace";
@@ -269,74 +268,17 @@
       return;
     }
 
-    if (
-      $editorSessionStore.path === task.path &&
-      ($editorSessionStore.dirty || $editorSessionStore.saving || $editorSessionStore.conflict)
-    ) {
-      localError = "Save or resolve the current editor page before changing this task status.";
-      return;
-    }
-
     taskContextMenu = null;
     localError = null;
     updatingTaskKey = taskKey(task);
-
-    if ($editorSessionStore.path === task.path) {
-      isolateMiddleEditorHistory();
-      const changed = editorSessionStore.setTaskStatusLine(
-        task.line,
-        task.status,
-        newStatus,
-        $workspaceStore.taskStates,
-      );
-      if (!changed) {
-        localError = `Line ${task.line} is not a recognized task. Refresh tasks.`;
-        updatingTaskKey = null;
-        return;
-      }
-      const saved = await editorSessionStore.save();
-      if (!saved) {
-        localError = $editorSessionStore.error ?? "Task status could not be saved.";
-        updatingTaskKey = null;
-        return;
-      }
-      await taskStore.refresh();
-      await rightPaneStore.refresh();
-      isolateMiddleEditorHistory();
-      appUndoStore.push({
-        kind: "task-status",
-        path: task.path,
-        line: task.line,
-        beforeStatus: task.status,
-        afterStatus: newStatus,
-      });
-      playTaskDoneSound(
-        newStatus,
-        $workspaceStore.taskStates,
-        $workspaceStore.taskDoneSoundEnabled,
-      );
-      updatingTaskKey = null;
-      return;
-    }
-
-    const updated = await taskStore.updateStatus(task, newStatus);
+    const result = await mutationOperations.setTaskStatus(
+      task.path,
+      task.line,
+      task.status,
+      newStatus,
+    );
+    localError = result.error;
     updatingTaskKey = null;
-
-    if (updated) {
-      await rightPaneStore.refresh();
-      appUndoStore.push({
-        kind: "task-status",
-        path: task.path,
-        line: task.line,
-        beforeStatus: task.status,
-        afterStatus: newStatus,
-      });
-      playTaskDoneSound(
-        newStatus,
-        $workspaceStore.taskStates,
-        $workspaceStore.taskDoneSoundEnabled,
-      );
-    }
   }
 
   async function changeTaskPriority(task: TaskItem, nextPriority: string | null) {
@@ -344,63 +286,17 @@
       return;
     }
 
-    if (
-      $editorSessionStore.path === task.path &&
-      ($editorSessionStore.dirty || $editorSessionStore.saving || $editorSessionStore.conflict)
-    ) {
-      localError = "Save or resolve the current editor page before changing this task priority.";
-      return;
-    }
-
     taskContextMenu = null;
     localError = null;
     updatingTaskKey = taskKey(task);
-
-    if ($editorSessionStore.path === task.path) {
-      isolateMiddleEditorHistory();
-      const changed = editorSessionStore.setTaskPriorityLine(
-        task.line,
-        nextPriority,
-        $workspaceStore.taskStates,
-      );
-      if (!changed) {
-        localError = `Line ${task.line} is not a recognized task. Refresh tasks.`;
-        updatingTaskKey = null;
-        return;
-      }
-      const saved = await editorSessionStore.save();
-      if (!saved) {
-        localError = $editorSessionStore.error ?? "Task priority could not be saved.";
-        updatingTaskKey = null;
-        return;
-      }
-      await taskStore.refresh();
-      await rightPaneStore.refresh();
-      isolateMiddleEditorHistory();
-      appUndoStore.push({
-        kind: "task-priority",
-        path: task.path,
-        line: task.line,
-        beforePriority: task.priority,
-        afterPriority: nextPriority,
-      });
-      updatingTaskKey = null;
-      return;
-    }
-
-    const updated = await taskStore.updatePriority(task, nextPriority);
+    const result = await mutationOperations.setTaskPriority(
+      task.path,
+      task.line,
+      task.priority,
+      nextPriority,
+    );
+    localError = result.error;
     updatingTaskKey = null;
-
-    if (updated) {
-      await rightPaneStore.refresh();
-      appUndoStore.push({
-        kind: "task-priority",
-        path: task.path,
-        line: task.line,
-        beforePriority: task.priority,
-        afterPriority: nextPriority,
-      });
-    }
   }
 
   function openTaskContextMenu(task: TaskItem, event: MouseEvent | KeyboardEvent) {
@@ -447,10 +343,6 @@
 
   function refreshTasks() {
     void taskStore.refresh();
-  }
-
-  function isolateMiddleEditorHistory() {
-    window.dispatchEvent(new CustomEvent("semtags-editor-isolate-history"));
   }
 
   function applyTaskOverviewConfig(config: TaskOverviewConfig) {
