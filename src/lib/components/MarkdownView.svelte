@@ -94,7 +94,7 @@
     ),
     taskRender.priorityTokens,
   );
-  $: highlightKey = highlightedLine ? `${highlightToken}:${highlightedLine}:${rendered}` : "";
+  $: highlightKey = highlightedLine ? `${highlightToken}:${highlightedLine}` : "";
   $: if (markdownElement && highlightKey !== lastHighlightKey) {
     lastHighlightKey = highlightKey;
     if (highlightedLine) {
