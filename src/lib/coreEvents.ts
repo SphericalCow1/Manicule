@@ -7,6 +7,7 @@ import {
 } from "./api";
 import { confirm as confirmDialog, message, open } from "@tauri-apps/plugin-dialog";
 import { get } from "svelte/store";
+import { runUserAction } from "./stores/appErrors.js";
 import { appUndoStore } from "./stores/appUndo";
 import { editorSessionStore } from "./stores/editorSession";
 import { editorModeStore } from "./stores/editorMode";
@@ -61,46 +62,53 @@ export async function setupCoreEvents() {
     await taskStore.refresh();
   });
 
-  await onCoreEvent("menu-open-workspace", async () => {
-    await openWorkspaceFromDialog();
-  });
+  await onCoreEvent(
+    "menu-open-workspace",
+    userAction("Could not open the workspace folder dialog", openWorkspaceFromDialog),
+  );
 
-  await onCoreEvent("menu-new-file", async () => {
-    const workspace = get(workspaceStore);
-    if (!workspace.root) {
-      await message("Open a workspace before creating a file.", {
-        title: "Semtags",
-        kind: "warning",
-      });
-      return;
-    }
+  await onCoreEvent(
+    "menu-new-file",
+    userAction("Could not create a new file", async () => {
+      const workspace = get(workspaceStore);
+      if (!workspace.root) {
+        await message("Open a workspace before creating a file.", {
+          title: "Semtags",
+          kind: "warning",
+        });
+        return;
+      }
 
-    window.dispatchEvent(new CustomEvent("semtags-new-page", { detail: { folderPath: "" } }));
-  });
+      window.dispatchEvent(new CustomEvent("semtags-new-page", { detail: { folderPath: "" } }));
+    }),
+  );
 
-  await onCoreEvent("menu-close-workspace", async () => {
-    const editor = get(editorSessionStore);
-    if (editor.saving) {
-      await message("Wait for the current save to finish before closing the workspace.", {
-        title: "Semtags",
-        kind: "warning",
-      });
-      return;
-    }
+  await onCoreEvent(
+    "menu-close-workspace",
+    userAction("Could not close the workspace", async () => {
+      const editor = get(editorSessionStore);
+      if (editor.saving) {
+        await message("Wait for the current save to finish before closing the workspace.", {
+          title: "Semtags",
+          kind: "warning",
+        });
+        return;
+      }
 
-    if (
-      (editor.dirty || editor.conflict) &&
-      !(await confirmDialog("Close workspace and discard unsaved editor changes?", {
-        title: "Semtags",
-        kind: "warning",
-      }))
-    ) {
-      return;
-    }
+      if (
+        (editor.dirty || editor.conflict) &&
+        !(await confirmDialog("Close workspace and discard unsaved editor changes?", {
+          title: "Semtags",
+          kind: "warning",
+        }))
+      ) {
+        return;
+      }
 
-    await closeWorkspace();
-    clearWorkspaceUi();
-  });
+      await closeWorkspace();
+      clearWorkspaceUi();
+    }),
+  );
 
   await onCoreEvent("menu-save", async () => {
     await editorSessionStore.save();
@@ -111,9 +119,15 @@ export async function setupCoreEvents() {
   setupTaskOverviewMenuLabel();
   window.addEventListener("semtags-editor-history-availability", handleEditorHistoryAvailability);
 
-  await onCoreEvent("menu-undo", () => handleUndoRequest("menu"));
+  await onCoreEvent(
+    "menu-undo",
+    userAction("Could not undo the last action", () => handleUndoRequest("menu")),
+  );
 
-  await onCoreEvent("menu-redo", () => handleRedoRequest("menu"));
+  await onCoreEvent(
+    "menu-redo",
+    userAction("Could not redo the last action", () => handleRedoRequest("menu")),
+  );
 
   window.addEventListener("keydown", handleGlobalUndoKeydown, { capture: true });
   window.addEventListener("keydown", handleGlobalViewKeydown, { capture: true });
@@ -249,10 +263,20 @@ function handleGlobalUndoKeydown(event: KeyboardEvent) {
   event.stopImmediatePropagation();
 
   if (isRedoShortcut(event)) {
-    void handleRedoRequest("keyboard");
+    void runUserAction("Could not redo the last action", () =>
+      handleRedoRequest("keyboard"),
+    );
   } else {
-    void handleUndoRequest("keyboard");
+    void runUserAction("Could not undo the last action", () =>
+      handleUndoRequest("keyboard"),
+    );
   }
+}
+
+function userAction(context: string, action: () => void | Promise<void>) {
+  return async () => {
+    await runUserAction(context, action);
+  };
 }
 
 function handleGlobalViewKeydown(event: KeyboardEvent) {

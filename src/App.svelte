@@ -2,6 +2,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { onDestroy, onMount } from "svelte";
   import EditorPane from "./lib/components/EditorPane.svelte";
+  import ErrorDialog from "./lib/components/ErrorDialog.svelte";
   import FileTree from "./lib/components/FileTree.svelte";
   import RightPane from "./lib/components/RightPane.svelte";
   import TaskOverview from "./lib/components/TaskOverview.svelte";
@@ -10,6 +11,7 @@
   import { trapDialogFocus } from "./lib/dialogFocus";
   import { journalPath } from "./lib/journals";
   import { keyboardShortcuts } from "./lib/keyboardShortcuts";
+  import { appErrorStore, runUserAction } from "./lib/stores/appErrors";
   import { editorSessionStore } from "./lib/stores/editorSession";
   import { mainViewStore } from "./lib/stores/mainView";
   import { rightPaneStore } from "./lib/stores/rightPane";
@@ -37,7 +39,7 @@
   let sessionSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
-    void setupCoreEvents();
+    void runUserAction("Could not initialize native application events", setupCoreEvents);
     void workspaceStore.openLastWorkspace();
     void loadAppVersion();
     loadLayout();
@@ -93,7 +95,9 @@
     }
 
     lastWindowTitle = title;
-    void setWindowTitle(title);
+    void runUserAction("Could not update the application window title", () =>
+      setWindowTitle(title),
+    );
   }
 
   function openAboutDialog() {
@@ -293,6 +297,12 @@
   ></button>
   <RightPane />
 </main>
+
+<ErrorDialog
+  title="Semtags Error"
+  message={$appErrorStore.message}
+  onClose={() => appErrorStore.clear()}
+/>
 
 {#if showAbout}
   <div

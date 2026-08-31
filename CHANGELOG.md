@@ -32,6 +32,8 @@ Changes since `v0.6.5`.
 - Checkbox, task-status, and task-priority changes from rendered views and Task
   Overview now use one shared mutation policy for editor routing, saving, undo,
   refresh, and completion sound.
+- Direct native and infrastructure actions now use one app-wide popup error
+  path, while store-owned errors remain on their existing component paths.
 
 ### Fixed
 
@@ -44,6 +46,9 @@ Changes since `v0.6.5`.
   unresolved editor conflict, while preserving unsaved editor text through the
   shared editor-backed mutation path.
 - Checkbox changes now refresh the task list as well as the rendered right pane.
+- Native workspace dialogs, workspace closing, undo/redo warnings, event setup,
+  and window-title failures no longer disappear as unhandled promise
+  rejections.
 
 ### Tests
 
@@ -52,6 +57,8 @@ Changes since `v0.6.5`.
   sound gating.
 - Added direct coverage for shared mutation routing, canonical backend task
   locations, editor conflict guards, and rejected backend operations.
+- Added coverage that rejected direct actions are reported once with context
+  and store-handled outcomes do not produce duplicate popups.
 
 ## 0.6.5
 

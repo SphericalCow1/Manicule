@@ -309,6 +309,8 @@ Stores:
 - `editorMode.ts`: source versus live preview editing mode
 - `tasks.ts`: task overview data and updates
 - `appUndo.ts`: global undo/redo actions outside CodeMirror-local editing
+- `appErrors.ts`: app-wide popup reporting for otherwise-unhandled direct user
+  actions and infrastructure calls
 - `mutationOperations.ts`: shared checkbox, task status, and task priority
   orchestration for rendered views and Task Overview
 - `theme.ts`: light and dark appearance state
@@ -373,6 +375,23 @@ menu state but do not duplicate this orchestration.
 
 The native Edit menu is synchronized from the frontend so menu labels and
 enabled states reflect the current undo/redo action.
+
+## Async Error Ownership
+
+Errors are surfaced at the narrowest layer that owns the operation:
+
+- Store actions catch operational failures and expose them through their own
+  state for the nearest `ErrorDialog`. Callers must not wrap these actions in a
+  second reporter because that would create duplicate or misleading popups.
+- Direct native user actions and infrastructure calls without a store-owned
+  error path run through `runUserAction` in `src/lib/stores/appErrors.ts`. A
+  rejected promise is converted to one contextual app-wide popup.
+
+The app-wide boundary currently covers native event initialization, workspace
+picker and close actions, undo/redo warnings, and window-title updates. Menu
+label synchronization and completion-sound playback are intentional
+best-effort effects; their failures do not invalidate the completed user
+operation and remain non-blocking.
 
 ## Watcher And External Changes
 
@@ -459,7 +478,8 @@ Frontend tests:
   parsing, checkboxes, journal path handling, editor block commands, editor
   live preview behavior, editor sessions, application undo ordering, shared
   mutation orchestration, task completion sound gating, line wrapping, and
-  version metadata.
+  version metadata. Direct async action errors are covered for contextual,
+  single reporting without re-reporting store-handled outcomes.
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 
