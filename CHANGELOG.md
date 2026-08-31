@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.7
+
+Changes since `v0.6.5`.
 
 ### Changed
 
@@ -21,6 +23,17 @@
   prefixes across editing, rendering, wrapping, tasks, and undo validation.
 - Shared parser contracts now cover CRLF, mixed indentation, conflicting
   priority cookies, nested emphasis, and large deeply nested blocks.
+- Native theme and task-overview menu actions now describe the view or mode they
+  will switch to.
+- The task-overview button now switches back to the editor when the overview is
+  already open.
+- Favorites and Recents now use the same right-pane action emphasis as the file
+  browser.
+
+### Fixed
+
+- Right-pane content refreshes no longer replay an existing source-line
+  highlight or scroll the highlighted line back into view.
 
 ## 0.6.5
 

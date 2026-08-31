@@ -1,6 +1,6 @@
 [package]
 name = "semtags"
-version = "0.6.5"
+version = "0.6.7"
 description = "A local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags."
 authors = ["Jens"]
 license = "AGPL-3.0-only"
