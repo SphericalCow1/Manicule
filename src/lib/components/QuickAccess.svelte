@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { keepContextMenuInViewport } from "../contextMenuPosition";
-  import { clickMenuMnemonic } from "../menuMnemonics";
+  import ContextMenuShell from "./ContextMenuShell.svelte";
 
   type FavoriteItem = {
     kind: "page" | "folder";
@@ -29,7 +28,6 @@
   export let folderGlyphStyle: (path: string) => string = () => "";
 
   let contextMenu: QuickContextMenuState | null = null;
-  let menuElement: HTMLElement | null = null;
 
   function openFavoriteContextMenu(favorite: FavoriteItem, event: MouseEvent) {
     event.preventDefault();
@@ -106,19 +104,9 @@
     contextMenu = null;
   }
 
-  function handleWindowKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      closeContextMenu();
-      return;
-    }
-
-    if (contextMenu) {
-      clickMenuMnemonic(event, menuElement);
-    }
-  }
 </script>
 
-<svelte:window on:click={closeContextMenu} on:keydown={handleWindowKeydown} />
+<svelte:window on:click={closeContextMenu} />
 
 <section class="quick-access" aria-label="Quick access">
   <div class="quick-section">
@@ -192,15 +180,7 @@
 </section>
 
 {#if contextMenu}
-  <div
-    class="context-menu"
-    use:keepContextMenuInViewport={{ x: contextMenu.x, y: contextMenu.y }}
-    style:left={`${contextMenu.x}px`}
-    style:top={`${contextMenu.y}px`}
-    role="menu"
-    tabindex="-1"
-    bind:this={menuElement}
-  >
+  <ContextMenuShell x={contextMenu.x} y={contextMenu.y} onClose={closeContextMenu}>
     <button type="button" role="menuitem" data-menu-key="e" on:click={openContextItemInEditor}>
       Open in <span class="menu-mnemonic">e</span>ditor
     </button>
@@ -232,5 +212,5 @@
     <button type="button" role="menuitem" data-menu-key="f" on:click={removeContextItem}>
       Remove <span class="menu-mnemonic">f</span>rom {contextMenu.source === "favorite" ? "Favorites" : "Recents"}
     </button>
-  </div>
+  </ContextMenuShell>
 {/if}

@@ -23,7 +23,7 @@
     undoDepth,
   } from "@codemirror/commands";
   import { onDestroy, onMount, tick } from "svelte";
-  import { keepContextMenuInViewport } from "../contextMenuPosition";
+  import ContextMenuShell from "./ContextMenuShell.svelte";
   import {
     applyInlineMarkdownFormat,
     canApplyInlineMarkdownFormat,
@@ -40,7 +40,6 @@
     foldableBlockLevelAtLine,
     foldedBlockAtLine,
   } from "../editorBlockFolding";
-  import { clickMenuMnemonic } from "../menuMnemonics";
   import { blockEditingKeymap } from "../editorBlockCommands";
   import { listWrapIndentExtension } from "../editorLineWrapping";
   import {
@@ -97,7 +96,6 @@
   let host: HTMLDivElement;
   let view: EditorView | null = null;
   let editorContextMenu: EditorContextMenu | null = null;
-  let menuElement: HTMLElement | null = null;
   let applyingExternalValue = false;
   let applyingHistoryCommand = false;
   let lastDocumentPath: string | null = null;
@@ -403,12 +401,6 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (editorContextMenu) {
-      if (clickMenuMnemonic(event, menuElement)) {
-        return;
-      }
-    }
-
     if (event.key !== "Escape") {
       return;
     }
@@ -1101,14 +1093,11 @@
   {@const blockIsFolded = currentSourceLineBlockIsFolded()}
   {@const currentPriority = currentTaskPriority()}
   {@const contextLink = editorContextMenu.link}
-  <div
-    class="editor-link-menu"
-    use:keepContextMenuInViewport={{ x: editorContextMenu.x, y: editorContextMenu.y }}
-    style:left={`${editorContextMenu.x}px`}
-    style:top={`${editorContextMenu.y}px`}
-    role="menu"
-    tabindex="-1"
-    bind:this={menuElement}
+  <ContextMenuShell
+    className="editor-link-menu"
+    x={editorContextMenu.x}
+    y={editorContextMenu.y}
+    onClose={closeEditorContextMenu}
   >
     {#if editorContextMenu.selection && hasSingleLineFormatSelection()}
       <div class="editor-menu-flyout" role="menuitem" tabindex="0">
@@ -1278,5 +1267,5 @@
         </div>
       </div>
     {/if}
-  </div>
+  </ContextMenuShell>
 {/if}

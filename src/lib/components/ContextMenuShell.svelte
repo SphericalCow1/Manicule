@@ -1,5 +1,10 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { keepContextMenuInViewport } from "../contextMenuPosition";
+  import {
+    focusFirstMenuItem,
+    handleContextMenuNavigation,
+  } from "../contextMenuKeyboard";
   import { clickMenuMnemonic } from "../menuMnemonics";
 
   export let x: number;
@@ -10,17 +15,18 @@
   let menuElement: HTMLElement | null = null;
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      onClose();
+    if (handleContextMenuNavigation(event, menuElement, onClose)) {
       return;
     }
 
     clickMenuMnemonic(event, menuElement);
   }
-</script>
 
-<svelte:window on:keydown={handleWindowKeydown} />
+  onMount(() => {
+    const frame = window.requestAnimationFrame(() => focusFirstMenuItem(menuElement));
+    return () => window.cancelAnimationFrame(frame);
+  });
+</script>
 
 <div
   class={className}
@@ -30,6 +36,7 @@
   role="menu"
   tabindex="-1"
   bind:this={menuElement}
+  on:keydown={handleWindowKeydown}
 >
   <slot />
 </div>

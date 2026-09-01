@@ -1166,6 +1166,13 @@ textarea {
   background: var(--surface-hover);
 }
 
+.context-menu button:focus-visible,
+.editor-link-menu button:focus-visible {
+  outline: 2px solid var(--accent-border);
+  outline-offset: -2px;
+  background: var(--surface-hover);
+}
+
 .context-menu button:disabled {
   color: var(--text-faint);
 }

@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import MarkdownIt from "markdown-it";
+  import ContextMenuShell from "./ContextMenuShell.svelte";
   import ErrorDialog from "./ErrorDialog.svelte";
-  import { keepContextMenuInViewport } from "../contextMenuPosition";
-  import { clickMenuMnemonic } from "../menuMnemonics";
   import { taskColorStyle } from "../taskColors";
   import { linkOperations } from "../stores/linkOperations";
   import { mutationOperations } from "../stores/mutationOperations";
@@ -30,7 +29,6 @@
     y: number;
     task: TaskItem;
   } | null = null;
-  let menuElement: HTMLElement | null = null;
   const inlineMarkdown = new MarkdownIt({
     breaks: false,
     html: false,
@@ -315,16 +313,6 @@
     taskContextMenu = null;
   }
 
-  function handleWindowKeydown(event: KeyboardEvent) {
-    if (taskContextMenu && clickMenuMnemonic(event, menuElement)) {
-      return;
-    }
-
-    if (event.key === "Escape") {
-      closeTaskContextMenu();
-    }
-  }
-
   function editTask(task: TaskItem) {
     void linkOperations.open(task.path, "editor", { line: task.line });
   }
@@ -411,10 +399,7 @@
   });
 </script>
 
-<svelte:window
-  on:click={closeTaskContextMenu}
-  on:keydown={handleWindowKeydown}
-/>
+<svelte:window on:click={closeTaskContextMenu} />
 
 <section class="task-overview" aria-label="Task overview">
   <header class="task-overview-header">
@@ -544,14 +529,11 @@
 
 {#if taskContextMenu}
   {@const menu = taskContextMenu}
-  <div
-    class="editor-link-menu"
-    use:keepContextMenuInViewport={{ x: menu.x, y: menu.y }}
-    style:left={`${menu.x}px`}
-    style:top={`${menu.y}px`}
-    role="menu"
-    tabindex="-1"
-    bind:this={menuElement}
+  <ContextMenuShell
+    className="editor-link-menu"
+    x={menu.x}
+    y={menu.y}
+    onClose={closeTaskContextMenu}
   >
     <details class="editor-submenu" open>
       <summary>Task</summary>
@@ -603,5 +585,5 @@
         </div>
       </div>
     </details>
-  </div>
+  </ContextMenuShell>
 {/if}
