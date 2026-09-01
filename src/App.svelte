@@ -301,6 +301,7 @@
 <ErrorDialog
   title="Semtags Error"
   message={$appErrorStore.message}
+  detail={$appErrorStore.detail}
   onClose={() => appErrorStore.clear()}
 />
 

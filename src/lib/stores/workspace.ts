@@ -21,7 +21,7 @@ import {
   saveTaskOverviewConfig as saveTaskOverviewConfigCommand,
   saveWorkspaceSessionConfig,
 } from "../api.js";
-import { toErrorMessage } from "../errors.js";
+import { toErrorPresentation } from "../errors.js";
 import { DEFAULT_TASK_STATE_COLORS } from "../taskColors.js";
 import { DEFAULT_TASK_STATES } from "../taskKeywords.js";
 import { themeStore } from "./theme.js";
@@ -55,7 +55,16 @@ const DEFAULT_BACKLINK_VIEW_CONFIG: BacklinkViewConfig = {
 const DEFAULT_THEME_MODE: ThemeMode = "light";
 
 function configSaveError(label: string, error: unknown) {
-  return `Could not save ${label} to .config: ${toErrorMessage(error)}`;
+  const presentation = toErrorPresentation(error);
+  return {
+    error: `Could not save ${label} to .config: ${presentation.message}`,
+    errorDetail: presentation.detail,
+  };
+}
+
+function workspaceError(error: unknown) {
+  const presentation = toErrorPresentation(error);
+  return { error: presentation.message, errorDetail: presentation.detail };
 }
 
 type WorkspaceStoreState = {
@@ -81,6 +90,7 @@ type WorkspaceStoreState = {
   lastRightPanePath: string | null;
   loading: boolean;
   error: string | null;
+  errorDetail: string | null;
 };
 
 const initialState: WorkspaceStoreState = {
@@ -106,6 +116,7 @@ const initialState: WorkspaceStoreState = {
   lastRightPanePath: null,
   loading: false,
   error: null,
+  errorDetail: null,
 };
 
 function createWorkspaceStore() {
@@ -118,13 +129,13 @@ function createWorkspaceStore() {
       themeStore.set(DEFAULT_THEME_MODE);
     },
     clearError() {
-      update((state) => ({ ...state, error: null }));
+      update((state) => ({ ...state, error: null, errorDetail: null }));
     },
     async open(path: string) {
       const trimmed = path.trim();
 
       if (!trimmed) {
-        update((state) => ({ ...state, error: "Enter a workspace path." }));
+        update((state) => ({ ...state, error: "Enter a workspace path.", errorDetail: null }));
         return;
       }
 
@@ -160,12 +171,13 @@ function createWorkspaceStore() {
           lastRightPanePath: workspace.lastRightPanePath ?? null,
           loading: false,
           error: null,
+          errorDetail: null,
         });
       } catch (error) {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
       }
     },
@@ -182,7 +194,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return false;
       }
@@ -191,7 +203,7 @@ function createWorkspaceStore() {
       const trimmed = path.trim();
 
       if (!trimmed) {
-        update((state) => ({ ...state, error: "Enter a page path." }));
+        update((state) => ({ ...state, error: "Enter a page path.", errorDetail: null }));
         return null;
       }
 
@@ -212,7 +224,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -221,7 +233,7 @@ function createWorkspaceStore() {
       const trimmed = path.trim();
 
       if (!trimmed) {
-        update((state) => ({ ...state, error: "Enter a folder path." }));
+        update((state) => ({ ...state, error: "Enter a folder path.", errorDetail: null }));
         return null;
       }
 
@@ -240,7 +252,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -267,7 +279,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -298,7 +310,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -321,7 +333,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -344,7 +356,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -367,7 +379,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -390,7 +402,7 @@ function createWorkspaceStore() {
         update((state) => ({
           ...state,
           loading: false,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
         return null;
       }
@@ -402,7 +414,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: toErrorMessage(error),
+          ...workspaceError(error),
         }));
       }
     },
@@ -416,7 +428,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("task overview settings", error),
+          ...configSaveError("task overview settings", error),
         }));
         return null;
       }
@@ -431,7 +443,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("backlink view settings", error),
+          ...configSaveError("backlink view settings", error),
         }));
         return null;
       }
@@ -452,7 +464,7 @@ function createWorkspaceStore() {
           }
           return {
             ...state,
-            error: configSaveError("theme setting", error),
+            ...configSaveError("theme setting", error),
           };
         });
         return null;
@@ -479,7 +491,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("page sort settings", error),
+          ...configSaveError("page sort settings", error),
         }));
         return null;
       }
@@ -498,7 +510,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("manual page order", error),
+          ...configSaveError("manual page order", error),
         }));
         return null;
       }
@@ -517,7 +529,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("folder colors", error),
+          ...configSaveError("folder colors", error),
         }));
         return null;
       }
@@ -530,7 +542,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("workspace session", error),
+          ...configSaveError("workspace session", error),
         }));
       }
     },
@@ -552,7 +564,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("navigation settings", error),
+          ...configSaveError("navigation settings", error),
         }));
         return null;
       }
@@ -572,7 +584,7 @@ function createWorkspaceStore() {
       } catch (error) {
         update((state) => ({
           ...state,
-          error: configSaveError("navigation layout", error),
+          ...configSaveError("navigation layout", error),
         }));
         return null;
       }

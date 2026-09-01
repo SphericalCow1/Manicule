@@ -1,11 +1,12 @@
 import { writable } from "svelte/store";
-import { toErrorMessage } from "../errors.js";
+import { toErrorPresentation } from "../errors.js";
 
 type AppErrorState = {
   message: string | null;
+  detail: string | null;
 };
 
-const initialState: AppErrorState = { message: null };
+const initialState: AppErrorState = { message: null, detail: null };
 
 function createAppErrorStore() {
   const { subscribe, set } = writable<AppErrorState>(initialState);
@@ -15,24 +16,25 @@ function createAppErrorStore() {
     clear() {
       set(initialState);
     },
-    show(message: string) {
-      set({ message });
+    show(message: string, detail: string | null = null) {
+      set({ message, detail });
     },
   };
 }
 
-export type ActionErrorReporter = (message: string) => void;
+export type ActionErrorReporter = (message: string, detail: string | null) => void;
 
 export async function runUserAction(
   context: string,
   action: () => unknown | Promise<unknown>,
-  reportError: ActionErrorReporter = (message) => appErrorStore.show(message),
+  reportError: ActionErrorReporter = (message, detail) => appErrorStore.show(message, detail),
 ) {
   try {
     await action();
     return true;
   } catch (error) {
-    reportError(`${context}: ${toErrorMessage(error)}`);
+    const presentation = toErrorPresentation(error);
+    reportError(`${context}: ${presentation.message}`, presentation.detail);
     return false;
   }
 }

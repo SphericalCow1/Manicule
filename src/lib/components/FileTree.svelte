@@ -35,6 +35,7 @@
   let lastRoot: string | null = null;
   let browseError: string | null = null;
   let popupError: string | null = null;
+  let popupErrorDetail: string | null = null;
   let searchQuery = "";
   let contextMenu: ContextMenuState | null = null;
   let searchResultContextMenu: SearchResultContextMenuState | null = null;
@@ -74,18 +75,25 @@
   let quickAccessPanel: HTMLElement | null = null;
   let quickAccessHeight = 220;
   let resizingQuickAccess = false;
-  let lastWorkspacePopupError: string | null = null;
+  let lastWorkspacePopupKey: string | null = null;
 
-  function showPopupError(message: string) {
+  function showPopupError(message: string, detail: string | null = null) {
     popupError = null;
+    popupErrorDetail = null;
     void tick().then(() => {
       popupError = message;
+      popupErrorDetail = detail;
     });
+  }
+
+  function workspaceDetailFor(message: string) {
+    return message === $workspaceStore.error ? $workspaceStore.errorDetail : null;
   }
 
   function closePopupError() {
     popupError = null;
-    lastWorkspacePopupError = null;
+    popupErrorDetail = null;
+    lastWorkspacePopupKey = null;
     if ($workspaceStore.error) {
       workspaceStore.clearError();
     }
@@ -194,43 +202,47 @@
 
   $: scheduleContentSearch(searchQuery, $workspaceStore.root);
 
-  $: if ($workspaceStore.error && $workspaceStore.error !== lastWorkspacePopupError) {
-    lastWorkspacePopupError = $workspaceStore.error;
-    showPopupError($workspaceStore.error);
+  $: workspacePopupKey = $workspaceStore.error
+    ? `${$workspaceStore.error}\u0000${$workspaceStore.errorDetail ?? ""}`
+    : null;
+
+  $: if ($workspaceStore.error && workspacePopupKey !== lastWorkspacePopupKey) {
+    lastWorkspacePopupKey = workspacePopupKey;
+    showPopupError($workspaceStore.error, $workspaceStore.errorDetail);
   }
 
   $: if (browseError) {
-    showPopupError(browseError);
+    showPopupError(browseError, workspaceDetailFor(browseError));
     browseError = null;
   }
 
   $: if (searchError) {
-    showPopupError(searchError);
+    showPopupError(searchError, workspaceDetailFor(searchError));
     searchError = null;
   }
 
   $: if (folderPageError) {
-    showPopupError(folderPageError);
+    showPopupError(folderPageError, workspaceDetailFor(folderPageError));
     folderPageError = null;
   }
 
   $: if (folderError) {
-    showPopupError(folderError);
+    showPopupError(folderError, workspaceDetailFor(folderError));
     folderError = null;
   }
 
   $: if (renameError) {
-    showPopupError(renameError);
+    showPopupError(renameError, workspaceDetailFor(renameError));
     renameError = null;
   }
 
   $: if (moveError) {
-    showPopupError(moveError);
+    showPopupError(moveError, workspaceDetailFor(moveError));
     moveError = null;
   }
 
   $: if (batchMoveError) {
-    showPopupError(batchMoveError);
+    showPopupError(batchMoveError, workspaceDetailFor(batchMoveError));
     batchMoveError = null;
   }
 
@@ -999,7 +1011,7 @@
     const result = await workspaceStore.deleteFolder(path);
     if (!result) {
       const message = $workspaceStore.error || "Folder could not be deleted.";
-      workspaceStore.clearError();
+      const detail = $workspaceStore.errorDetail;
       if (editorPath && editorWasInFolder) {
         await editorSessionStore.open(editorPath);
       }
@@ -1007,7 +1019,8 @@
         await rightPaneStore.open(rightPanePath);
       }
       if (notifyError) {
-        showPopupError(message);
+        workspaceStore.clearError();
+        showPopupError(message, detail);
       }
       return false;
     }
@@ -1226,8 +1239,9 @@
           : await deletePage(node.path, { confirmDelete: false });
       if (!deleted) {
         const message = $workspaceStore.error || "Selection could not be deleted.";
+        const detail = $workspaceStore.errorDetail;
         workspaceStore.clearError();
-        showPopupError(message);
+        showPopupError(message, detail);
         return;
       }
     }
@@ -2590,5 +2604,6 @@
 <ErrorDialog
   title="Semtags Error"
   message={popupError}
+  detail={popupErrorDetail}
   onClose={closePopupError}
 />

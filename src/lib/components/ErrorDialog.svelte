@@ -3,6 +3,7 @@
 
   export let title = "Error";
   export let message: string | null = null;
+  export let detail: string | null = null;
   export let onClose: () => void;
   export let primaryActionLabel: string | null = null;
   export let onPrimaryAction: (() => void) | null = null;
@@ -32,6 +33,12 @@
         <h2>{title}</h2>
         <p>{message}</p>
       </header>
+      {#if detail}
+        <details class="error-details">
+          <summary>Technical details</summary>
+          <pre>{detail}</pre>
+        </details>
+      {/if}
       <div class="dialog-actions">
         {#if secondaryActionLabel && onSecondaryAction}
           <button type="button" on:click={onSecondaryAction}>{secondaryActionLabel}</button>

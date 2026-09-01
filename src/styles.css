@@ -1325,6 +1325,31 @@ textarea {
   width: min(440px, 100%);
 }
 
+.error-details {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.error-details summary {
+  width: fit-content;
+  cursor: pointer;
+  user-select: none;
+}
+
+.error-details pre {
+  max-height: 180px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: var(--surface-pane-subtle);
+  color: inherit;
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .rename-dialog header {
   display: grid;
   gap: 4px;
