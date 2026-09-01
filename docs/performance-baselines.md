@@ -29,6 +29,7 @@ compilation are outside the measurements.
 | Operation | Median budget | Rationale |
 |---|---:|---|
 | Full reindex | 1,000 ms | Background refresh should normally finish without a prolonged stale view. |
+| One-file incremental reindex | 250 ms | An ordinary external edit should refresh derived data without interrupting interaction. |
 | Workspace search | 300 ms | Search should feel interactive after the user submits a query. |
 | Task Overview | 500 ms | Opening the overview may do more work than search but should remain responsive. |
 | One-file save recovery | 250 ms | Saving and refreshing the affected derived data should not interrupt editing. |
@@ -79,3 +80,31 @@ so incremental workspace indexing alone cannot remove that cost.
 Lock-scope changes remain conditional on measured contention after incremental
 indexing exists. Moving filesystem work outside the workspace lock without a
 version check would trade latency for stale-state races.
+
+## Sprint 4 Follow-up
+
+After adding the content snapshot and incremental watcher path, the two datasets
+that missed a baseline budget were measured again with the same environment and
+commands on 2026-09-01:
+
+| Dataset | Reindex median / slow | Search median / slow | Tasks median / slow | Incremental median / slow | Save median / slow |
+|---|---:|---:|---:|---:|---:|
+| Stress, 5,000 files | 8,478.26 / 8,614.51 ms | 130.77 / 131.27 ms | 615.55 / 655.34 ms | 62.39 / 63.51 ms | 2.99 / 6.10 ms |
+| Large page, 3.69 MB | 309.66 / 322.65 ms | 47.16 / 51.71 ms | 317.29 / 320.59 ms | 298.66 / 324.65 ms | 314.80 / 350.66 ms |
+
+Workspace search now meets its stress budget, and the normal one-file watcher
+path avoids the 8.5-second full reindex. Task Overview remains 115.55 ms over
+its median stress budget. A pre-parsed task index is deferred because the miss
+occurs at 5,000 generated task files, while the 1,000-file realistic baseline
+was already well within budget. Add that extra derived state only if real
+workspace measurements show a user-visible problem.
+
+The large-page incremental and save paths necessarily parse the complete
+changed page to keep its title and backlinks current. They remain documented
+exceptions rather than a reason to weaken index consistency.
+
+The incremental update currently runs while holding the workspace mutex. The
+measured ordinary stress update holds that operation for about 62 ms and no lock
+contention has been observed. Lock restructuring is therefore deferred. Any
+future attempt to move filesystem reads outside the lock must add a workspace
+generation or content-version check before committing derived state.

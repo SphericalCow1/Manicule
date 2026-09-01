@@ -145,10 +145,12 @@ Important backend structures:
 
 - `AppState`: process-wide application state guarded for Tauri command access
 - `WorkspaceState`: opened workspace root, workspace config, folders, page
-  index, and backlink index
+  index, backlink index, and content snapshot
 - `PageIndex`: in-memory index of Markdown pages by relative path and
   case-insensitive page key
 - `BacklinkIndex`: in-memory index of wiki-link backlinks by target page key
+- `ContentSnapshot`: disposable page content used by whole-workspace queries to
+  avoid opening every Markdown file for every search or Task Overview load
 
 Workspace state is rebuilt from disk when opening a workspace and after larger
 file operations that can affect many paths.
@@ -161,6 +163,7 @@ Top-level modules in `src-tauri/src`:
   command registration
 - `commands.rs`: page, navigation, task, and search commands
 - `config_commands.rs`: user and workspace configuration commands
+- `content_snapshot.rs`: derived Markdown content cache with disk fallback
 - `app_state.rs`: process-wide guarded application state
 - `dto.rs`: serializable types crossing the command boundary
 - `workspace_index.rs`: full workspace scan and index construction
@@ -198,6 +201,12 @@ those blocks. For every link, it stores:
 
 Indexes are intentionally in memory. They are derived data and can be rebuilt
 from the workspace files.
+
+A full reindex reads every Markdown file once and rebuilds page metadata,
+backlinks, and the content snapshot together. `WorkspaceState` methods update or
+remove those three derived representations as one operation after internal
+writes. Workspace search and Task Overview use the snapshot, with a direct disk
+read as a recovery path for a missing cache entry.
 
 ## Markdown Parsing
 
@@ -405,7 +414,18 @@ operation and remain non-blocking.
 ## Watcher And External Changes
 
 The backend starts a workspace watcher from `src-tauri/src/watcher.rs` when a
-workspace opens. It emits frontend events when Markdown files change on disk.
+workspace opens. It retains normalized Markdown paths and event kinds across a
+400 ms debounce window. Ordinary file create, modify, remove, and rename events
+incrementally update only affected pages; folder renames, ambiguous events, and
+watcher errors use a full rebuild. An incremental failure also falls back to a
+full rebuild before any frontend index event is emitted. Scanner visibility
+remains authoritative, so symlinks and ignored build directories cannot enter
+through the incremental path.
+
+The watcher ignores events from a previous workspace after the application has
+switched roots. It emits frontend events when the current workspace's derived
+state has been updated successfully.
+
 The workspace `.config` file is loaded when the workspace opens and is persisted
 through dedicated Tauri commands; external `.config` changes are not watched or
 merged while the workspace is open.

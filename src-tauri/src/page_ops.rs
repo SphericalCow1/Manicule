@@ -54,10 +54,8 @@ pub(crate) fn create_page_in_workspace(
         .map_err(|error| format!("Failed to create page '{}': {error}", markdown_path))?;
 
     let page = workspace
-        .pages
-        .insert_page(markdown_path.clone(), &content)
+        .index_page_content(markdown_path.clone(), content)
         .ok_or_else(|| "Failed to index created page".to_string())?;
-    workspace.backlinks.index_page(markdown_path, &content);
     refresh_workspace_folders(workspace)?;
 
     Ok(CreatePageResultDto {
@@ -121,8 +119,7 @@ pub(crate) fn delete_page_in_workspace(
     fs::remove_file(&absolute_path)
         .map_err(|error| format!("Failed to delete page '{}': {error}", resolved_path))?;
 
-    workspace.pages.remove_path(&resolved_path);
-    workspace.backlinks.remove_page(&resolved_path);
+    workspace.remove_indexed_page(&resolved_path);
     refresh_workspace_folders(workspace)?;
 
     Ok(DeletePageResultDto {
@@ -229,14 +226,11 @@ pub(crate) fn move_page_in_workspace(
         format!("Failed to move page '{resolved_path}' to '{target_path}': {error}")
     })?;
 
-    workspace.pages.remove_path(&resolved_path);
-    workspace.backlinks.remove_page(&resolved_path);
+    workspace.remove_indexed_page(&resolved_path);
     let page = workspace
-        .pages
-        .insert_page(target_path.clone(), &content)
+        .index_page_content(target_path.clone(), content)
         .ok_or_else(|| "Failed to index moved page".to_string())?;
     let page_path = page.path.clone();
-    workspace.backlinks.index_page(page_path.clone(), &content);
     let updated_link_count =
         rewrite_links_to_targets_with_recovery(workspace, &[(source_key, page_path)])?;
     refresh_workspace_folders(workspace)?;
@@ -327,14 +321,11 @@ pub(crate) fn rename_page_in_workspace(
         format!("Failed to rename page '{resolved_path}' to '{target_path}': {error}")
     })?;
 
-    workspace.pages.remove_path(&resolved_path);
-    workspace.backlinks.remove_page(&resolved_path);
+    workspace.remove_indexed_page(&resolved_path);
     let page = workspace
-        .pages
-        .insert_page(target_path.clone(), &content)
+        .index_page_content(target_path.clone(), content)
         .ok_or_else(|| "Failed to index renamed page".to_string())?;
     let page_path = page.path.clone();
-    workspace.backlinks.index_page(page_path.clone(), &content);
     let updated_link_count =
         rewrite_links_to_targets_with_recovery(workspace, &[(source_key, page_path)])?;
     refresh_workspace_folders(workspace)?;
@@ -448,9 +439,7 @@ fn rewrite_links_to_targets(
         fs::write(&rewrite.absolute_path, &rewrite.rewritten).map_err(|error| {
             format!("Failed to update links in '{}': {error}", rewrite.page_path)
         })?;
-        workspace
-            .backlinks
-            .index_page(rewrite.page_path, &rewrite.rewritten);
+        workspace.index_page_content(rewrite.page_path, rewrite.rewritten);
     }
 
     Ok(updated_link_count)
@@ -599,6 +588,7 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::*;
+    use crate::content_snapshot::ContentSnapshot;
     use crate::index::backlink_index::BacklinkIndex;
     use crate::index::page_index::PageIndex;
     use crate::workspace_config::WorkspaceConfig;
@@ -620,6 +610,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::from_paths(vec!["Alpha.md".to_string(), "Source.md".to_string()]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
 
         let result = rewrite_links_to_targets_with_recovery(
@@ -661,6 +652,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::default(),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
         reindex_workspace(&mut workspace).unwrap();
         fs::set_permissions(&second_source, fs::Permissions::from_mode(0o444)).unwrap();
@@ -709,6 +701,7 @@ mod tests {
             folders: vec!["projects".to_string(), "projects/archive".to_string()],
             pages: PageIndex::from_paths(vec!["Inbox.md".to_string()]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
 
         let result =
@@ -735,6 +728,7 @@ mod tests {
             folders: vec!["projects".to_string(), "projects/archive".to_string()],
             pages: PageIndex::from_paths(vec!["projects/Alpha.md".to_string()]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
 
         let error = delete_folder_in_workspace(&mut workspace, "projects".to_string())
@@ -766,6 +760,7 @@ mod tests {
                 "Source.md".to_string(),
             ]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
 
         let result = move_folder_in_workspace(
@@ -802,6 +797,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::default(),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
         reindex_workspace(&mut workspace).unwrap();
 
@@ -849,6 +845,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::default(),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
         reindex_workspace(&mut workspace).unwrap();
         let pages_before = workspace.pages.pages();
@@ -885,6 +882,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::from_paths(vec!["Alpha.md".to_string()]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
 
         let result = move_page_in_workspace(

@@ -38,10 +38,9 @@ pub fn search_pages_in_workspace(
             });
         }
 
-        let absolute_path = resolve_workspace_relative_path(&workspace.root, &page.path)
-            .ok_or_else(|| format!("Invalid page path '{}'", page.path))?;
-        let content = fs::read_to_string(&absolute_path)
-            .map_err(|error| format!("Failed to read page '{}': {error}", page.path))?;
+        let content = workspace
+            .contents
+            .get_or_read(&workspace.root, &page.path)?;
 
         for (index, line) in content.lines().enumerate() {
             if let Some(rank) = classify_search_line(line, &normalized_query) {
@@ -129,10 +128,9 @@ pub fn list_tasks_in_workspace(workspace: &WorkspaceState) -> Result<Vec<TaskIte
     let mut tasks = Vec::new();
 
     for page in workspace.pages.pages() {
-        let absolute_path = resolve_workspace_relative_path(&workspace.root, &page.path)
-            .ok_or_else(|| format!("Invalid page path '{}'", page.path))?;
-        let content = fs::read_to_string(&absolute_path)
-            .map_err(|error| format!("Failed to read page '{}': {error}", page.path))?;
+        let content = workspace
+            .contents
+            .get_or_read(&workspace.root, &page.path)?;
         let blocks = parse_blocks_with_task_states(&content, &workspace.config.task_states);
         let heading_contexts = heading_contexts_by_line(&content);
 
@@ -196,9 +194,7 @@ pub(crate) fn update_task_status_in_workspace(
 
     fs::write(&absolute_path, &updated_content)
         .map_err(|error| format!("Failed to write page '{}': {error}", resolved_path))?;
-    workspace
-        .backlinks
-        .index_page(resolved_path.clone(), &updated_content);
+    workspace.index_page_content(resolved_path.clone(), updated_content.clone());
 
     let blocks = parse_blocks_with_task_states(&updated_content, &workspace.config.task_states);
     let heading_contexts = heading_contexts_by_line(&updated_content);
@@ -271,9 +267,7 @@ pub(crate) fn update_task_priority_in_workspace(
 
     fs::write(&absolute_path, &updated_content)
         .map_err(|error| format!("Failed to write page '{}': {error}", resolved_path))?;
-    workspace
-        .backlinks
-        .index_page(resolved_path.clone(), &updated_content);
+    workspace.index_page_content(resolved_path.clone(), updated_content.clone());
 
     let blocks = parse_blocks_with_task_states(&updated_content, &workspace.config.task_states);
     let heading_contexts = heading_contexts_by_line(&updated_content);
@@ -321,9 +315,7 @@ pub(crate) fn toggle_checkbox_in_workspace(
 
     fs::write(&absolute_path, &updated_content)
         .map_err(|error| format!("Failed to write page '{}': {error}", resolved_path))?;
-    workspace
-        .backlinks
-        .index_page(resolved_path.clone(), &updated_content);
+    workspace.index_page_content(resolved_path.clone(), updated_content);
 
     Ok(ToggleCheckboxResultDto {
         path: resolved_path,

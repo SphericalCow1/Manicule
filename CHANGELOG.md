@@ -44,6 +44,11 @@ Changes since `v0.6.5`.
 - A reproducible release-profile benchmark now measures full reindexing,
   workspace search, Task Overview loading, and one-file save recovery against
   documented interaction budgets and generated workspace profiles.
+- Workspace search and Task Overview now read from a coherent, disposable
+  in-memory content snapshot instead of reopening every Markdown file.
+- External Markdown changes now update affected page metadata, backlinks, and
+  cached content incrementally after debounce, with full reindex recovery for
+  ambiguous or failed batches.
 
 ### Fixed
 
@@ -61,6 +66,9 @@ Changes since `v0.6.5`.
   rejections.
 - Failed right-pane navigation now keeps the previously rendered page and no
   longer consumes a back/forward history entry.
+- Watcher updates from a previously closed workspace no longer mutate the
+  currently open workspace, and failed incremental updates no longer emit a
+  successful index event.
 
 ### Tests
 
@@ -77,6 +85,9 @@ Changes since `v0.6.5`.
   back navigation.
 - Added coverage that the benchmarked workspace-save path updates file content,
   page titles, and backlinks together.
+- Added coverage for content snapshot fallback and mutation consistency,
+  path-aware watcher batches, scanner exclusions, and incremental/full index
+  equivalence across create, modify, and remove changes.
 
 ## 0.6.5
 

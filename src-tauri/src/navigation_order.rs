@@ -192,6 +192,7 @@ fn page_name_from_path(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content_snapshot::ContentSnapshot;
     use crate::index::backlink_index::BacklinkIndex;
     use crate::index::page_index::PageIndex;
     use crate::workspace_config::WorkspaceConfig;
@@ -225,6 +226,7 @@ mod tests {
                 "projects/a.md".to_string(),
             ]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
         let order = page_navigation_order(&workspace);
 
@@ -250,6 +252,7 @@ mod tests {
                 "team/z.md".to_string(),
             ]),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
         let order = page_navigation_order(&workspace);
 

@@ -78,8 +78,7 @@ pub fn save_page_in_workspace(
     )?;
 
     if matches!(result, SavePageResultDto::Saved { .. }) {
-        workspace.pages.update_title(&resolved_path, &content);
-        workspace.backlinks.index_page(resolved_path, &content);
+        workspace.index_page_content(resolved_path, content);
     }
 
     Ok(result)
@@ -106,6 +105,7 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
+    use crate::content_snapshot::ContentSnapshot;
     use crate::index::backlink_index::BacklinkIndex;
     use crate::index::page_index::PageIndex;
     use crate::workspace_config::WorkspaceConfig;
@@ -125,6 +125,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::default(),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
         reindex_workspace(&mut workspace).unwrap();
 
@@ -152,6 +153,7 @@ mod tests {
             workspace.backlinks.backlinks_for_target_key("target").len(),
             1
         );
+        assert_eq!(workspace.contents.get("Inbox.md"), Some(content.as_str()));
 
         fs::remove_dir_all(root).unwrap();
     }

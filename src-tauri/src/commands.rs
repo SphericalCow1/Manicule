@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager, State};
 
 use crate::app_state::{AppState, WorkspaceState};
+use crate::content_snapshot::ContentSnapshot;
 use crate::dto::{
     page_summaries, CreateFolderResultDto, CreatePageResultDto, DeleteFolderResultDto,
     DeletePageResultDto, MovePageResultDto, PageContentDto, PageSummaryDto, PageViewDto,
@@ -59,6 +60,7 @@ pub fn open_workspace(
         folders: Vec::new(),
         pages: PageIndex::default(),
         backlinks: BacklinkIndex::default(),
+        contents: ContentSnapshot::default(),
     };
     reindex_workspace(&mut workspace)?;
     let diagnostics = workspace.pages.collision_diagnostics();
@@ -193,8 +195,7 @@ pub fn open_page(path: String, state: State<'_, AppState>) -> Result<PageContent
             fs::write(&absolute_path, &updated_content)
                 .map_err(|error| format!("Failed to add page heading '{}': {error}", path))?;
             content = updated_content;
-            workspace.pages.update_title(&path, &content);
-            workspace.backlinks.index_page(path.clone(), &content);
+            workspace.index_page_content(path.clone(), content.clone());
         }
 
         let modified_at = modified_at_millis(&absolute_path)?;
@@ -415,6 +416,7 @@ mod tests {
             folders: Vec::new(),
             pages: PageIndex::default(),
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         };
 
         reindex_workspace(&mut workspace).unwrap();
@@ -427,6 +429,11 @@ mod tests {
         assert_eq!(
             linked[0].block_markdown,
             "- Wir priorisieren [[Projekte/Alpha]]\n  - Budget offen"
+        );
+        assert_eq!(workspace.contents.len(), 2);
+        assert_eq!(
+            workspace.contents.get("Meetings/Teamrunde.md"),
+            Some("- Wir priorisieren [[Projekte/Alpha]]\n  - Budget offen")
         );
 
         fs::remove_dir_all(root).unwrap();
@@ -506,6 +513,10 @@ mod tests {
             .pages
             .get_by_path("Projekte/projekt alpha.md")
             .is_some());
+        assert_eq!(
+            workspace.contents.get("Projekte/projekt alpha.md"),
+            Some("# Projekt alpha\n\n")
+        );
 
         fs::remove_dir_all(root).unwrap();
     }
@@ -550,6 +561,7 @@ mod tests {
             .backlinks
             .backlinks_for_target_key("target")
             .is_empty());
+        assert!(workspace.contents.get("Source.md").is_none());
 
         fs::remove_dir_all(root).unwrap();
     }
@@ -582,6 +594,11 @@ mod tests {
         assert!(root.join("archive").join("Source.md").is_file());
         assert!(workspace.pages.get_by_path("team/Source.md").is_none());
         assert!(workspace.pages.get_by_path("archive/Source.md").is_some());
+        assert!(workspace.contents.get("team/Source.md").is_none());
+        assert_eq!(
+            workspace.contents.get("archive/Source.md"),
+            Some("- Link [[Target]]")
+        );
         let backlinks = workspace.backlinks.backlinks_for_target_key("target");
         assert_eq!(backlinks.len(), 1);
         assert_eq!(backlinks[0].source_path, "archive/Source.md");
@@ -724,6 +741,12 @@ mod tests {
             workspace.backlinks.backlinks_for_target_key("beta").len(),
             2
         );
+        assert!(workspace.contents.get("Alpha.md").is_none());
+        assert_eq!(workspace.contents.get("Beta.md"), Some("# Alpha"));
+        assert_eq!(
+            workspace.contents.get("Source.md"),
+            Some("- Link [[Beta]]\n- Alias [[Beta|Old]]")
+        );
 
         fs::remove_dir_all(root).unwrap();
     }
@@ -784,6 +807,12 @@ mod tests {
                 .backlinks_for_target_key("people/sub/beta")
                 .len(),
             1
+        );
+        assert!(workspace.contents.get("team/Alpha.md").is_none());
+        assert_eq!(workspace.contents.get("people/Alpha.md"), Some("# Alpha"));
+        assert_eq!(
+            workspace.contents.get("Source.md"),
+            Some("- Alpha [[people/Alpha]]\n- Beta [[people/sub/Beta|Beta]]\n- Other [[Gamma]]")
         );
 
         fs::remove_dir_all(root).unwrap();
@@ -1279,6 +1308,7 @@ mod tests {
             folders: Vec::new(),
             pages,
             backlinks: BacklinkIndex::default(),
+            contents: ContentSnapshot::default(),
         }
     }
 }

@@ -5,13 +5,14 @@ use std::path::PathBuf;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use semtags_lib::app_state::WorkspaceState;
+use semtags_lib::content_snapshot::ContentSnapshot;
 use semtags_lib::dto::SavePageResultDto;
 use semtags_lib::index::backlink_index::BacklinkIndex;
 use semtags_lib::index::page_index::PageIndex;
 use semtags_lib::page_io::{content_hash, save_page_in_workspace};
 use semtags_lib::query::{list_tasks_in_workspace, search_pages_in_workspace};
 use semtags_lib::workspace_config::WorkspaceConfig;
-use semtags_lib::workspace_index::reindex_workspace;
+use semtags_lib::workspace_index::{reindex_workspace, reindex_workspace_paths};
 
 #[derive(Debug, Clone)]
 struct BenchmarkConfig {
@@ -23,6 +24,7 @@ struct BenchmarkConfig {
     warmup_runs: usize,
     search_query: String,
     reindex_budget_ms: f64,
+    incremental_budget_ms: f64,
     search_budget_ms: f64,
     tasks_budget_ms: f64,
     save_budget_ms: f64,
@@ -40,6 +42,7 @@ impl Default for BenchmarkConfig {
             warmup_runs: 1,
             search_query: "benchmark-match".to_string(),
             reindex_budget_ms: 1_000.0,
+            incremental_budget_ms: 250.0,
             search_budget_ms: 300.0,
             tasks_budget_ms: 500.0,
             save_budget_ms: 250.0,
@@ -156,6 +159,41 @@ fn run_benchmarks(
 
     let target_path = page_target(0, config.folders);
     let target_absolute_path = generated.root.join(&target_path).with_extension("md");
+    let indexed_content = fs::read_to_string(&target_absolute_path).map_err(|error| {
+        format!(
+            "Failed to read incremental benchmark page '{}': {error}",
+            target_absolute_path.display()
+        )
+    })?;
+    let target_markdown_path = target_path_with_extension(0, config.folders);
+    let mut incremental_iteration = 0_usize;
+    let incremental = measure_operation_with_setup(
+        "one-file incremental",
+        config.warmup_runs,
+        config.runs,
+        config.incremental_budget_ms,
+        || {
+            incremental_iteration += 1;
+            fs::write(
+                &target_absolute_path,
+                format!(
+                    "{indexed_content}\n- External generation {}\n",
+                    incremental_iteration % 2
+                ),
+            )
+            .map_err(|error| {
+                format!(
+                    "Failed to prepare incremental benchmark page '{}': {error}",
+                    target_absolute_path.display()
+                )
+            })
+        },
+        || {
+            reindex_workspace_paths(&mut workspace, [target_markdown_path.clone()])?;
+            Ok(1)
+        },
+    )?;
+
     let original_content = fs::read_to_string(&target_absolute_path).map_err(|error| {
         format!(
             "Failed to read save benchmark page '{}': {error}",
@@ -195,7 +233,7 @@ fn run_benchmarks(
         },
     )?;
 
-    let measurements = [reindex, search, tasks, save];
+    let measurements = [reindex, search, tasks, incremental, save];
     print_measurements(&measurements);
     print_decision(&measurements);
     Ok(())
@@ -208,6 +246,7 @@ fn empty_workspace(root: PathBuf) -> WorkspaceState {
         folders: Vec::new(),
         pages: PageIndex::default(),
         backlinks: BacklinkIndex::default(),
+        contents: ContentSnapshot::default(),
     }
 }
 
@@ -216,18 +255,35 @@ fn measure_operation<F>(
     warmup_runs: usize,
     runs: usize,
     budget_ms: f64,
-    mut operation: F,
+    operation: F,
 ) -> Result<Measurement, String>
 where
     F: FnMut() -> Result<usize, String>,
 {
+    measure_operation_with_setup(name, warmup_runs, runs, budget_ms, || Ok(()), operation)
+}
+
+fn measure_operation_with_setup<S, F>(
+    name: &'static str,
+    warmup_runs: usize,
+    runs: usize,
+    budget_ms: f64,
+    mut setup: S,
+    mut operation: F,
+) -> Result<Measurement, String>
+where
+    S: FnMut() -> Result<(), String>,
+    F: FnMut() -> Result<usize, String>,
+{
     for _ in 0..warmup_runs {
+        setup()?;
         black_box(operation()?);
     }
 
     let mut durations = Vec::with_capacity(runs);
     let mut output_count = 0;
     for _ in 0..runs {
+        setup()?;
         let started = Instant::now();
         output_count = operation()?;
         durations.push(started.elapsed().as_secs_f64() * 1_000.0);
@@ -270,10 +326,11 @@ fn print_measurements(measurements: &[Measurement]) {
 }
 
 fn print_decision(measurements: &[Measurement]) {
-    let reindex = &measurements[0];
-    let search = &measurements[1];
-    let tasks = &measurements[2];
-    let save = &measurements[3];
+    let reindex = measurement(measurements, "full reindex");
+    let search = measurement(measurements, "workspace search");
+    let tasks = measurement(measurements, "task overview");
+    let incremental = measurement(measurements, "one-file incremental");
+    let save = measurement(measurements, "one-file save recovery");
 
     if search.within_budget() && tasks.within_budget() {
         println!("content snapshot gate: defer; search and tasks meet their budgets");
@@ -289,11 +346,24 @@ fn print_decision(measurements: &[Measurement]) {
         println!("incremental reindex gate: prioritize incremental indexing");
     }
 
+    if incremental.within_budget() {
+        println!("incremental recovery gate: keep one-file incremental indexing");
+    } else {
+        println!("incremental recovery gate: profile changed-page indexing");
+    }
+
     if save.within_budget() {
         println!("save recovery gate: keep current one-page index update");
     } else {
         println!("save recovery gate: profile the one-page save path");
     }
+}
+
+fn measurement<'a>(measurements: &'a [Measurement], name: &str) -> &'a Measurement {
+    measurements
+        .iter()
+        .find(|measurement| measurement.name == name)
+        .unwrap_or_else(|| panic!("Missing benchmark measurement '{name}'"))
 }
 
 fn parse_config(args: Vec<String>) -> Result<BenchmarkConfig, String> {
@@ -315,6 +385,9 @@ fn parse_config(args: Vec<String>) -> Result<BenchmarkConfig, String> {
                 config.search_query = string_arg(&args, index, "--search-query")?;
             }
             "--reindex-budget-ms" => set_f64(&mut config.reindex_budget_ms, &args, index, arg)?,
+            "--incremental-budget-ms" => {
+                set_f64(&mut config.incremental_budget_ms, &args, index, arg)?
+            }
             "--search-budget-ms" => set_f64(&mut config.search_budget_ms, &args, index, arg)?,
             "--tasks-budget-ms" => set_f64(&mut config.tasks_budget_ms, &args, index, arg)?,
             "--save-budget-ms" => set_f64(&mut config.save_budget_ms, &args, index, arg)?,
@@ -378,6 +451,7 @@ fn print_help() {
     println!("  --warmup-runs <n>     Warmup runs, default 1");
     println!("  --runs <n>            Measured runs, default 5");
     println!("  --reindex-budget-ms <n>  Full-reindex budget, default 1000");
+    println!("  --incremental-budget-ms <n>  One-file reindex budget, default 250");
     println!("  --search-budget-ms <n>   Search budget, default 300");
     println!("  --tasks-budget-ms <n>    Task-list budget, default 500");
     println!("  --save-budget-ms <n>     One-file save budget, default 250");

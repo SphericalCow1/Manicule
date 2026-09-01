@@ -1,6 +1,7 @@
 pub mod app_state;
 pub mod commands;
 pub mod config_commands;
+pub mod content_snapshot;
 pub mod dto;
 pub mod index;
 pub mod navigation_order;

@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::content_snapshot::ContentSnapshot;
 use crate::index::backlink_index::BacklinkIndex;
-use crate::index::page_index::PageIndex;
+use crate::index::page_index::{Page, PageIndex};
 use crate::watcher::WorkspaceWatcher;
 use crate::workspace_config::WorkspaceConfig;
 
@@ -19,6 +20,27 @@ pub struct WorkspaceState {
     pub folders: Vec<String>,
     pub pages: PageIndex,
     pub backlinks: BacklinkIndex,
+    pub contents: ContentSnapshot,
+}
+
+impl WorkspaceState {
+    pub fn index_page_content(&mut self, path: String, content: String) -> Option<Page> {
+        if self.pages.get_by_path(&path).is_some() {
+            self.pages.update_title(&path, &content);
+        } else {
+            self.pages.insert_page(path.clone(), &content)?;
+        }
+        self.backlinks.index_page(path.clone(), &content);
+        self.contents.insert(path.clone(), content);
+        self.pages.get_by_path(&path).cloned()
+    }
+
+    pub fn remove_indexed_page(&mut self, path: &str) -> Option<Page> {
+        let page = self.pages.remove_path(path);
+        self.backlinks.remove_page(path);
+        self.contents.remove(path);
+        page
+    }
 }
 
 impl AppState {
