@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
+use crate::app_error::{AppError, AppResult};
 use crate::app_state::WorkspaceState;
 use crate::dto::{
     page_summaries, page_summary, CreateFolderResultDto, CreatePageResultDto,
@@ -26,36 +27,56 @@ struct LinkRewrite {
 pub(crate) fn create_page_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
-) -> Result<CreatePageResultDto, String> {
+) -> AppResult<CreatePageResultDto> {
     let markdown_path =
-        markdown_path_from_page_target(&path).ok_or_else(|| "Invalid page path".to_string())?;
+        markdown_path_from_page_target(&path).ok_or_else(|| invalid_page_path(&path))?;
     let markdown_path = lowercase_markdown_file_name(&markdown_path);
-    let key = page_key_from_relative_path(&markdown_path)
-        .ok_or_else(|| "Invalid page path".to_string())?;
+    let key =
+        page_key_from_relative_path(&markdown_path).ok_or_else(|| invalid_page_path(&path))?;
 
     if !workspace.pages.paths_for_key(&key).is_empty() {
-        return Err("A page with this path already exists, ignoring case.".to_string());
+        return Err(AppError::already_exists(
+            "A page with this path already exists, ignoring case. Choose another name.",
+        ));
     }
 
     let absolute_path = resolve_workspace_relative_path(&workspace.root, &markdown_path)
-        .ok_or_else(|| "Invalid page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&path))?;
 
     if absolute_path.exists() {
-        return Err("Page already exists.".to_string());
+        return Err(AppError::already_exists(
+            "A page with this path already exists. Choose another name.",
+        ));
     }
 
     if let Some(parent) = absolute_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|error| format!("Failed to create page directory: {error}"))?;
+        fs::create_dir_all(parent).map_err(|error| {
+            AppError::io(
+                "The page folder could not be created. Check its permissions and try again.",
+                format!(
+                    "Failed to create page directory '{}': {error}",
+                    parent.display()
+                ),
+            )
+        })?;
     }
 
     let content = default_page_content(&markdown_path);
-    fs::write(&absolute_path, &content)
-        .map_err(|error| format!("Failed to create page '{}': {error}", markdown_path))?;
+    fs::write(&absolute_path, &content).map_err(|error| {
+        AppError::io(
+            "The page could not be created. Check the folder permissions and try again.",
+            format!("Failed to create page '{}': {error}", markdown_path),
+        )
+    })?;
 
     let page = workspace
         .index_page_content(markdown_path.clone(), content)
-        .ok_or_else(|| "Failed to index created page".to_string())?;
+        .ok_or_else(|| {
+            AppError::internal(
+                "The page was created, but Semtags could not add it to the workspace index. Refresh the workspace.",
+                format!("Failed to index created page '{markdown_path}'"),
+            )
+        })?;
     refresh_workspace_folders(workspace)?;
 
     Ok(CreatePageResultDto {
@@ -69,18 +90,23 @@ pub(crate) fn create_page_in_workspace(
 pub(crate) fn create_folder_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
-) -> Result<CreateFolderResultDto, String> {
-    let folder_path =
-        folder_path_from_target(&path).ok_or_else(|| "Invalid folder path".to_string())?;
+) -> AppResult<CreateFolderResultDto> {
+    let folder_path = folder_path_from_target(&path).ok_or_else(|| invalid_folder_path(&path))?;
     let absolute_path = resolve_workspace_relative_path(&workspace.root, &folder_path)
-        .ok_or_else(|| "Invalid folder path".to_string())?;
+        .ok_or_else(|| invalid_folder_path(&path))?;
 
     if absolute_path.exists() {
-        return Err("Folder already exists.".to_string());
+        return Err(AppError::already_exists(
+            "A folder with this path already exists. Choose another name.",
+        ));
     }
 
-    fs::create_dir_all(&absolute_path)
-        .map_err(|error| format!("Failed to create folder '{}': {error}", folder_path))?;
+    fs::create_dir_all(&absolute_path).map_err(|error| {
+        AppError::io(
+            "The folder could not be created. Check the parent folder permissions and try again.",
+            format!("Failed to create folder '{}': {error}", folder_path),
+        )
+    })?;
     refresh_workspace_folders(workspace)?;
 
     Ok(CreateFolderResultDto {
@@ -104,20 +130,25 @@ fn lowercase_markdown_file_name(path: &str) -> String {
 pub(crate) fn delete_page_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
-) -> Result<DeletePageResultDto, String> {
+) -> AppResult<DeletePageResultDto> {
     let resolved_path = workspace
         .pages
-        .resolve_path(&path)?
-        .ok_or_else(|| "Page is not indexed".to_string())?;
+        .resolve_path(&path)
+        .map_err(|detail| ambiguous_page_path(&path, detail))?
+        .ok_or_else(|| page_not_found(&path))?;
     let absolute_path = resolve_workspace_relative_path(&workspace.root, &resolved_path)
-        .ok_or_else(|| "Invalid page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&path))?;
 
     if !absolute_path.is_file() {
-        return Err("Page does not exist".to_string());
+        return Err(page_not_found(&resolved_path));
     }
 
-    fs::remove_file(&absolute_path)
-        .map_err(|error| format!("Failed to delete page '{}': {error}", resolved_path))?;
+    fs::remove_file(&absolute_path).map_err(|error| {
+        AppError::io(
+            "The page could not be deleted. Check its permissions and try again.",
+            format!("Failed to delete page '{}': {error}", resolved_path),
+        )
+    })?;
 
     workspace.remove_indexed_page(&resolved_path);
     refresh_workspace_folders(workspace)?;
@@ -133,28 +164,39 @@ pub(crate) fn delete_page_in_workspace(
 pub(crate) fn delete_folder_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
-) -> Result<DeleteFolderResultDto, String> {
+) -> AppResult<DeleteFolderResultDto> {
     let folder = normalize_folder_path(&path)?;
     let absolute_path = resolve_workspace_relative_path(&workspace.root, &folder)
-        .ok_or_else(|| "Invalid folder path".to_string())?;
+        .ok_or_else(|| invalid_folder_path(&path))?;
 
     if !absolute_path.is_dir() {
-        return Err("Folder does not exist".to_string());
+        return Err(folder_not_found(&folder));
     }
 
     if absolute_path
         .read_dir()
-        .map_err(|error| format!("Failed to inspect folder '{}': {error}", folder))?
+        .map_err(|error| {
+            AppError::io(
+                "The folder contents could not be checked. Check its permissions and try again.",
+                format!("Failed to inspect folder '{}': {error}", folder),
+            )
+        })?
         .next()
         .is_some()
     {
-        return Err("Folder is not empty. Move or delete its contents first.".to_string());
+        return Err(AppError::folder_not_empty(
+            "The folder is not empty. Move or delete its contents first.",
+        ));
     }
 
-    fs::remove_dir(&absolute_path)
-        .map_err(|error| format!("Failed to delete folder '{}': {error}", folder))?;
+    fs::remove_dir(&absolute_path).map_err(|error| {
+        AppError::io(
+            "The folder could not be deleted. Check its permissions and try again.",
+            format!("Failed to delete folder '{}': {error}", folder),
+        )
+    })?;
 
-    reindex_workspace(workspace)?;
+    reindex_after_file_operation(workspace)?;
 
     Ok(DeleteFolderResultDto {
         deleted_path: folder,
@@ -169,15 +211,16 @@ pub(crate) fn move_page_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
     target_folder: String,
-) -> Result<MovePageResultDto, String> {
+) -> AppResult<MovePageResultDto> {
     let resolved_path = workspace
         .pages
-        .resolve_path(&path)?
-        .ok_or_else(|| "Page is not indexed".to_string())?;
+        .resolve_path(&path)
+        .map_err(|detail| ambiguous_page_path(&path, detail))?
+        .ok_or_else(|| page_not_found(&path))?;
     let file_name = resolved_path
         .rsplit('/')
         .next()
-        .ok_or_else(|| "Invalid page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&path))?;
     let target_folder = target_folder.trim().trim_matches('/');
     let target_path = if target_folder.is_empty() {
         file_name.to_string()
@@ -189,7 +232,7 @@ pub(crate) fn move_page_in_workspace(
         let page = workspace
             .pages
             .get_by_path(&resolved_path)
-            .ok_or_else(|| "Page is not indexed".to_string())?
+            .ok_or_else(|| page_not_found(&resolved_path))?
             .clone();
         return Ok(MovePageResultDto {
             old_path: resolved_path,
@@ -202,34 +245,53 @@ pub(crate) fn move_page_in_workspace(
     }
 
     let source_key = page_key_from_relative_path(&resolved_path)
-        .ok_or_else(|| "Invalid source page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&resolved_path))?;
     ensure_page_target_available(&workspace.pages, &target_path)?;
 
     let source_absolute_path = resolve_workspace_relative_path(&workspace.root, &resolved_path)
-        .ok_or_else(|| "Invalid page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&resolved_path))?;
     let target_absolute_path = resolve_workspace_relative_path(&workspace.root, &target_path)
-        .ok_or_else(|| "Invalid target page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&target_path))?;
 
     if !source_absolute_path.is_file() {
-        return Err("Page does not exist".to_string());
+        return Err(page_not_found(&resolved_path));
     }
 
-    let content = fs::read_to_string(&source_absolute_path)
-        .map_err(|error| format!("Failed to read page '{}': {error}", resolved_path))?;
+    let content = fs::read_to_string(&source_absolute_path).map_err(|error| {
+        AppError::io(
+            "The page could not be read before moving it. Check its permissions and try again.",
+            format!("Failed to read page '{}': {error}", resolved_path),
+        )
+    })?;
 
     if let Some(parent) = target_absolute_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|error| format!("Failed to create target directory: {error}"))?;
+        fs::create_dir_all(parent).map_err(|error| {
+            AppError::io(
+                "The target folder could not be created. Check its permissions and try again.",
+                format!(
+                    "Failed to create target directory '{}': {error}",
+                    parent.display()
+                ),
+            )
+        })?;
     }
 
     fs::rename(&source_absolute_path, &target_absolute_path).map_err(|error| {
-        format!("Failed to move page '{resolved_path}' to '{target_path}': {error}")
+        AppError::io(
+            "The page could not be moved. Check the source and target folder permissions and try again.",
+            format!("Failed to move page '{resolved_path}' to '{target_path}': {error}"),
+        )
     })?;
 
     workspace.remove_indexed_page(&resolved_path);
     let page = workspace
         .index_page_content(target_path.clone(), content)
-        .ok_or_else(|| "Failed to index moved page".to_string())?;
+        .ok_or_else(|| {
+            AppError::internal(
+                "The page was moved, but Semtags could not update the workspace index. Refresh the workspace.",
+                format!("Failed to index moved page '{target_path}'"),
+            )
+        })?;
     let page_path = page.path.clone();
     let updated_link_count =
         rewrite_links_to_targets_with_recovery(workspace, &[(source_key, page_path)])?;
@@ -249,22 +311,24 @@ pub(crate) fn move_folder_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
     target_folder: String,
-) -> Result<RenameFolderResultDto, String> {
+) -> AppResult<RenameFolderResultDto> {
     let old_folder = normalize_folder_path(&path)?;
     let target_folder = target_folder.trim().trim_matches('/').replace('\\', "/");
     if target_folder
         .split('/')
         .any(|segment| !segment.is_empty() && normalized_folder_name(segment).is_err())
     {
-        return Err("Invalid target folder path".to_string());
+        return Err(invalid_folder_path(&target_folder));
     }
     if target_folder == old_folder || target_folder.starts_with(&format!("{old_folder}/")) {
-        return Err("Cannot move a folder into itself.".to_string());
+        return Err(AppError::invalid_path(
+            "A folder cannot be moved into itself. Choose a different target folder.",
+        ));
     }
     let folder_name = old_folder
         .rsplit('/')
         .next()
-        .ok_or_else(|| "Invalid folder path".to_string())?;
+        .ok_or_else(|| invalid_folder_path(&old_folder))?;
     let new_folder = if target_folder.is_empty() {
         folder_name.to_string()
     } else {
@@ -278,18 +342,19 @@ pub(crate) fn rename_page_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
     new_name: String,
-) -> Result<RenamePageResultDto, String> {
+) -> AppResult<RenamePageResultDto> {
     let resolved_path = workspace
         .pages
-        .resolve_path(&path)?
-        .ok_or_else(|| "Page is not indexed".to_string())?;
+        .resolve_path(&path)
+        .map_err(|detail| ambiguous_page_path(&path, detail))?
+        .ok_or_else(|| page_not_found(&path))?;
     let target_path = renamed_page_path(&resolved_path, &new_name)?;
 
     if resolved_path == target_path {
         let page = workspace
             .pages
             .get_by_path(&resolved_path)
-            .ok_or_else(|| "Page is not indexed".to_string())?
+            .ok_or_else(|| page_not_found(&resolved_path))?
             .clone();
         return Ok(RenamePageResultDto {
             old_path: resolved_path,
@@ -302,29 +367,41 @@ pub(crate) fn rename_page_in_workspace(
     }
 
     let source_key = page_key_from_relative_path(&resolved_path)
-        .ok_or_else(|| "Invalid source page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&resolved_path))?;
     ensure_page_target_available(&workspace.pages, &target_path)?;
 
     let source_absolute_path = resolve_workspace_relative_path(&workspace.root, &resolved_path)
-        .ok_or_else(|| "Invalid page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&resolved_path))?;
     let target_absolute_path = resolve_workspace_relative_path(&workspace.root, &target_path)
-        .ok_or_else(|| "Invalid target page path".to_string())?;
+        .ok_or_else(|| invalid_page_path(&target_path))?;
 
     if !source_absolute_path.is_file() {
-        return Err("Page does not exist".to_string());
+        return Err(page_not_found(&resolved_path));
     }
 
-    let content = fs::read_to_string(&source_absolute_path)
-        .map_err(|error| format!("Failed to read page '{}': {error}", resolved_path))?;
+    let content = fs::read_to_string(&source_absolute_path).map_err(|error| {
+        AppError::io(
+            "The page could not be read before renaming it. Check its permissions and try again.",
+            format!("Failed to read page '{}': {error}", resolved_path),
+        )
+    })?;
 
     fs::rename(&source_absolute_path, &target_absolute_path).map_err(|error| {
-        format!("Failed to rename page '{resolved_path}' to '{target_path}': {error}")
+        AppError::io(
+            "The page could not be renamed. Check the folder permissions and try again.",
+            format!("Failed to rename page '{resolved_path}' to '{target_path}': {error}"),
+        )
     })?;
 
     workspace.remove_indexed_page(&resolved_path);
     let page = workspace
         .index_page_content(target_path.clone(), content)
-        .ok_or_else(|| "Failed to index renamed page".to_string())?;
+        .ok_or_else(|| {
+            AppError::internal(
+                "The page was renamed, but Semtags could not update the workspace index. Refresh the workspace.",
+                format!("Failed to index renamed page '{target_path}'"),
+            )
+        })?;
     let page_path = page.path.clone();
     let updated_link_count =
         rewrite_links_to_targets_with_recovery(workspace, &[(source_key, page_path)])?;
@@ -344,7 +421,7 @@ pub(crate) fn rename_folder_in_workspace(
     workspace: &mut WorkspaceState,
     path: String,
     new_name: String,
-) -> Result<RenameFolderResultDto, String> {
+) -> AppResult<RenameFolderResultDto> {
     let old_folder = normalize_folder_path(&path)?;
     let new_folder = renamed_folder_path(&old_folder, &new_name)?;
 
@@ -355,7 +432,7 @@ fn move_folder_to_path(
     workspace: &mut WorkspaceState,
     old_folder: String,
     new_folder: String,
-) -> Result<RenameFolderResultDto, String> {
+) -> AppResult<RenameFolderResultDto> {
     if old_folder == new_folder {
         return Ok(RenameFolderResultDto {
             old_path: old_folder,
@@ -377,36 +454,53 @@ fn move_folder_to_path(
         .collect();
     let mut target_rewrites = Vec::new();
     for page in &pages_to_rename {
-        let suffix = page
-            .path
-            .strip_prefix(&old_folder_prefix)
-            .ok_or_else(|| "Failed to derive folder-relative page path".to_string())?;
+        let suffix = page.path.strip_prefix(&old_folder_prefix).ok_or_else(|| {
+            AppError::internal(
+                "Semtags could not prepare the folder move. Refresh the workspace and try again.",
+                format!(
+                    "Failed to derive folder-relative page path '{}' from '{old_folder}'",
+                    page.path
+                ),
+            )
+        })?;
         let new_page_path = format!("{new_folder}/{suffix}");
         ensure_page_target_available(&workspace.pages, &new_page_path)?;
         target_rewrites.push((page.key.clone(), new_page_path));
     }
 
     let old_absolute_path = resolve_workspace_relative_path(&workspace.root, &old_folder)
-        .ok_or_else(|| "Invalid folder path".to_string())?;
+        .ok_or_else(|| invalid_folder_path(&old_folder))?;
     let new_absolute_path = resolve_workspace_relative_path(&workspace.root, &new_folder)
-        .ok_or_else(|| "Invalid target folder path".to_string())?;
+        .ok_or_else(|| invalid_folder_path(&new_folder))?;
 
     if !old_absolute_path.is_dir() {
-        return Err("Folder does not exist".to_string());
+        return Err(folder_not_found(&old_folder));
     }
     if new_absolute_path.exists() {
-        return Err("Target folder already exists".to_string());
+        return Err(AppError::already_exists(
+            "A folder already exists at the target path. Choose a different destination.",
+        ));
     }
     if let Some(parent) = new_absolute_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|error| format!("Failed to create target parent directory: {error}"))?;
+        fs::create_dir_all(parent).map_err(|error| {
+            AppError::io(
+                "The target folder could not be created. Check its permissions and try again.",
+                format!(
+                    "Failed to create target parent directory '{}': {error}",
+                    parent.display()
+                ),
+            )
+        })?;
     }
 
     fs::rename(&old_absolute_path, &new_absolute_path).map_err(|error| {
-        format!("Failed to move folder '{old_folder}' to '{new_folder}': {error}")
+        AppError::io(
+            "The folder could not be moved. Check the source and target folder permissions and try again.",
+            format!("Failed to move folder '{old_folder}' to '{new_folder}': {error}"),
+        )
     })?;
 
-    reindex_workspace(workspace)?;
+    reindex_after_file_operation(workspace)?;
     let updated_link_count = rewrite_links_to_targets_with_recovery(workspace, &target_rewrites)?;
 
     Ok(RenameFolderResultDto {
@@ -420,15 +514,22 @@ fn move_folder_to_path(
     })
 }
 
-fn refresh_workspace_folders(workspace: &mut WorkspaceState) -> Result<(), String> {
-    workspace.folders = scan_workspace(&workspace.root)?.folders;
+fn refresh_workspace_folders(workspace: &mut WorkspaceState) -> AppResult<()> {
+    workspace.folders = scan_workspace(&workspace.root)
+        .map_err(|detail| {
+            AppError::io(
+                "The file operation completed, but the folder list could not be refreshed. Refresh the workspace.",
+                detail,
+            )
+        })?
+        .folders;
     Ok(())
 }
 
 fn rewrite_links_to_targets(
     workspace: &mut WorkspaceState,
     target_rewrites: &[(String, String)],
-) -> Result<usize, String> {
+) -> AppResult<usize> {
     let rewrite_plan = collect_link_rewrite_plan(workspace, target_rewrites)?;
     let updated_link_count = rewrite_plan
         .iter()
@@ -437,7 +538,10 @@ fn rewrite_links_to_targets(
 
     for rewrite in rewrite_plan {
         fs::write(&rewrite.absolute_path, &rewrite.rewritten).map_err(|error| {
-            format!("Failed to update links in '{}': {error}", rewrite.page_path)
+            AppError::io(
+                "A linked page could not be updated. Check its permissions and review affected wiki links.",
+                format!("Failed to update links in '{}': {error}", rewrite.page_path),
+            )
         })?;
         workspace.index_page_content(rewrite.page_path, rewrite.rewritten);
     }
@@ -448,14 +552,19 @@ fn rewrite_links_to_targets(
 fn rewrite_links_to_targets_with_recovery(
     workspace: &mut WorkspaceState,
     target_rewrites: &[(String, String)],
-) -> Result<usize, String> {
+) -> AppResult<usize> {
     rewrite_links_to_targets(workspace, target_rewrites).map_err(|error| {
+        let original_detail = error.detail.unwrap_or(error.message);
         match reindex_workspace(workspace) {
-            Ok(()) => {
-                format!("{error}. Workspace index was rebuilt after the link update failure.")
-            }
-            Err(reindex_error) => format!(
-                "{error}. Failed to rebuild workspace index after the link update failure: {reindex_error}"
+            Ok(()) => AppError::io(
+                "The file operation completed, but not all wiki links could be updated. The workspace index was rebuilt; review affected links.",
+                format!("{original_detail}. Workspace index was rebuilt after the link update failure."),
+            ),
+            Err(reindex_error) => AppError::internal(
+                "The file operation completed, but wiki links and the workspace index could not be updated. Reopen the workspace before continuing.",
+                format!(
+                    "{original_detail}. Failed to rebuild workspace index after the link update failure: {reindex_error}"
+                ),
             ),
         }
     })
@@ -464,14 +573,18 @@ fn rewrite_links_to_targets_with_recovery(
 fn collect_link_rewrite_plan(
     workspace: &WorkspaceState,
     target_rewrites: &[(String, String)],
-) -> Result<Vec<LinkRewrite>, String> {
+) -> AppResult<Vec<LinkRewrite>> {
     let mut rewrite_plan = Vec::new();
 
     for page in workspace.pages.pages() {
         let absolute_path = resolve_workspace_relative_path(&workspace.root, &page.path)
-            .ok_or_else(|| format!("Invalid page path '{}'", page.path))?;
-        let content = fs::read_to_string(&absolute_path)
-            .map_err(|error| format!("Failed to read page '{}': {error}", page.path))?;
+            .ok_or_else(|| invalid_page_path(&page.path))?;
+        let content = fs::read_to_string(&absolute_path).map_err(|error| {
+            AppError::io(
+                "A linked page could not be read. Check its permissions and try again.",
+                format!("Failed to read page '{}': {error}", page.path),
+            )
+        })?;
         let (rewritten, replacements) = rewrite_wiki_link_targets(
             &content,
             |target| replacement_target_for_link(target, target_rewrites).is_some(),
@@ -504,17 +617,19 @@ fn replacement_target_for_link(
         .map(|(_, new_page_path)| page_path_to_link_target(new_page_path))
 }
 
-fn ensure_page_target_available(pages: &PageIndex, target_path: &str) -> Result<(), String> {
-    let target_key = page_key_from_relative_path(target_path)
-        .ok_or_else(|| "Invalid target page path".to_string())?;
+fn ensure_page_target_available(pages: &PageIndex, target_path: &str) -> AppResult<()> {
+    let target_key =
+        page_key_from_relative_path(target_path).ok_or_else(|| invalid_page_path(target_path))?;
     if !pages.paths_for_key(&target_key).is_empty() {
-        return Err("A page with this path already exists, ignoring case.".to_string());
+        return Err(AppError::already_exists(
+            "A page with this path already exists, ignoring case. Choose another name or folder.",
+        ));
     }
 
     Ok(())
 }
 
-fn renamed_page_path(current_path: &str, new_name: &str) -> Result<String, String> {
+fn renamed_page_path(current_path: &str, new_name: &str) -> AppResult<String> {
     let new_file_name = normalized_leaf_markdown_file_name(new_name)?;
     let current_folder = current_path.rsplit_once('/').map(|(folder, _)| folder);
 
@@ -524,7 +639,7 @@ fn renamed_page_path(current_path: &str, new_name: &str) -> Result<String, Strin
     })
 }
 
-fn renamed_folder_path(current_path: &str, new_name: &str) -> Result<String, String> {
+fn renamed_folder_path(current_path: &str, new_name: &str) -> AppResult<String> {
     let new_folder_name = normalized_folder_name(new_name)?;
     let current_parent = current_path.rsplit_once('/').map(|(parent, _)| parent);
 
@@ -534,33 +649,35 @@ fn renamed_folder_path(current_path: &str, new_name: &str) -> Result<String, Str
     })
 }
 
-fn normalize_folder_path(path: &str) -> Result<String, String> {
+fn normalize_folder_path(path: &str) -> AppResult<String> {
     let normalized = path.trim().trim_matches('/');
     if normalized.is_empty() {
-        return Err("Folder path is required".to_string());
+        return Err(AppError::invalid_path("Enter a folder path."));
     }
     if normalized
         .split('/')
         .any(|segment| normalized_folder_name(segment).is_err())
     {
-        return Err("Invalid folder path".to_string());
+        return Err(invalid_folder_path(path));
     }
 
     Ok(normalized.to_string())
 }
 
-fn normalized_leaf_markdown_file_name(value: &str) -> Result<String, String> {
+fn normalized_leaf_markdown_file_name(value: &str) -> AppResult<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() || trimmed.contains('/') || trimmed.contains('\\') {
-        return Err("Enter a file name, not a path.".to_string());
+        return Err(AppError::invalid_path(
+            "Enter a file name without a folder path.",
+        ));
     }
 
     markdown_path_from_page_target(trimmed)
         .filter(|path| !path.contains('/'))
-        .ok_or_else(|| "Invalid page name".to_string())
+        .ok_or_else(|| AppError::invalid_path("Enter a valid page name."))
 }
 
-fn normalized_folder_name(value: &str) -> Result<String, String> {
+fn normalized_folder_name(value: &str) -> AppResult<String> {
     let trimmed = value.trim();
     if trimmed.is_empty()
         || trimmed == "."
@@ -568,10 +685,54 @@ fn normalized_folder_name(value: &str) -> Result<String, String> {
         || trimmed.contains('/')
         || trimmed.contains('\\')
     {
-        return Err("Invalid folder name".to_string());
+        return Err(AppError::invalid_path(
+            "Enter a folder name without path separators or dot segments.",
+        ));
     }
 
     Ok(trimmed.to_string())
+}
+
+fn reindex_after_file_operation(workspace: &mut WorkspaceState) -> AppResult<()> {
+    reindex_workspace(workspace).map_err(|detail| {
+        AppError::internal(
+            "The file operation completed, but the workspace index could not be refreshed. Reopen the workspace before continuing.",
+            detail,
+        )
+    })
+}
+
+fn invalid_page_path(path: &str) -> AppError {
+    AppError::invalid_path(format!(
+        "'{path}' is not a valid page path inside the workspace. Choose another path."
+    ))
+}
+
+fn invalid_folder_path(path: &str) -> AppError {
+    AppError::invalid_path(format!(
+        "'{path}' is not a valid folder path inside the workspace. Choose another path."
+    ))
+}
+
+fn page_not_found(path: &str) -> AppError {
+    AppError::not_found(format!(
+        "The page '{path}' no longer exists. Refresh the file list and try again."
+    ))
+}
+
+fn folder_not_found(path: &str) -> AppError {
+    AppError::not_found(format!(
+        "The folder '{path}' no longer exists. Refresh the file list and try again."
+    ))
+}
+
+fn ambiguous_page_path(path: &str, detail: String) -> AppError {
+    AppError::conflict(
+        format!(
+            "More than one page matches '{path}' when letter case is ignored. Rename one of the pages and try again."
+        ),
+        detail,
+    )
 }
 
 fn page_path_to_link_target(path: &str) -> String {
@@ -621,8 +782,10 @@ mod tests {
         fs::set_permissions(&source_path, fs::Permissions::from_mode(0o644)).unwrap();
 
         let error = result.unwrap_err();
-        assert!(error.contains("Failed to update links in 'Source.md'"));
-        assert!(error.contains("Workspace index was rebuilt"));
+        assert_eq!(error.code, crate::app_error::AppErrorCode::Io);
+        let detail = error.detail.unwrap();
+        assert!(detail.contains("Failed to update links in 'Source.md'"));
+        assert!(detail.contains("Workspace index was rebuilt"));
         assert_eq!(
             fs::read_to_string(&source_path).unwrap(),
             "- Link to [[Alpha]]"
@@ -665,8 +828,10 @@ mod tests {
         fs::set_permissions(&second_source, fs::Permissions::from_mode(0o644)).unwrap();
 
         let error = result.unwrap_err();
-        assert!(error.contains("Failed to update links in 'B-source.md'"));
-        assert!(error.contains("Workspace index was rebuilt"));
+        assert_eq!(error.code, crate::app_error::AppErrorCode::Io);
+        let detail = error.detail.unwrap();
+        assert!(detail.contains("Failed to update links in 'B-source.md'"));
+        assert!(detail.contains("Workspace index was rebuilt"));
         assert_eq!(
             fs::read_to_string(&first_source).unwrap(),
             "- First [[archive/Alpha]]"
@@ -734,9 +899,10 @@ mod tests {
         let error = delete_folder_in_workspace(&mut workspace, "projects".to_string())
             .expect_err("non-empty folders should not be deleted");
 
+        assert_eq!(error.code, crate::app_error::AppErrorCode::FolderNotEmpty);
         assert_eq!(
-            error,
-            "Folder is not empty. Move or delete its contents first."
+            error.message,
+            "The folder is not empty. Move or delete its contents first."
         );
         assert!(root.join("projects").exists());
         assert!(root.join("projects/Alpha.md").exists());
@@ -857,10 +1023,8 @@ mod tests {
             "existing".to_string(),
         );
 
-        assert_eq!(
-            result.unwrap_err(),
-            "A page with this path already exists, ignoring case."
-        );
+        let error = result.unwrap_err();
+        assert_eq!(error.code, crate::app_error::AppErrorCode::AlreadyExists);
         assert!(root.join("Alpha.md").is_file());
         assert!(root.join("Existing.md").is_file());
         assert_eq!(workspace.pages.pages(), pages_before);
@@ -893,8 +1057,11 @@ mod tests {
 
         fs::set_permissions(&source, fs::Permissions::from_mode(0o644)).unwrap();
 
-        assert!(result
-            .unwrap_err()
+        let error = result.unwrap_err();
+        assert_eq!(error.code, crate::app_error::AppErrorCode::Io);
+        assert!(error
+            .detail
+            .unwrap()
             .contains("Failed to read page 'Alpha.md'"));
         assert!(source.is_file());
         assert!(!root.join("archive/Alpha.md").exists());

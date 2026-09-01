@@ -137,6 +137,20 @@ to Tauri `invoke` commands. Backend commands return DTOs from
 `src-tauri/src/dto.rs` so the UI can update its local stores without knowing
 Rust-internal data structures.
 
+File and folder mutation failures use the structured Tauri error contract in
+`src-tauri/src/app_error.rs`. The contract contains a stable category code, a
+concise user-safe message, and optional technical detail. The current codes are
+`invalid_path`, `not_found`, `conflict`, `already_exists`,
+`folder_not_empty`, `io`, `state_lock`, and `internal`. Create, delete, move,
+and rename commands are migrated; other command families still return strings
+until they are migrated deliberately.
+
+The frontend normalizes both shapes in `src/lib/errors.ts`. Components and
+stores must preserve `detail` separately from the main message when they own an
+error dialog. Technical details are collapsed by default and remain available
+for diagnostics. Do not branch on message wording; use a stable error code when
+behavior needs to differ by category.
+
 ## Workspace State
 
 The backend holds the currently opened workspace in `AppState`.
@@ -404,6 +418,9 @@ Errors are surfaced at the narrowest layer that owns the operation:
 - Direct native user actions and infrastructure calls without a store-owned
   error path run through `runUserAction` in `src/lib/stores/appErrors.ts`. A
   rejected promise is converted to one contextual app-wide popup.
+- Structured backend failures retain their technical detail through the owning
+  store. `ErrorDialog` keeps that detail behind a collapsed disclosure so the
+  actionable message remains primary.
 
 The app-wide boundary currently covers native event initialization, workspace
 picker and close actions, undo/redo warnings, and window-title updates. Menu
@@ -553,6 +570,19 @@ Shared Markdown contract fixtures:
 - Changes to the fixture require both `npm run test:frontend` and `cargo test`
   from `src-tauri`; run `npm run check`, `cargo fmt --check`, and
   `git diff --check` before committing.
+
+Error-contract tests:
+
+- Rust tests in `src-tauri/src/app_error.rs` lock the serialized field names and
+  stable code values. File-operation tests should assert categories and
+  technical details separately instead of matching complete user messages.
+- Frontend tests in `tests/errors.test.ts` cover structured, legacy string, and
+  unknown rejection shapes. `tests/appErrors.test.ts` verifies that one rejected
+  action produces one contextual report while preserving technical detail.
+- When migrating another Tauri command family, add category assertions at the
+  Rust boundary first, keep unknown frontend errors visible, and verify the
+  owning component does not also route the same failure through the global
+  reporter.
 
 Backend tests:
 

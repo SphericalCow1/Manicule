@@ -1,3 +1,4 @@
+pub mod app_error;
 pub mod app_state;
 pub mod commands;
 pub mod config_commands;

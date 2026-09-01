@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::app_error::{AppError, AppResult};
 use crate::content_snapshot::ContentSnapshot;
 use crate::index::backlink_index::BacklinkIndex;
 use crate::index::page_index::{Page, PageIndex};
@@ -79,6 +80,20 @@ impl AppState {
             .as_mut()
             .ok_or_else(|| "No workspace is open".to_string())?;
         Ok(callback(workspace))
+    }
+
+    pub fn with_workspace_mut_app<T>(
+        &self,
+        callback: impl FnOnce(&mut WorkspaceState) -> AppResult<T>,
+    ) -> AppResult<T> {
+        let mut state = self
+            .workspace
+            .lock()
+            .map_err(|_| AppError::state_lock("Failed to lock app state"))?;
+        let workspace = state
+            .as_mut()
+            .ok_or_else(|| AppError::not_found("Open a workspace before using this action."))?;
+        callback(workspace)
     }
 
     pub fn set_watcher(&self, watcher: WorkspaceWatcher) -> Result<(), String> {

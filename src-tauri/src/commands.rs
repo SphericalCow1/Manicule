@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, Manager, State};
 
+use crate::app_error::AppError;
 use crate::app_state::{AppState, WorkspaceState};
 use crate::content_snapshot::ContentSnapshot;
 use crate::dto::{
@@ -113,32 +114,32 @@ pub fn list_pages(state: State<'_, AppState>) -> Result<Vec<PageSummaryDto>, Str
 pub fn create_page(
     path: String,
     state: State<'_, AppState>,
-) -> Result<CreatePageResultDto, String> {
-    state.with_workspace_mut(|workspace| create_page_in_workspace(workspace, path))?
+) -> Result<CreatePageResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| create_page_in_workspace(workspace, path))
 }
 
 #[tauri::command]
 pub fn create_folder(
     path: String,
     state: State<'_, AppState>,
-) -> Result<CreateFolderResultDto, String> {
-    state.with_workspace_mut(|workspace| create_folder_in_workspace(workspace, path))?
+) -> Result<CreateFolderResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| create_folder_in_workspace(workspace, path))
 }
 
 #[tauri::command]
 pub fn delete_page(
     path: String,
     state: State<'_, AppState>,
-) -> Result<DeletePageResultDto, String> {
-    state.with_workspace_mut(|workspace| delete_page_in_workspace(workspace, path))?
+) -> Result<DeletePageResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| delete_page_in_workspace(workspace, path))
 }
 
 #[tauri::command]
 pub fn delete_folder(
     path: String,
     state: State<'_, AppState>,
-) -> Result<DeleteFolderResultDto, String> {
-    state.with_workspace_mut(|workspace| delete_folder_in_workspace(workspace, path))?
+) -> Result<DeleteFolderResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| delete_folder_in_workspace(workspace, path))
 }
 
 #[tauri::command]
@@ -146,8 +147,8 @@ pub fn move_page(
     path: String,
     target_folder: String,
     state: State<'_, AppState>,
-) -> Result<MovePageResultDto, String> {
-    state.with_workspace_mut(|workspace| move_page_in_workspace(workspace, path, target_folder))?
+) -> Result<MovePageResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| move_page_in_workspace(workspace, path, target_folder))
 }
 
 #[tauri::command]
@@ -155,9 +156,10 @@ pub fn move_folder(
     path: String,
     target_folder: String,
     state: State<'_, AppState>,
-) -> Result<RenameFolderResultDto, String> {
-    state
-        .with_workspace_mut(|workspace| move_folder_in_workspace(workspace, path, target_folder))?
+) -> Result<RenameFolderResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| {
+        move_folder_in_workspace(workspace, path, target_folder)
+    })
 }
 
 #[tauri::command]
@@ -165,8 +167,8 @@ pub fn rename_page(
     path: String,
     new_name: String,
     state: State<'_, AppState>,
-) -> Result<RenamePageResultDto, String> {
-    state.with_workspace_mut(|workspace| rename_page_in_workspace(workspace, path, new_name))?
+) -> Result<RenamePageResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| rename_page_in_workspace(workspace, path, new_name))
 }
 
 #[tauri::command]
@@ -174,8 +176,8 @@ pub fn rename_folder(
     path: String,
     new_name: String,
     state: State<'_, AppState>,
-) -> Result<RenameFolderResultDto, String> {
-    state.with_workspace_mut(|workspace| rename_folder_in_workspace(workspace, path, new_name))?
+) -> Result<RenameFolderResultDto, AppError> {
+    state.with_workspace_mut_app(|workspace| rename_folder_in_workspace(workspace, path, new_name))
 }
 
 #[tauri::command]
