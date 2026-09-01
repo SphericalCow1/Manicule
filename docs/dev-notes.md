@@ -111,9 +111,14 @@ The shell is configured in `src-tauri/tauri.conf.json`:
 The Vite dev server in `vite.config.ts` uses a strict port on `127.0.0.1:1420`
 and ignores `src-tauri/**` so Rust rebuilds do not trigger frontend reloads.
 
-Cargo declares two targets in `src-tauri/Cargo.toml`: the `Semtags` binary from
-`src/main.rs` and the `semtags_lib` library from `src/lib.rs`. Command
-permissions are granted through `src-tauri/capabilities/default.json`.
+Cargo explicitly declares the `Semtags` binary from `src/main.rs` and the
+`semtags_lib` library from `src/lib.rs`. Command permissions are granted through
+`src-tauri/capabilities/default.json`.
+
+Performance measurements use the `reindex_benchmark` Cargo example. It is not
+an additional application binary and does not alter the Tauri bundle targets.
+Dataset definitions, commands, budgets, and recorded results are maintained in
+`docs/performance-baselines.md`.
 
 ## Runtime Boundary
 

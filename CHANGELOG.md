@@ -41,6 +41,9 @@ Changes since `v0.6.5`.
   destination pane passed explicitly.
 - Middle- and right-pane navigation now share one back/forward history helper
   while retaining pane-specific loading, editor safeguards, and line targeting.
+- A reproducible release-profile benchmark now measures full reindexing,
+  workspace search, Task Overview loading, and one-file save recovery against
+  documented interaction budgets and generated workspace profiles.
 
 ### Fixed
 
@@ -72,6 +75,8 @@ Changes since `v0.6.5`.
   options, and create-refresh-open ordering.
 - Added coverage for shared navigation transitions and failed editor/right-pane
   back navigation.
+- Added coverage that the benchmarked workspace-save path updates file content,
+  page titles, and backlinks together.
 
 ## 0.6.5
 

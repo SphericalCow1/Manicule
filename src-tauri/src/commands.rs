@@ -12,7 +12,9 @@ use crate::dto::{
 };
 use crate::index::backlink_index::BacklinkIndex;
 use crate::index::page_index::{markdown_with_default_h1, PageIndex};
-use crate::page_io::{content_hash, modified_at_millis, save_page_to_disk};
+#[cfg(test)]
+use crate::page_io::save_page_to_disk;
+use crate::page_io::{content_hash, modified_at_millis, save_page_in_workspace};
 use crate::page_ops::{
     create_folder_in_workspace, create_page_in_workspace, delete_folder_in_workspace,
     delete_page_in_workspace, move_folder_in_workspace, move_page_in_workspace,
@@ -267,27 +269,13 @@ pub fn save_page(
     state: State<'_, AppState>,
 ) -> Result<SavePageResultDto, String> {
     state.with_workspace_mut(|workspace| {
-        let resolved_path = workspace
-            .pages
-            .resolve_path(&path)?
-            .ok_or_else(|| "Page is not indexed".to_string())?;
-        let absolute_path = resolve_workspace_relative_path(&workspace.root, &resolved_path)
-            .ok_or_else(|| "Invalid page path".to_string())?;
-
-        let result = save_page_to_disk(
-            resolved_path.clone(),
-            absolute_path,
-            content.clone(),
+        save_page_in_workspace(
+            workspace,
+            &path,
+            content,
             expected_modified_at,
             expected_content_hash,
-        )?;
-
-        if matches!(result, SavePageResultDto::Saved { .. }) {
-            workspace.pages.update_title(&resolved_path, &content);
-            workspace.backlinks.index_page(resolved_path, &content);
-        }
-
-        Ok(result)
+        )
     })?
 }
 

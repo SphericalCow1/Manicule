@@ -9,7 +9,7 @@ use crate::parser::blocks::{parse_blocks_with_task_states, ParsedBlock};
 use crate::parser::wiki_links::{parse_wiki_links, WikiLink};
 use crate::workspace::paths::resolve_workspace_relative_path;
 
-pub(crate) fn search_pages_in_workspace(
+pub fn search_pages_in_workspace(
     workspace: &WorkspaceState,
     query: &str,
 ) -> Result<Vec<SearchResultDto>, String> {
@@ -125,9 +125,7 @@ fn wiki_link_matches(link: &WikiLink, normalized_query: &str) -> bool {
             .is_some_and(|alias| alias.to_lowercase().contains(normalized_query))
 }
 
-pub(crate) fn list_tasks_in_workspace(
-    workspace: &WorkspaceState,
-) -> Result<Vec<TaskItemDto>, String> {
+pub fn list_tasks_in_workspace(workspace: &WorkspaceState) -> Result<Vec<TaskItemDto>, String> {
     let mut tasks = Vec::new();
 
     for page in workspace.pages.pages() {
