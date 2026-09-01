@@ -1,5 +1,6 @@
 type DialogFocusOptions = {
   onClose?: () => void;
+  returnFocus?: HTMLElement | null | (() => HTMLElement | null);
 };
 
 const FOCUSABLE_SELECTOR = [
@@ -65,7 +66,26 @@ export function trapDialogFocus(node: HTMLElement, options: DialogFocusOptions =
     destroy() {
       window.cancelAnimationFrame(frame);
       node.removeEventListener("keydown", handleKeydown);
-      previousFocus?.focus({ preventScroll: true });
+      const explicitReturnFocus =
+        typeof options.returnFocus === "function" ? options.returnFocus() : options.returnFocus;
+      resolveDialogReturnFocus(explicitReturnFocus ?? null, previousFocus)?.focus({
+        preventScroll: true,
+      });
     },
   };
+}
+
+export function resolveDialogReturnFocus(
+  explicitTarget: HTMLElement | null,
+  previousTarget: HTMLElement | null,
+) {
+  if (explicitTarget?.isConnected) {
+    return explicitTarget;
+  }
+
+  if (previousTarget?.isConnected) {
+    return previousTarget;
+  }
+
+  return null;
 }

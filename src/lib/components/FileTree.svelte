@@ -4,6 +4,7 @@
   import { journalPathForDateInput, journalPathForDay, type JournalDay } from "../journals";
   import { saveExpandedFolders, searchPages } from "../api";
   import { toErrorMessage } from "../errors";
+  import { trapDialogFocus } from "../dialogFocus";
   import { taskStore } from "../stores/tasks";
   import { workspaceStore } from "../stores/workspace";
   import { editorSessionStore } from "../stores/editorSession";
@@ -76,6 +77,7 @@
   let quickAccessHeight = 220;
   let resizingQuickAccess = false;
   let lastWorkspacePopupKey: string | null = null;
+  let dialogReturnFocusTarget: HTMLElement | null = null;
 
   function showPopupError(message: string, detail: string | null = null) {
     popupError = null;
@@ -88,6 +90,22 @@
 
   function workspaceDetailFor(message: string) {
     return message === $workspaceStore.error ? $workspaceStore.errorDetail : null;
+  }
+
+  function rememberDialogReturnFocus(path: string | null = focusedTreePath) {
+    const activeElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const activeOutsideMenu = activeElement && !activeElement.closest("[role='menu']")
+      ? activeElement
+      : null;
+    const treePath = path ?? focusedTreePath;
+    const treeRow = treePath === null
+      ? null
+      : fileTreeElement?.querySelector<HTMLElement>(
+          `[data-tree-path="${CSS.escape(treePath)}"]`,
+        ) ?? null;
+
+    dialogReturnFocusTarget = treeRow ?? activeOutsideMenu ?? fileTreeElement;
   }
 
   function closePopupError() {
@@ -622,6 +640,7 @@
   }
 
   async function startCreatePageInFolder(folderPath: string) {
+    rememberDialogReturnFocus(folderPath);
     folderPageDialog = {
       folderPath,
       value: "",
@@ -676,6 +695,7 @@
   }
 
   async function startCreateFolder(parentPath: string) {
+    rememberDialogReturnFocus(parentPath);
     folderDialog = {
       parentPath,
       value: "",
@@ -1055,6 +1075,7 @@
   }
 
   async function startMovePage(path: string) {
+    rememberDialogReturnFocus(path);
     const currentFolder = path.split("/").slice(0, -1).join("/");
     moveDialog = {
       kind: "page",
@@ -1071,6 +1092,7 @@
   }
 
   async function startMoveFolder(path: string) {
+    rememberDialogReturnFocus(path);
     const currentFolder = path.split("/").slice(0, -1).join("/");
     moveDialog = {
       kind: "folder",
@@ -1124,12 +1146,13 @@
     }
   }
 
-  async function startBatchMove() {
+  async function startBatchMove(returnPath: string | null = focusedTreePath) {
     const paths = compactSelection(selectedNodes).map((node) => node.path);
     if (paths.length === 0) {
       return;
     }
 
+    rememberDialogReturnFocus(returnPath ?? paths[0]);
     batchMoveDialog = {
       paths,
       targetFolder: "",
@@ -1349,6 +1372,7 @@
   }
 
   async function openRenameDialog(kind: RenameDialogState["kind"], path: string, currentName: string) {
+    rememberDialogReturnFocus(path);
     renameDialog = {
       kind,
       path,
@@ -1853,7 +1877,7 @@
     contextMenu = null;
 
     if (action === "batch-move") {
-      void startBatchMove();
+      void startBatchMove(node.path);
       return;
     }
 
@@ -2289,11 +2313,9 @@
         aria-modal="true"
         aria-labelledby="folder-page-dialog-title"
         tabindex="-1"
-        on:keydown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            closeFolderPageDialog();
-          }
+        use:trapDialogFocus={{
+          onClose: closeFolderPageDialog,
+          returnFocus: () => dialogReturnFocusTarget,
         }}
       >
         <form on:submit|preventDefault={submitFolderPage}>
@@ -2345,11 +2367,9 @@
         aria-modal="true"
         aria-labelledby="folder-dialog-title"
         tabindex="-1"
-        on:keydown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            closeFolderDialog();
-          }
+        use:trapDialogFocus={{
+          onClose: closeFolderDialog,
+          returnFocus: () => dialogReturnFocusTarget,
         }}
       >
         <form on:submit|preventDefault={submitFolder}>
@@ -2401,11 +2421,9 @@
         aria-modal="true"
         aria-labelledby="rename-dialog-title"
         tabindex="-1"
-        on:keydown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            closeRenameDialog();
-          }
+        use:trapDialogFocus={{
+          onClose: closeRenameDialog,
+          returnFocus: () => dialogReturnFocusTarget,
         }}
       >
         <form on:submit|preventDefault={submitRename}>
@@ -2462,11 +2480,9 @@
         aria-modal="true"
         aria-labelledby="move-dialog-title"
         tabindex="-1"
-        on:keydown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            closeMoveDialog();
-          }
+        use:trapDialogFocus={{
+          onClose: closeMoveDialog,
+          returnFocus: () => dialogReturnFocusTarget,
         }}
       >
         <form on:submit|preventDefault={submitMove}>
@@ -2540,11 +2556,9 @@
         aria-modal="true"
         aria-labelledby="batch-move-dialog-title"
         tabindex="-1"
-        on:keydown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            closeBatchMoveDialog();
-          }
+        use:trapDialogFocus={{
+          onClose: closeBatchMoveDialog,
+          returnFocus: () => dialogReturnFocusTarget,
         }}
       >
         <form on:submit|preventDefault={submitBatchMove}>

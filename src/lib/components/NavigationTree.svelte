@@ -46,6 +46,7 @@
       title="Drop a page here to move it to the workspace root"
       role="treeitem"
       aria-selected="false"
+      data-tree-path=""
       tabindex="-1"
       on:dragover={(event) => handleFolderDragOver("", event)}
       on:dragleave={handleFolderDragLeave}

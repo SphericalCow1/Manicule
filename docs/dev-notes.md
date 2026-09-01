@@ -325,6 +325,18 @@ Primary components:
   infrastructure and navigation-specific menu entries
 - `ErrorDialog.svelte`: error and conflict reporting
 
+Shared accessibility infrastructure:
+
+- `contextMenuKeyboard.ts` implements wrapped Up/Down traversal, Home/End,
+  activation, Escape, and Left/Right submenu navigation for menus hosted by
+  `ContextMenuShell.svelte`. Mnemonics use the same flyout-opening helper so
+  mouse, letter, and arrow-key interaction keep one open-submenu state.
+- `dialogFocus.ts` traps Tab navigation inside modal dialogs, closes them through
+  their owner on Escape, and restores focus to an explicit invoking control or
+  the previously focused connected element. Every `aria-modal="true"` dialog
+  must use this action; non-modal popovers such as the journal date picker must
+  not trap application focus.
+
 Stores:
 
 - `workspace.ts`: opened workspace metadata and workspace config mirrors
@@ -544,7 +556,10 @@ Frontend tests:
   tests cover pane routing, navigation options, canonical created paths, and
   unsuccessful page creation. Shared navigation-history tests cover stack
   transitions, availability flags, duplicate suppression, forward-history
-  invalidation, clearing, and failed pane navigation.
+  invalidation, clearing, and failed pane navigation. Context-menu tests cover
+  wrapped navigation and disabled entries for root, Status, Priority, Color,
+  and Sort menus; dialog-focus tests cover safe focus restoration when invoking
+  controls have been removed.
 - Run frontend tests with `npm run test:frontend`.
 - Run static Svelte and TypeScript checks with `npm run check`.
 
