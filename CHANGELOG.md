@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
+
+Changes since `v0.6.7`.
 
 ### Changed
 
