@@ -7,7 +7,7 @@ Senior Operations Project Lead.
   - Prepare decisions for [[people/Martin Keller]].
   - Turn [[people/Nadine Vogt]]'s operational evidence into a clear steering recommendation.
 
-- Semtags workflow
+- Manicule workflow
   - Capture daily notes in `journal/`.
   - Link people, projects, and meetings while writing.
   - Use project pages and person pages as automatic backlink collections.

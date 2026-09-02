@@ -201,7 +201,7 @@
     const replacements = [];
     const localLine = index + 1;
     const sourceLine = lineNumbers[index] ?? localLine;
-    const taskMarker = `SEMTAGS_TASK_${taskTokens.length}_TOKEN`;
+    const taskMarker = `MANICULE_TASK_${taskTokens.length}_TOKEN`;
     taskTokens.push({
       line: sourceLine,
       localLine,
@@ -212,7 +212,7 @@
 
     const priorityMatch = priorityCookieMatch(line, 0, states);
     if (priorityMatch) {
-      const priorityMarker = `SEMTAGS_PRIORITY_${priorityTokens.length}_TOKEN`;
+      const priorityMarker = `MANICULE_PRIORITY_${priorityTokens.length}_TOKEN`;
       priorityTokens.push({
         line: sourceLine,
         localLine,
@@ -258,18 +258,18 @@
     const link = (event.target as HTMLElement).closest("a");
     const href = link?.getAttribute("href");
 
-    if (href?.startsWith("semtags-missing:")) {
+    if (href?.startsWith("manicule-missing:")) {
       event.preventDefault();
-      onMissingWikiLink(decodeURIComponent(href.slice("semtags-missing:".length)));
+      onMissingWikiLink(decodeURIComponent(href.slice("manicule-missing:".length)));
       return;
     }
 
-    if (!href?.startsWith("semtags:")) {
+    if (!href?.startsWith("manicule:")) {
       return;
     }
 
     event.preventDefault();
-    onWikiLink(decodeURIComponent(href.slice("semtags:".length)));
+    onWikiLink(decodeURIComponent(href.slice("manicule:".length)));
   }
 
   function handleContextMenu(event: MouseEvent) {
@@ -299,7 +299,7 @@
     const link = (event.target as HTMLElement).closest("a");
     const href = link?.getAttribute("href");
 
-    if (!href?.startsWith("semtags:") && !href?.startsWith("semtags-missing:")) {
+    if (!href?.startsWith("manicule:") && !href?.startsWith("manicule-missing:")) {
       if (sourceLineMenuTargets.length === 0) {
         return;
       }
@@ -327,8 +327,8 @@
 
     taskContextMenu = null;
     sourceLineContextMenu = null;
-    const missing = href.startsWith("semtags-missing:");
-    const prefix = missing ? "semtags-missing:" : "semtags:";
+    const missing = href.startsWith("manicule-missing:");
+    const prefix = missing ? "manicule-missing:" : "manicule:";
     linkContextMenu = {
       x: event.clientX,
       y: event.clientY,

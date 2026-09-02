@@ -221,18 +221,18 @@
     const link = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>("a");
     const href = link?.getAttribute("href");
 
-    if (href?.startsWith("semtags:")) {
+    if (href?.startsWith("manicule:")) {
       event.preventDefault();
       event.stopPropagation();
-      void linkOperations.open(decodeURIComponent(href.slice("semtags:".length)), "right");
+      void linkOperations.open(decodeURIComponent(href.slice("manicule:".length)), "right");
       return;
     }
 
-    if (href?.startsWith("semtags-missing:")) {
+    if (href?.startsWith("manicule-missing:")) {
       event.preventDefault();
       event.stopPropagation();
       localError = `Linked page does not exist: ${decodeURIComponent(
-        href.slice("semtags-missing:".length),
+        href.slice("manicule-missing:".length),
       )}`;
       return;
     }

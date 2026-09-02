@@ -247,7 +247,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!("semtags-scanner-test-{now}"));
+        let root = std::env::temp_dir().join(format!("manicule-scanner-test-{now}"));
         fs::create_dir_all(&root).unwrap();
         root
     }

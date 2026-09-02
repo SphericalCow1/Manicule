@@ -23,9 +23,9 @@ const fallbackMessages: Record<AppErrorCode, string> = {
   conflict: "The operation conflicts with the current workspace state. Refresh and try again.",
   already_exists: "An item with this name already exists. Choose another name.",
   folder_not_empty: "The folder is not empty. Move or delete its contents first.",
-  io: "Semtags could not access the file. Check its permissions and try again.",
-  state_lock: "Semtags could not access its current state. Restart the app and try again.",
-  internal: "Semtags could not complete the operation. Reopen the workspace and try again.",
+  io: "Manicule could not access the file. Check its permissions and try again.",
+  state_lock: "Manicule could not access its current state. Restart the app and try again.",
+  internal: "Manicule could not complete the operation. Reopen the workspace and try again.",
 };
 
 function appErrorCode(value: unknown): AppErrorCode | null {

@@ -1,22 +1,22 @@
 [package]
-name = "semtags"
+name = "manicule"
 version = "0.6.7"
 description = "A local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags."
 authors = ["Jens"]
 license = "AGPL-3.0-only"
-repository = "https://github.com/SphericalCow1/Semtags"
-homepage = "https://github.com/SphericalCow1/Semtags"
+repository = "https://github.com/SphericalCow1/Manicule"
+homepage = "https://github.com/SphericalCow1/Manicule"
 readme = "../README.md"
 edition = "2021"
-default-run = "Semtags"
+default-run = "Manicule"
 autobins = false
 
 [[bin]]
-name = "Semtags"
+name = "Manicule"
 path = "src/main.rs"
 
 [lib]
-name = "semtags_lib"
+name = "manicule_lib"
 path = "src/lib.rs"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
