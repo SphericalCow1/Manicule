@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Renamed the application, desktop bundle, executable, menus, dialogs, internal
+  namespaces, and documentation from Semtags to Manicule.
+- User-level startup configuration is now stored in `~/.manicule`; configuration
+  files from earlier product names are intentionally not imported.
+- Repository metadata now points to `SphericalCow1/Manicule`.
+
 ## 0.6.7
 
 Changes since `v0.6.5`.

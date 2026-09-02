@@ -1936,8 +1936,8 @@ textarea {
 }
 
 .code-editor .cm-list-wrap-indent {
-  padding-left: calc(8px + var(--semtags-list-prefix-width)) !important;
-  text-indent: calc(-1 * var(--semtags-list-prefix-width));
+  padding-left: calc(8px + var(--manicule-list-prefix-width)) !important;
+  text-indent: calc(-1 * var(--manicule-list-prefix-width));
 }
 
 .code-editor .cm-gutters {
@@ -2425,7 +2425,7 @@ textarea {
   transform-origin: center;
 }
 
-.markdown-view a[href^="semtags-missing:"] {
+.markdown-view a[href^="manicule-missing:"] {
   color: #9b1c1c;
   text-decoration-style: dotted;
   cursor: pointer;

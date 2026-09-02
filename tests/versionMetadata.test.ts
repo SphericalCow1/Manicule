@@ -18,9 +18,31 @@ test("keeps application versions in sync", () => {
   assert.equal(tauriConfig.version, packageJson.version);
 });
 
-test("keeps the About dialog repository link current", () => {
+test("keeps application naming consistent across build metadata", () => {
+  const packageJson = readJson<{ name: string }>("package.json");
+  const tauriConfig = readJson<{
+    productName: string;
+    identifier: string;
+    app: { windows: Array<{ title: string }> };
+  }>("src-tauri/tauri.conf.json");
+  const cargoToml = readFileSync(join(root, "src-tauri/Cargo.toml"), "utf8");
+  const indexHtml = readFileSync(join(root, "index.html"), "utf8");
+
+  assert.equal(packageJson.name, "manicule");
+  assert.equal(tauriConfig.productName, "Manicule");
+  assert.equal(tauriConfig.identifier, "dev.manicule.desktop");
+  assert.equal(tauriConfig.app.windows[0]?.title, "Manicule");
+  assert.match(cargoToml, /^name = "manicule"$/m);
+  assert.match(cargoToml, /^default-run = "Manicule"$/m);
+  assert.match(cargoToml, /^name = "Manicule"$/m);
+  assert.match(cargoToml, /^name = "manicule_lib"$/m);
+  assert.match(indexHtml, /<title>Manicule<\/title>/);
+});
+
+test("keeps the About dialog product name and repository link current", () => {
   const appSource = readFileSync(join(root, "src/App.svelte"), "utf8");
 
-  assert.match(appSource, /https:\/\/github\.com\/SphericalCow1\/Semtags/);
+  assert.match(appSource, /<h2 id="about-dialog-title">Manicule<\/h2>/);
+  assert.match(appSource, /https:\/\/github\.com\/SphericalCow1\/Manicule/);
   assert.match(appSource, /A local Markdown-based knowledge workspace/);
 });

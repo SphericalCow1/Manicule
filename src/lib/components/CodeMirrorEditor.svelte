@@ -233,7 +233,7 @@
 
     lastHistoryAvailability = serialized;
     window.dispatchEvent(
-      new CustomEvent("semtags-editor-history-availability", {
+      new CustomEvent("manicule-editor-history-availability", {
         detail: availability,
       }),
     );
@@ -880,11 +880,11 @@
   }
 
   onMount(() => {
-    window.addEventListener("semtags-editor-undo", handleEditorUndoEvent);
-    window.addEventListener("semtags-editor-redo", handleEditorRedoEvent);
-    window.addEventListener("semtags-editor-isolate-history", isolateEditorHistory);
-    window.addEventListener("semtags-collapse-all-blocks-below-level", handleCollapseBelowLevelEvent);
-    window.addEventListener("semtags-expand-all-blocks", handleExpandAllBlocksEvent);
+    window.addEventListener("manicule-editor-undo", handleEditorUndoEvent);
+    window.addEventListener("manicule-editor-redo", handleEditorRedoEvent);
+    window.addEventListener("manicule-editor-isolate-history", isolateEditorHistory);
+    window.addEventListener("manicule-collapse-all-blocks-below-level", handleCollapseBelowLevelEvent);
+    window.addEventListener("manicule-expand-all-blocks", handleExpandAllBlocksEvent);
     lastDocumentPath = documentPath;
     view = new EditorView({
       parent: host,
@@ -953,14 +953,14 @@
   }
 
   onDestroy(() => {
-    window.removeEventListener("semtags-editor-undo", handleEditorUndoEvent);
-    window.removeEventListener("semtags-editor-redo", handleEditorRedoEvent);
-    window.removeEventListener("semtags-editor-isolate-history", isolateEditorHistory);
+    window.removeEventListener("manicule-editor-undo", handleEditorUndoEvent);
+    window.removeEventListener("manicule-editor-redo", handleEditorRedoEvent);
+    window.removeEventListener("manicule-editor-isolate-history", isolateEditorHistory);
     window.removeEventListener(
-      "semtags-collapse-all-blocks-below-level",
+      "manicule-collapse-all-blocks-below-level",
       handleCollapseBelowLevelEvent,
     );
-    window.removeEventListener("semtags-expand-all-blocks", handleExpandAllBlocksEvent);
+    window.removeEventListener("manicule-expand-all-blocks", handleExpandAllBlocksEvent);
     if (highlightTimer) {
       clearTimeout(highlightTimer);
     }

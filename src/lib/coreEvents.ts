@@ -74,13 +74,13 @@ export async function setupCoreEvents() {
       const workspace = get(workspaceStore);
       if (!workspace.root) {
         await message("Open a workspace before creating a file.", {
-          title: "Semtags",
+          title: "Manicule",
           kind: "warning",
         });
         return;
       }
 
-      window.dispatchEvent(new CustomEvent("semtags-new-page", { detail: { folderPath: "" } }));
+      window.dispatchEvent(new CustomEvent("manicule-new-page", { detail: { folderPath: "" } }));
     }),
   );
 
@@ -90,7 +90,7 @@ export async function setupCoreEvents() {
       const editor = get(editorSessionStore);
       if (editor.saving) {
         await message("Wait for the current save to finish before closing the workspace.", {
-          title: "Semtags",
+          title: "Manicule",
           kind: "warning",
         });
         return;
@@ -99,7 +99,7 @@ export async function setupCoreEvents() {
       if (
         (editor.dirty || editor.conflict) &&
         !(await confirmDialog("Close workspace and discard unsaved editor changes?", {
-          title: "Semtags",
+          title: "Manicule",
           kind: "warning",
         }))
       ) {
@@ -119,7 +119,7 @@ export async function setupCoreEvents() {
   setupThemeMenuLabel();
   setupTaskOverviewMenuLabel();
   setupEditorModeMenuLabel();
-  window.addEventListener("semtags-editor-history-availability", handleEditorHistoryAvailability);
+  window.addEventListener("manicule-editor-history-availability", handleEditorHistoryAvailability);
 
   await onCoreEvent(
     "menu-undo",
@@ -147,7 +147,7 @@ export async function setupCoreEvents() {
   });
 
   await onCoreEvent("menu-reset-layout", async () => {
-    window.dispatchEvent(new CustomEvent("semtags-reset-layout"));
+    window.dispatchEvent(new CustomEvent("manicule-reset-layout"));
   });
 
   for (const level of [1, 2, 3, 4]) {
@@ -155,7 +155,7 @@ export async function setupCoreEvents() {
       mainViewStore.set("editor");
       window.setTimeout(() => {
         window.dispatchEvent(
-          new CustomEvent("semtags-collapse-all-blocks-below-level", {
+          new CustomEvent("manicule-collapse-all-blocks-below-level", {
             detail: { level },
           }),
         );
@@ -166,7 +166,7 @@ export async function setupCoreEvents() {
   await onCoreEvent("menu-expand-all-blocks", async () => {
     mainViewStore.set("editor");
     window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("semtags-expand-all-blocks"));
+      window.dispatchEvent(new CustomEvent("manicule-expand-all-blocks"));
     }, 0);
   });
 
@@ -183,11 +183,11 @@ export async function setupCoreEvents() {
   });
 
   await onCoreEvent("menu-about", async () => {
-    window.dispatchEvent(new CustomEvent("semtags-show-about"));
+    window.dispatchEvent(new CustomEvent("manicule-show-about"));
   });
 
   await onCoreEvent("menu-keyboard-shortcuts", async () => {
-    window.dispatchEvent(new CustomEvent("semtags-show-keyboard-shortcuts"));
+    window.dispatchEvent(new CustomEvent("manicule-show-keyboard-shortcuts"));
   });
 }
 
@@ -300,7 +300,7 @@ function handleGlobalViewKeydown(event: KeyboardEvent) {
   if (key === "e") {
     mainViewStore.set("editor");
     window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("semtags-expand-all-blocks"));
+      window.dispatchEvent(new CustomEvent("manicule-expand-all-blocks"));
     }, 0);
     return;
   }
@@ -369,12 +369,12 @@ async function handleUndoRequest(source: "keyboard" | "menu") {
     const undone = await appUndoStore.undoLast();
     const undoState = get(appUndoStore);
     if (!undone && undoState.error) {
-      await message(undoState.error, { title: "Semtags", kind: "warning" });
+      await message(undoState.error, { title: "Manicule", kind: "warning" });
       return;
     }
 
     if (!undone && get(mainViewStore) === "editor") {
-      window.dispatchEvent(new CustomEvent("semtags-editor-undo"));
+      window.dispatchEvent(new CustomEvent("manicule-editor-undo"));
     }
   } finally {
     undoRunning = false;
@@ -406,12 +406,12 @@ async function handleRedoRequest(source: "keyboard" | "menu") {
     const redone = await appUndoStore.redoLast();
     const undoState = get(appUndoStore);
     if (!redone && undoState.error) {
-      await message(undoState.error, { title: "Semtags", kind: "warning" });
+      await message(undoState.error, { title: "Manicule", kind: "warning" });
       return;
     }
 
     if (!redone && get(mainViewStore) === "editor") {
-      window.dispatchEvent(new CustomEvent("semtags-editor-redo"));
+      window.dispatchEvent(new CustomEvent("manicule-editor-redo"));
     }
   } finally {
     redoRunning = false;
@@ -439,7 +439,7 @@ async function openWorkspaceFromDialog() {
   const selected = await open({
     directory: true,
     multiple: false,
-    title: "Open Semtags workspace",
+    title: "Open Manicule workspace",
   });
 
   if (typeof selected === "string") {
