@@ -201,7 +201,7 @@
     const replacements = [];
     const localLine = index + 1;
     const sourceLine = lineNumbers[index] ?? localLine;
-    const taskMarker = `MENTINOTE_TASK_${taskTokens.length}_TOKEN`;
+    const taskMarker = `SEMTAGS_TASK_${taskTokens.length}_TOKEN`;
     taskTokens.push({
       line: sourceLine,
       localLine,
@@ -212,7 +212,7 @@
 
     const priorityMatch = priorityCookieMatch(line, 0, states);
     if (priorityMatch) {
-      const priorityMarker = `MENTINOTE_PRIORITY_${priorityTokens.length}_TOKEN`;
+      const priorityMarker = `SEMTAGS_PRIORITY_${priorityTokens.length}_TOKEN`;
       priorityTokens.push({
         line: sourceLine,
         localLine,
@@ -258,18 +258,18 @@
     const link = (event.target as HTMLElement).closest("a");
     const href = link?.getAttribute("href");
 
-    if (href?.startsWith("mentinote-missing:")) {
+    if (href?.startsWith("semtags-missing:")) {
       event.preventDefault();
-      onMissingWikiLink(decodeURIComponent(href.slice("mentinote-missing:".length)));
+      onMissingWikiLink(decodeURIComponent(href.slice("semtags-missing:".length)));
       return;
     }
 
-    if (!href?.startsWith("mentinote:")) {
+    if (!href?.startsWith("semtags:")) {
       return;
     }
 
     event.preventDefault();
-    onWikiLink(decodeURIComponent(href.slice("mentinote:".length)));
+    onWikiLink(decodeURIComponent(href.slice("semtags:".length)));
   }
 
   function handleContextMenu(event: MouseEvent) {
@@ -299,7 +299,7 @@
     const link = (event.target as HTMLElement).closest("a");
     const href = link?.getAttribute("href");
 
-    if (!href?.startsWith("mentinote:") && !href?.startsWith("mentinote-missing:")) {
+    if (!href?.startsWith("semtags:") && !href?.startsWith("semtags-missing:")) {
       if (sourceLineMenuTargets.length === 0) {
         return;
       }
@@ -327,8 +327,8 @@
 
     taskContextMenu = null;
     sourceLineContextMenu = null;
-    const missing = href.startsWith("mentinote-missing:");
-    const prefix = missing ? "mentinote-missing:" : "mentinote:";
+    const missing = href.startsWith("semtags-missing:");
+    const prefix = missing ? "semtags-missing:" : "semtags:";
     linkContextMenu = {
       x: event.clientX,
       y: event.clientY,

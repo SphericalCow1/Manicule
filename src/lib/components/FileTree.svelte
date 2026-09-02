@@ -286,14 +286,14 @@
   $: pruneSelection();
 
   onMount(() => {
-    window.addEventListener("mentinote-new-page", handleNewPageEvent);
+    window.addEventListener("semtags-new-page", handleNewPageEvent);
   });
 
   onDestroy(() => {
     if (navigationLayoutSaveTimer) {
       clearTimeout(navigationLayoutSaveTimer);
     }
-    window.removeEventListener("mentinote-new-page", handleNewPageEvent);
+    window.removeEventListener("semtags-new-page", handleNewPageEvent);
     window.removeEventListener("pointermove", resizeQuickAccess);
   });
 
@@ -308,7 +308,7 @@
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Open mentiNote workspace",
+        title: "Open Semtags workspace",
       });
 
       if (typeof selected !== "string") {
@@ -331,7 +331,7 @@
   async function confirmWarning(message: string) {
     try {
       return await confirmDialog(message, {
-        title: "mentiNote",
+        title: "Semtags",
         kind: "warning",
       });
     } catch (error) {
@@ -2616,7 +2616,7 @@
 </aside>
 
 <ErrorDialog
-  title="mentiNote Error"
+  title="Semtags Error"
   message={popupError}
   detail={popupErrorDetail}
   onClose={closePopupError}

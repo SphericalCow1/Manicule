@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-const zoomStorageKey = "mentinote:zoom";
+const zoomStorageKey = "semtags:zoom";
 const defaultZoom = 1;
 const minZoom = 0.75;
 const maxZoom = 1.25;

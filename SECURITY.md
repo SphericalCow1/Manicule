@@ -1,6 +1,6 @@
 # Security Policy
 
-mentiNote is an early-stage local desktop application that reads and writes
+Semtags is an early-stage local desktop application that reads and writes
 Markdown files in a user-selected workspace. Please use appropriate backups,
 especially when testing file operations such as move, rename, and delete.
 

@@ -65,7 +65,7 @@ export function wikiLinkHref(target: string, pages: PageSummary[]): string | nul
     return null;
   }
 
-  const scheme = resolved.exists || pages.length === 0 ? "mentinote" : "mentinote-missing";
+  const scheme = resolved.exists || pages.length === 0 ? "semtags" : "semtags-missing";
   return `${scheme}:${encodeURIComponent(resolved.path)}`;
 }
 
@@ -134,9 +134,9 @@ export function applyWikiLinkColorStyles(
   folderColors: FolderColors = {},
 ) {
   return html.replace(
-    /<a href="(mentinote:[^"]+)"([^>]*)>/g,
+    /<a href="(semtags:[^"]+)"([^>]*)>/g,
     (match, href: string, rest: string) => {
-      const target = decodeURIComponent(href.slice("mentinote:".length));
+      const target = decodeURIComponent(href.slice("semtags:".length));
       const style = wikiLinkColorStyle(target, pages, folderColors);
 
       if (rest.includes("style=")) {

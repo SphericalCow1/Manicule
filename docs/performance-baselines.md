@@ -16,8 +16,8 @@ cargo run --locked --release --example reindex_benchmark -- [options]
 The benchmark calls the same Rust functions used by the application for full
 reindexing, workspace search, Task Overview loading, and one-file saving. It is
 a Cargo example, not an application binary. `Cargo.toml` therefore continues to
-declare only the `mentiNote` binary and `cargo run` remains unambiguous through
-`default-run = "mentiNote"`. The existing Tauri GitHub Actions build matrix does
+declare only the `Semtags` binary and `cargo run` remains unambiguous through
+`default-run = "Semtags"`. The existing Tauri GitHub Actions build matrix does
 not need an additional target or bundle configuration.
 
 Every measured operation has one warm-up run and five timed runs. The benchmark
@@ -45,7 +45,7 @@ timing assertion.
 - Hardware: MacBook Air, Intel Core i5 1.8 GHz, 2 cores / 4 logical CPUs, 8 GB RAM
 - Operating system: macOS 12.7.6, x86_64
 - Build profile: Cargo `release`
-- mentiNote version: 0.6.7 development branch
+- Semtags version: 0.6.7 development branch
 
 ## Results
 

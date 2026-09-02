@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "mentiNote",
+  "productName": "Semtags",
   "version": "0.6.7",
-  "identifier": "dev.mentinote.desktop",
+  "identifier": "dev.semtags.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "mentiNote",
+        "title": "Semtags",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
