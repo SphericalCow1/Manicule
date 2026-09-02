@@ -29,10 +29,6 @@
     void loadEditorPageView($editorSessionStore.path);
   }
 
-  async function createWikiLinkPage(path: string) {
-    await linkOperations.createAndOpen(path, "editor");
-  }
-
   async function loadEditorPageView(path: string | null) {
     const requestId = ++pageViewRequestSequence;
     missingLinkPath = null;
@@ -199,7 +195,6 @@
       onEditorHistoryDiscard={(path) => appUndoStore.discardEditorHistory(path)}
       onOpenWikiLink={openWikiTarget}
       onOpenSourceLineInRightPane={openCurrentLineInRightPane}
-      onCreateWikiLinkPage={(path) => void createWikiLinkPage(path)}
     />
     {#if missingLinkPath}
       <div class="missing-link-action editor-missing-link-action">
