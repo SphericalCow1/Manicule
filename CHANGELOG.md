@@ -1,16 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### Changed
-
-- Renamed the application, desktop bundle, executable, menus, dialogs, and
-  documentation from Semtags to mentiNote.
-- Renamed the user-level startup configuration from `~/.semtags` to
-  `~/.mentinote`; the previous file is intentionally not migrated.
-- Renamed internal application events, rendered wiki-link schemes, and local UI
-  storage keys to use the `mentinote` namespace.
-
 ## 0.6.7
 
 Changes since `v0.6.5`.

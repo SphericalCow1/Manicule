@@ -1,22 +1,22 @@
 [package]
-name = "mentinote"
+name = "semtags"
 version = "0.6.7"
 description = "A local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags."
 authors = ["Jens"]
 license = "AGPL-3.0-only"
-repository = "https://github.com/SphericalCow1/mentiNote"
-homepage = "https://github.com/SphericalCow1/mentiNote"
+repository = "https://github.com/SphericalCow1/Semtags"
+homepage = "https://github.com/SphericalCow1/Semtags"
 readme = "../README.md"
 edition = "2021"
-default-run = "mentiNote"
+default-run = "Semtags"
 autobins = false
 
 [[bin]]
-name = "mentiNote"
+name = "Semtags"
 path = "src/main.rs"
 
 [lib]
-name = "mentinote_lib"
+name = "semtags_lib"
 path = "src/lib.rs"
 crate-type = ["staticlib", "cdylib", "rlib"]
 

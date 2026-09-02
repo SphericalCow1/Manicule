@@ -233,7 +233,7 @@
 
     lastHistoryAvailability = serialized;
     window.dispatchEvent(
-      new CustomEvent("mentinote-editor-history-availability", {
+      new CustomEvent("semtags-editor-history-availability", {
         detail: availability,
       }),
     );
@@ -880,11 +880,11 @@
   }
 
   onMount(() => {
-    window.addEventListener("mentinote-editor-undo", handleEditorUndoEvent);
-    window.addEventListener("mentinote-editor-redo", handleEditorRedoEvent);
-    window.addEventListener("mentinote-editor-isolate-history", isolateEditorHistory);
-    window.addEventListener("mentinote-collapse-all-blocks-below-level", handleCollapseBelowLevelEvent);
-    window.addEventListener("mentinote-expand-all-blocks", handleExpandAllBlocksEvent);
+    window.addEventListener("semtags-editor-undo", handleEditorUndoEvent);
+    window.addEventListener("semtags-editor-redo", handleEditorRedoEvent);
+    window.addEventListener("semtags-editor-isolate-history", isolateEditorHistory);
+    window.addEventListener("semtags-collapse-all-blocks-below-level", handleCollapseBelowLevelEvent);
+    window.addEventListener("semtags-expand-all-blocks", handleExpandAllBlocksEvent);
     lastDocumentPath = documentPath;
     view = new EditorView({
       parent: host,
@@ -953,14 +953,14 @@
   }
 
   onDestroy(() => {
-    window.removeEventListener("mentinote-editor-undo", handleEditorUndoEvent);
-    window.removeEventListener("mentinote-editor-redo", handleEditorRedoEvent);
-    window.removeEventListener("mentinote-editor-isolate-history", isolateEditorHistory);
+    window.removeEventListener("semtags-editor-undo", handleEditorUndoEvent);
+    window.removeEventListener("semtags-editor-redo", handleEditorRedoEvent);
+    window.removeEventListener("semtags-editor-isolate-history", isolateEditorHistory);
     window.removeEventListener(
-      "mentinote-collapse-all-blocks-below-level",
+      "semtags-collapse-all-blocks-below-level",
       handleCollapseBelowLevelEvent,
     );
-    window.removeEventListener("mentinote-expand-all-blocks", handleExpandAllBlocksEvent);
+    window.removeEventListener("semtags-expand-all-blocks", handleExpandAllBlocksEvent);
     if (highlightTimer) {
       clearTimeout(highlightTimer);
     }

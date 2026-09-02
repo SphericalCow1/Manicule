@@ -41,7 +41,7 @@ function buildListWrapIndentDecorations(state: EditorState) {
       line.from,
       Decoration.line({
         class: "cm-list-wrap-indent",
-        attributes: { style: `--mentinote-list-prefix-width: ${indent}ch` },
+        attributes: { style: `--semtags-list-prefix-width: ${indent}ch` },
       }),
     );
   }

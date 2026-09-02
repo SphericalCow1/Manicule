@@ -84,7 +84,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "mentinote-content-snapshot-test-{}-{nanos}-{unique}",
+            "semtags-content-snapshot-test-{}-{nanos}-{unique}",
             std::process::id()
         ));
         fs::create_dir_all(&path).unwrap();

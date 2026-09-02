@@ -165,7 +165,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "mentinote-page-io-test-{}-{nanos}-{unique}",
+            "semtags-page-io-test-{}-{nanos}-{unique}",
             std::process::id()
         ));
         fs::create_dir_all(&path).unwrap();
