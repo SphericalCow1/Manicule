@@ -1744,6 +1744,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mentinote"
+version = "0.6.7"
+dependencies = [
+ "notify",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2602,18 +2614,6 @@ dependencies = [
  "rustc-hash",
  "servo_arc",
  "smallvec",
-]
-
-[[package]]
-name = "semtags"
-version = "0.6.7"
-dependencies = [
- "notify",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
 ]
 
 [[package]]

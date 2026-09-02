@@ -20,7 +20,7 @@ pub fn save_last_workspace(home_dir: &Path, path: &Path) -> Result<(), String> {
 }
 
 fn user_config_path(home_dir: &Path) -> PathBuf {
-    home_dir.join(".semtags")
+    home_dir.join(".mentinote")
 }
 
 fn load_or_create_user_config_at(path: &Path) -> Result<UserConfig, String> {
@@ -31,7 +31,7 @@ fn load_or_create_user_config_at(path: &Path) -> Result<UserConfig, String> {
     }
 
     let content = fs::read_to_string(path)
-        .map_err(|error| format!("Failed to read user .semtags: {error}"))?;
+        .map_err(|error| format!("Failed to read user .mentinote: {error}"))?;
 
     if content.trim().is_empty() {
         let config = UserConfig::default();
@@ -40,19 +40,21 @@ fn load_or_create_user_config_at(path: &Path) -> Result<UserConfig, String> {
     }
 
     serde_json::from_str(&content)
-        .map_err(|error| format!("Failed to parse user .semtags: {error}"))
+        .map_err(|error| format!("Failed to parse user .mentinote: {error}"))
 }
 
 fn write_user_config(path: &Path, config: &UserConfig) -> Result<(), String> {
     let content = serde_json::to_string_pretty(config)
-        .map_err(|error| format!("Failed to serialize user .semtags: {error}"))?;
+        .map_err(|error| format!("Failed to serialize user .mentinote: {error}"))?;
     fs::write(path, format!("{content}\n"))
-        .map_err(|error| format!("Failed to write user .semtags: {error}"))
+        .map_err(|error| format!("Failed to write user .mentinote: {error}"))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{load_or_create_user_config_at, write_user_config, UserConfig};
+    use super::{
+        load_or_create_user_config, load_or_create_user_config_at, write_user_config, UserConfig,
+    };
     use std::fs;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -60,19 +62,18 @@ mod tests {
     #[test]
     fn creates_missing_user_config() {
         let root = temp_dir();
-        let path = root.join(".semtags");
 
-        let config = load_or_create_user_config_at(&path).unwrap();
+        let config = load_or_create_user_config(&root).unwrap();
 
         assert_eq!(config, UserConfig::default());
-        assert!(path.exists());
+        assert!(root.join(".mentinote").exists());
         fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
     fn reads_last_workspace_from_user_config() {
         let root = temp_dir();
-        let path = root.join(".semtags");
+        let path = root.join(".mentinote");
         write_user_config(
             &path,
             &UserConfig {
@@ -93,7 +94,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        path.push(format!("semtags-user-config-test-{nanos}"));
+        path.push(format!("mentinote-user-config-test-{nanos}"));
         fs::create_dir_all(&path).unwrap();
         path
     }

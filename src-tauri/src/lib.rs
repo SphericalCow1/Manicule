@@ -76,7 +76,7 @@ impl Diagnostic {
 
 #[tauri::command]
 fn ping() -> &'static str {
-    "semtags-ready"
+    "mentinote-ready"
 }
 
 #[tauri::command]
@@ -208,7 +208,7 @@ pub fn run() {
             commands::toggle_checkbox
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Semtags");
+        .expect("error while running mentiNote");
 }
 
 fn build_app_menu(handle: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
@@ -395,7 +395,7 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
 fn ensure_help_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri::Result<()> {
     let shortcuts =
         MenuItemBuilder::with_id(MENU_KEYBOARD_SHORTCUTS, "Keyboard Shortcuts").build(handle)?;
-    let about = MenuItemBuilder::with_id(MENU_ABOUT, "About Semtags").build(handle)?;
+    let about = MenuItemBuilder::with_id(MENU_ABOUT, "About mentiNote").build(handle)?;
 
     if let Some(help_menu) = find_submenu(menu, "Help")? {
         while !help_menu.items()?.is_empty() {

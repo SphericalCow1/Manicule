@@ -1293,7 +1293,7 @@ mod tests {
             .as_nanos();
         let counter = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let root = std::env::temp_dir().join(format!(
-            "semtags-command-test-{}-{counter}-{now}",
+            "mentinote-command-test-{}-{counter}-{now}",
             std::process::id()
         ));
         if root.exists() {
