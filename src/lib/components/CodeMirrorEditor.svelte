@@ -54,6 +54,7 @@
   } from "../editorLivePreview";
   import { DEFAULT_TASK_STATES, priorityCookieMatch, taskPriorityChange } from "../taskKeywords";
   import { playTaskDoneSound } from "../taskCompletionSound";
+  import { minimalTextChange } from "../textChanges";
   import { matchWikiLinkCompletion, wikiLinkSuggestions } from "../wikiLinkCompletion";
   import { resolveWikiTarget } from "../wikiLinks";
   import type { LinkTargetPane } from "../stores/linkOperations";
@@ -864,7 +865,10 @@
         }
 
         onChange(update.state.doc.toString());
-        if (!applyingHistoryCommand) {
+        if (
+          !applyingHistoryCommand &&
+          undoDepth(update.state) > undoDepth(update.startState)
+        ) {
           onEditorHistoryChange(documentPath);
         }
         if (searchOpen) {
@@ -910,12 +914,9 @@
 
   $: if (view && value !== view.state.doc.toString()) {
     applyingExternalValue = true;
+    const change = minimalTextChange(view.state.doc.toString(), value);
     view.dispatch({
-      changes: {
-        from: 0,
-        to: view.state.doc.length,
-        insert: value,
-      },
+      changes: change ?? undefined,
       annotations: Transaction.addToHistory.of(false),
     });
     if (searchOpen) {
@@ -1099,6 +1100,153 @@
     y={editorContextMenu.y}
     onClose={closeEditorContextMenu}
   >
+    {#if editorContextMenu.task}
+      <div class="editor-menu-flyout" role="menuitem" tabindex="0">
+        <button
+          type="button"
+          class="editor-menu-flyout-trigger"
+          data-menu-key="t"
+          on:click|stopPropagation
+        >
+          <span><span class="menu-mnemonic">T</span>ask</span>
+          <span aria-hidden="true">›</span>
+        </button>
+        <div class="editor-menu-flyout-panel" role="menu">
+          <div class="editor-menu-flyout" role="menuitem" tabindex="0">
+            <button
+              type="button"
+              class="editor-menu-flyout-trigger"
+              data-menu-key="s"
+              on:click|stopPropagation
+            >
+              <span><span class="menu-mnemonic">S</span>tatus</span>
+              <span aria-hidden="true">›</span>
+            </button>
+            <div class="editor-menu-flyout-panel" role="menu">
+              {#each taskStates as state, index}
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-menu-key={String(index + 1)}
+                  disabled={state === editorContextMenu.task.status}
+                  on:click={() => setTaskStatus(state)}
+                >
+                  <span class="menu-mnemonic">{index + 1}</span> {state}
+                </button>
+              {/each}
+            </div>
+          </div>
+          <div class="editor-menu-flyout" role="menuitem" tabindex="0">
+            <button
+              type="button"
+              class="editor-menu-flyout-trigger"
+              data-menu-key="p"
+              on:click|stopPropagation
+            >
+              <span><span class="menu-mnemonic">P</span>riority</span>
+              <span aria-hidden="true">›</span>
+            </button>
+            <div class="editor-menu-flyout-panel" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                data-menu-key="0"
+                disabled={currentPriority === null}
+                on:click={() => setTaskPriority(null)}
+              >
+                <span class="menu-mnemonic">0</span> No priority
+              </button>
+              {#each taskPriorityOptions as priority}
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-menu-key={priority}
+                  disabled={currentPriority === priority}
+                  on:click={() => setTaskPriority(priority)}
+                >
+                  #<span class="menu-mnemonic">{priority}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    {#if !editorContextMenu.task}
+      <div class="editor-menu-flyout" role="menuitem" tabindex="0">
+        <button
+          type="button"
+          class="editor-menu-flyout-trigger"
+          data-menu-key="c"
+          on:click|stopPropagation
+        >
+          <span><span class="menu-mnemonic">C</span>ollapse</span>
+          <span aria-hidden="true">›</span>
+        </button>
+        <div class="editor-menu-flyout-panel" role="menu">
+          {#if blockIsCollapsible}
+            <button
+              type="button"
+              role="menuitem"
+              data-menu-key={blockIsFolded ? "e" : "c"}
+              on:click={toggleSourceLineBlockFold}
+            >
+              {#if blockIsFolded}
+                <span class="menu-mnemonic">E</span>xpand block
+              {:else}
+                <span class="menu-mnemonic">C</span>ollapse block
+              {/if}
+            </button>
+          {/if}
+          {#if blockLevel !== null}
+            <button
+              type="button"
+              role="menuitem"
+              data-menu-key="l"
+              on:click={collapseSourceLineBelowLevel}
+            >
+              Collapse all below <span class="menu-mnemonic">l</span>evel {blockLevel}
+            </button>
+          {/if}
+          <button
+            type="button"
+            role="menuitem"
+            data-menu-key="a"
+            on:click={expandAllSourceLineBlocks}
+          >
+            Expand <span class="menu-mnemonic">a</span>ll
+          </button>
+        </div>
+      </div>
+    {/if}
+
+    {#if contextLink}
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="p"
+        disabled={!contextLink.resolvedPath || !contextLink.resolvedExists}
+        on:click={openWikiLinkInRightPane}
+      >
+        Open link in right <span class="menu-mnemonic">p</span>ane
+      </button>
+      {#if contextLink.resolvedPath && !contextLink.resolvedExists}
+        <button type="button" role="menuitem" data-menu-key="c" on:click={createWikiLinkPage}>
+          <span class="menu-mnemonic">C</span>reate page
+        </button>
+      {/if}
+    {/if}
+
+    <button
+      type="button"
+      role="menuitem"
+      data-menu-key="r"
+      on:click={openSourceLineInRightPane}
+    >
+      Open line in <span class="menu-mnemonic">r</span>ight pane
+    </button>
+
     {#if editorContextMenu.selection && hasSingleLineFormatSelection()}
       <div class="editor-menu-flyout" role="menuitem" tabindex="0">
         <button
@@ -1144,126 +1292,6 @@
           >
             Inline <span class="menu-mnemonic">c</span>ode
           </button>
-        </div>
-      </div>
-    {/if}
-
-    <div class="editor-menu-flyout" role="menuitem" tabindex="0">
-      <button
-        type="button"
-        class="editor-menu-flyout-trigger"
-        data-menu-key="c"
-        on:click|stopPropagation
-      >
-        <span><span class="menu-mnemonic">C</span>ollapse</span>
-        <span aria-hidden="true">›</span>
-      </button>
-      <div class="editor-menu-flyout-panel" role="menu">
-        {#if blockIsCollapsible}
-          <button
-            type="button"
-            role="menuitem"
-            data-menu-key={blockIsFolded ? "e" : "c"}
-            on:click={toggleSourceLineBlockFold}
-          >
-            {#if blockIsFolded}
-              <span class="menu-mnemonic">E</span>xpand block
-            {:else}
-              <span class="menu-mnemonic">C</span>ollapse block
-            {/if}
-          </button>
-        {/if}
-        {#if blockLevel !== null}
-          <button
-            type="button"
-            role="menuitem"
-            data-menu-key="l"
-            on:click={collapseSourceLineBelowLevel}
-          >
-            Collapse all below <span class="menu-mnemonic">l</span>evel {blockLevel}
-          </button>
-        {/if}
-        <button
-          type="button"
-          role="menuitem"
-          data-menu-key="a"
-          on:click={expandAllSourceLineBlocks}
-        >
-          Expand <span class="menu-mnemonic">a</span>ll
-        </button>
-      </div>
-    </div>
-
-    <button
-      type="button"
-      role="menuitem"
-      data-menu-key="r"
-      on:click={openSourceLineInRightPane}
-    >
-      Open line in <span class="menu-mnemonic">r</span>ight pane
-    </button>
-    {#if contextLink}
-      <button
-        type="button"
-        role="menuitem"
-        data-menu-key="p"
-        disabled={!contextLink.resolvedPath || !contextLink.resolvedExists}
-        on:click={openWikiLinkInRightPane}
-      >
-        Open link in right <span class="menu-mnemonic">p</span>ane
-      </button>
-      {#if contextLink.resolvedPath && !contextLink.resolvedExists}
-        <button type="button" role="menuitem" data-menu-key="c" on:click={createWikiLinkPage}>
-          <span class="menu-mnemonic">C</span>reate page
-        </button>
-      {/if}
-    {/if}
-
-    {#if editorContextMenu.task}
-      <div class="editor-menu-flyout" role="menuitem" tabindex="0">
-        <button
-          type="button"
-          class="editor-menu-flyout-trigger"
-          data-menu-key="t"
-          on:click|stopPropagation
-        >
-          <span><span class="menu-mnemonic">T</span>ask</span>
-          <span aria-hidden="true">›</span>
-        </button>
-        <div class="editor-menu-flyout-panel" role="menu">
-          <div class="editor-menu-group-label">Status</div>
-          {#each taskStates as state, index}
-            <button
-              type="button"
-              role="menuitem"
-              data-menu-key={String(index + 1)}
-              disabled={state === editorContextMenu.task.status}
-              on:click={() => setTaskStatus(state)}
-            >
-              <span class="menu-mnemonic">{index + 1}</span> {state}
-            </button>
-          {/each}
-          <div class="editor-menu-group-label">Priority</div>
-          <button
-            type="button"
-            role="menuitem"
-            data-menu-key="0"
-            disabled={currentPriority === null}
-            on:click={() => setTaskPriority(null)}
-          >
-            <span class="menu-mnemonic">0</span> No priority
-          </button>
-          {#each taskPriorityOptions as priority}
-            <button
-              type="button"
-              role="menuitem"
-              data-menu-key={priority}
-              disabled={currentPriority === priority}
-              on:click={() => setTaskPriority(priority)}
-            >
-              #<span class="menu-mnemonic">{priority}</span>
-            </button>
-          {/each}
         </div>
       </div>
     {/if}

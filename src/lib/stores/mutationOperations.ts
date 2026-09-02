@@ -111,10 +111,10 @@ export function createMutationOperations(
         return guard;
       }
 
+      dependencies.isolateEditorHistory();
       try {
         const editor = dependencies.getEditorState();
         if (editor.path === path) {
-          dependencies.isolateEditorHistory();
           if (!dependencies.toggleEditorCheckbox(line)) {
             return failed(`Line ${line} is not a recognized checkbox item.`);
           }
@@ -130,7 +130,6 @@ export function createMutationOperations(
             beforeChecked: previousChecked,
             afterChecked: !previousChecked,
           });
-          dependencies.isolateEditorHistory();
         } else {
           const result = await dependencies.toggleCheckbox(path, line);
           dependencies.pushUndo({
@@ -146,6 +145,8 @@ export function createMutationOperations(
         return changed;
       } catch (error) {
         return failed(`Could not change checkbox: ${toErrorMessage(error)}`);
+      } finally {
+        dependencies.isolateEditorHistory();
       }
     },
 
@@ -166,12 +167,12 @@ export function createMutationOperations(
 
       const { taskStates, taskDoneSoundEnabled } = dependencies.getTaskConfig();
 
+      dependencies.isolateEditorHistory();
       try {
         const editor = dependencies.getEditorState();
         let operationPath = path;
         let operationLine = line;
         if (editor.path === path) {
-          dependencies.isolateEditorHistory();
           if (!dependencies.setEditorTaskStatus(line, currentStatus, nextStatus, taskStates)) {
             return failed(`Line ${line} is not a recognized task. Refresh tasks.`);
           }
@@ -198,14 +199,13 @@ export function createMutationOperations(
           beforeStatus: currentStatus,
           afterStatus: nextStatus,
         });
-        if (editor.path === path) {
-          dependencies.isolateEditorHistory();
-        }
         dependencies.playDoneSound(nextStatus, taskStates, taskDoneSoundEnabled);
         await refreshDerivedViews(dependencies);
         return changed;
       } catch (error) {
         return failed(`Could not change task status: ${toErrorMessage(error)}`);
+      } finally {
+        dependencies.isolateEditorHistory();
       }
     },
 
@@ -226,12 +226,12 @@ export function createMutationOperations(
 
       const { taskStates } = dependencies.getTaskConfig();
 
+      dependencies.isolateEditorHistory();
       try {
         const editor = dependencies.getEditorState();
         let operationPath = path;
         let operationLine = line;
         if (editor.path === path) {
-          dependencies.isolateEditorHistory();
           if (!dependencies.setEditorTaskPriority(line, nextPriority, taskStates)) {
             return failed(`Line ${line} is not a recognized task. Refresh tasks.`);
           }
@@ -253,13 +253,12 @@ export function createMutationOperations(
           beforePriority: currentPriority,
           afterPriority: nextPriority,
         });
-        if (editor.path === path) {
-          dependencies.isolateEditorHistory();
-        }
         await refreshDerivedViews(dependencies);
         return changed;
       } catch (error) {
         return failed(`Could not change task priority: ${toErrorMessage(error)}`);
+      } finally {
+        dependencies.isolateEditorHistory();
       }
     },
   };

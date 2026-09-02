@@ -398,6 +398,17 @@ derived indexes.
 CodeMirror owns editor-local text undo and redo while a file is open in the
 middle pane.
 
+The global stack records an editor marker only when CodeMirror's `undoDepth`
+actually increases. Do not reintroduce a separate time-based grouping heuristic:
+CodeMirror decides which typing transactions form one undo group. Every rendered
+checkbox or task mutation isolates the active editor history before and after the
+operation, even when the mutation targets another file. This keeps sequences such
+as editor edit, right-pane checkbox, editor edit aligned across both histories.
+When such a mutation targets the open editor page, synchronize its new content as
+the smallest contiguous CodeMirror change with `addToHistory` disabled. Replacing
+the complete document would overlap and invalidate otherwise unrelated editor
+history entries.
+
 Application-level changes outside direct editor typing are recorded in
 `src/lib/stores/appUndo.ts`. Examples include checkbox toggles, task state
 changes, and task priority changes made from rendered views or the task
@@ -412,7 +423,7 @@ user-visible undo policy is intentionally changed.
 
 Forward mutations initiated outside CodeMirror go through
 `src/lib/stores/mutationOperations.ts`. This layer decides whether the target
-is the open editor page or a disk-backed page, isolates editor history, waits
+is the open editor page or a disk-backed page, isolates active editor history, waits
 for save success, records one global undo operation, refreshes derived views,
 and gates the task completion sound. Svelte components retain presentation and
 menu state but do not duplicate this orchestration.
@@ -549,7 +560,8 @@ Frontend tests:
 - Covered areas include wiki-link completion, Markdown rendering helpers,
   backlink grouping, navigation tree building, folder colors, task keyword
   parsing, checkboxes, journal path handling, editor block commands, editor
-  live preview behavior, editor sessions, application undo ordering, shared
+  live preview behavior, editor sessions, CodeMirror history grouping,
+  application undo ordering, shared
   mutation orchestration, task completion sound gating, line wrapping, and
   version metadata. Direct async action errors are covered for contextual,
   single reporting without re-reporting store-handled outcomes. Link-operation

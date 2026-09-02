@@ -11,7 +11,6 @@ import { workspaceStore } from "./workspace.js";
 type EditorChangeOperation = {
   kind: "editor-change";
   path: string;
-  updatedAt: number;
 };
 
 export type TaskStatusOperation = {
@@ -71,6 +70,7 @@ export type AppUndoDependencies = {
   getEditorState: () => UndoEditorState;
   getTaskStates: () => string[];
   requestEditorHistoryChange: (direction: "undo" | "redo") => Promise<boolean>;
+  isolateEditorHistory: () => void;
   setEditorCheckboxLine: (line: number, checked: boolean) => boolean;
   setEditorTaskStatusLine: (
     line: number,
@@ -101,13 +101,15 @@ const initialState: AppUndoState = {
   error: null,
 };
 
-const editorChangeGroupMs = 500;
 const maxUndoActions = 50;
 
 const defaultDependencies: AppUndoDependencies = {
   getEditorState: () => get(editorSessionStore),
   getTaskStates: () => get(workspaceStore).taskStates,
   requestEditorHistoryChange,
+  isolateEditorHistory: () => {
+    window.dispatchEvent(new CustomEvent("semtags-editor-isolate-history"));
+  },
   setEditorCheckboxLine: (line, checked) => editorSessionStore.setCheckboxLine(line, checked),
   setEditorTaskStatusLine: (line, currentStatus, nextStatus, taskStates) =>
     editorSessionStore.setTaskStatusLine(line, currentStatus, nextStatus, taskStates),
@@ -145,30 +147,15 @@ export function createAppUndoStore(dependencies: AppUndoDependencies = defaultDe
         return;
       }
 
-      const now = Date.now();
-      update((state) => {
-        const last = state.undoStack.at(-1);
-        if (
-          last?.kind === "editor-change" &&
-          last.path === path &&
-          now - last.updatedAt <= editorChangeGroupMs
-        ) {
-          return withLabels({
-            ...state,
-            undoStack: [...state.undoStack.slice(0, -1), { ...last, updatedAt: now }],
-            redoStack: [],
-            error: null,
-          });
-        }
-
-        const operation: EditorChangeOperation = { kind: "editor-change", path, updatedAt: now };
-        return withLabels({
+      const operation: EditorChangeOperation = { kind: "editor-change", path };
+      update((state) =>
+        withLabels({
           ...state,
           undoStack: [...state.undoStack, operation].slice(-maxUndoActions),
           redoStack: [],
           error: null,
-        });
-      });
+        }),
+      );
     },
     discardEditorHistory(path: string | null) {
       update((state) =>
@@ -283,27 +270,28 @@ async function applyOperation(
   }
 
   const editor = dependencies.getEditorState();
-  if (
-    editor.path === operation.path &&
-    (editor.dirty || editor.saving || editor.conflict) &&
-    operation.kind !== "checkbox" &&
-    operation.kind !== "task-status" &&
-    operation.kind !== "task-priority"
-  ) {
-    throw new Error("Save or resolve the current editor page before undoing this change.");
+  if (editor.path === operation.path && (editor.saving || editor.conflict)) {
+    throw new Error(
+      "Wait for the current save or resolve the editor conflict before undoing this change.",
+    );
   }
 
-  if (operation.kind === "checkbox") {
-    await applyCheckboxOperation(operation, direction, dependencies);
-    return;
-  }
+  dependencies.isolateEditorHistory();
+  try {
+    if (operation.kind === "checkbox") {
+      await applyCheckboxOperation(operation, direction, dependencies);
+      return;
+    }
 
-  if (operation.kind === "task-status") {
-    await applyTaskStatusOperation(operation, direction, dependencies);
-    return;
-  }
+    if (operation.kind === "task-status") {
+      await applyTaskStatusOperation(operation, direction, dependencies);
+      return;
+    }
 
-  await applyTaskPriorityOperation(operation, direction, dependencies);
+    await applyTaskPriorityOperation(operation, direction, dependencies);
+  } finally {
+    dependencies.isolateEditorHistory();
+  }
 }
 
 async function applyEditorOperation(

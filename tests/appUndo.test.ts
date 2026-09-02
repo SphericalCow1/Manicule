@@ -22,6 +22,9 @@ function baseHarness(editor: EditorState) {
       calls.push(`editor:${direction}`);
       return true;
     },
+    isolateEditorHistory: () => {
+      calls.push("isolate");
+    },
     setEditorCheckboxLine: (_line, checked) => {
       calls.push(`checkbox:${checked}`);
       editor.content = editor.content.replace(/\[[ xX]\]/, checked ? "[x]" : "[ ]");
@@ -122,16 +125,20 @@ test("undoes and redoes editor, right-pane checkbox, editor in strict order", as
 
   assert.deepEqual(calls, [
     "editor:undo",
+    "isolate",
     "checkbox:false",
     "save",
     "refresh-tasks",
     "refresh-right",
+    "isolate",
     "editor:undo",
     "editor:redo",
+    "isolate",
     "checkbox:true",
     "save",
     "refresh-tasks",
     "refresh-right",
+    "isolate",
     "editor:redo",
   ]);
   assert.equal(get(store).nextUndoLabel, "Edit");
@@ -168,6 +175,18 @@ test("routes status and priority undo through an open editor page", async () => 
     calls.filter((call) => call.startsWith("status:") || call.startsWith("priority:")),
     ["priority:A", "status:DONE->TODO", "status:TODO->DONE", "priority:B"],
   );
+});
+
+test("records each CodeMirror history group supplied by the editor", () => {
+  const editor = editorState("Inbox.md", "Text");
+  const { dependencies } = baseHarness(editor);
+  const store = createAppUndoStore(dependencies);
+
+  store.recordEditorChange("Inbox.md");
+  store.recordEditorChange("Inbox.md");
+
+  assert.equal(get(store).undoStack.length, 2);
+  assert.equal(get(store).nextUndoLabel, "Edit");
 });
 
 test("keeps task-overview and backlink task changes in one disk-backed history", async () => {
@@ -229,6 +248,25 @@ test("keeps a failed operation on the undo stack and reports the save error", as
   assert.equal(get(store).redoStack.length, 0);
   assert.equal(get(store).nextUndoLabel, "Uncheck");
   assert.equal(get(store).error, "File changed on disk.");
+});
+
+test("does not apply a rendered mutation while its editor page is saving", async () => {
+  const editor = editorState("Inbox.md", "- [x] Checkbox");
+  editor.saving = true;
+  const { calls, dependencies } = baseHarness(editor);
+  const store = createAppUndoStore(dependencies);
+  store.push({
+    kind: "checkbox",
+    path: "Inbox.md",
+    line: 1,
+    beforeChecked: false,
+    afterChecked: true,
+  });
+
+  assert.equal(await store.undoLast(), false);
+  assert.deepEqual(calls, []);
+  assert.equal(get(store).undoStack.length, 1);
+  assert.match(get(store).error ?? "", /current save/);
 });
 
 function task(path: string, line: number, status: string, priority: string | null): TaskItem {

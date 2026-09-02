@@ -1251,9 +1251,8 @@ textarea {
   left: auto;
 }
 
-.context-menu-flyout:hover .context-menu-flyout-panel,
-.context-menu-flyout:focus-within .context-menu-flyout-panel,
-.context-menu-flyout-open .context-menu-flyout-panel {
+.context-menu-flyout:hover > .context-menu-flyout-panel,
+.context-menu-flyout-open > .context-menu-flyout-panel {
   display: grid;
 }
 
@@ -2107,9 +2106,8 @@ textarea {
   left: auto;
 }
 
-.editor-menu-flyout:hover .editor-menu-flyout-panel,
-.editor-menu-flyout:focus-within .editor-menu-flyout-panel,
-.editor-menu-flyout-open .editor-menu-flyout-panel {
+.editor-menu-flyout:hover > .editor-menu-flyout-panel,
+.editor-menu-flyout-open > .editor-menu-flyout-panel {
   display: grid;
 }
 

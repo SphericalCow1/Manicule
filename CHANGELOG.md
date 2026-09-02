@@ -66,6 +66,14 @@ Changes since `v0.6.5`.
   rejections.
 - Failed right-pane navigation now keeps the previously rendered page and no
   longer consumes a back/forward history entry.
+- Mixed editor and rendered-view actions now keep the global stack aligned with
+  CodeMirror's actual undo groups, including actions targeting another file.
+- Global mutation undo now waits for an active editor save or conflict instead
+  of attempting to modify the same page concurrently.
+- External checkbox and task updates to the open editor now apply a localized
+  text change, preserving earlier CodeMirror undo and redo entries.
+- The editor Task context menu now groups available states and priorities into
+  separate nested submenus.
 - Watcher updates from a previously closed workspace no longer mutate the
   currently open workspace, and failed incremental updates no longer emit a
   successful index event.
@@ -75,6 +83,10 @@ Changes since `v0.6.5`.
 - Added behavioral coverage for mixed editor and rendered-view undo ordering,
   open-editor and disk-backed task mutations, save conflicts, and completion
   sound gating.
+- Added direct coverage for CodeMirror undo grouping, cross-file history
+  isolation, and undo attempts during an active editor save.
+- Added a real CodeMirror regression sequence for mixed editor and same-file
+  rendered mutations, plus focused minimal-text-change tests.
 - Added direct coverage for shared mutation routing, canonical backend task
   locations, editor conflict guards, and rejected backend operations.
 - Added coverage that rejected direct actions are reported once with context

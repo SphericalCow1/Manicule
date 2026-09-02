@@ -92,9 +92,9 @@ test("coordinates an editor-backed checkbox change in one operation", async () =
     "editor-checkbox:4",
     "save",
     "undo:checkbox",
-    "isolate",
     "refresh-tasks",
     "refresh-right",
+    "isolate",
   ]);
   assert.deepEqual(undoOperations, [
     {
@@ -122,15 +122,19 @@ test("routes disk-backed status and priority changes through the same policy", a
   );
 
   assert.deepEqual(calls, [
+    "isolate",
     "disk-status:Tasks.md:2:TODO->DONE",
     "undo:task-status",
     "sound:DONE:DONE:true",
     "refresh-tasks",
     "refresh-right",
+    "isolate",
+    "isolate",
     "disk-priority:Tasks.md:2:A",
     "undo:task-priority",
     "refresh-tasks",
     "refresh-right",
+    "isolate",
   ]);
   assert.equal(undoOperations.length, 2);
 });
@@ -187,7 +191,7 @@ test("does not report success, record undo, refresh, or play sound after a faile
   const outcome = await operations.setTaskStatus("Inbox.md", 3, "TODO", "DONE");
 
   assert.deepEqual(outcome, { status: "failed", error: "File changed on disk." });
-  assert.deepEqual(calls, ["isolate", "editor-status:3:TODO->DONE", "save"]);
+  assert.deepEqual(calls, ["isolate", "editor-status:3:TODO->DONE", "save", "isolate"]);
   assert.deepEqual(undoOperations, []);
 });
 
@@ -205,7 +209,7 @@ test("returns a contextual failure when a disk mutation is rejected", async () =
     status: "failed",
     error: "Could not change task priority: line changed externally",
   });
-  assert.deepEqual(calls, []);
+  assert.deepEqual(calls, ["isolate", "isolate"]);
   assert.deepEqual(undoOperations, []);
 });
 
