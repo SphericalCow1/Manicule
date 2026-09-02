@@ -54,6 +54,10 @@
   } from "../editorLivePreview";
   import { DEFAULT_TASK_STATES, priorityCookieMatch, taskPriorityChange } from "../taskKeywords";
   import { playTaskDoneSound } from "../taskCompletionSound";
+  import {
+    editorContextMenuKind,
+    type EditorContextMenuKind,
+  } from "../editorContextMenu";
   import { minimalTextChange } from "../textChanges";
   import { matchWikiLinkCompletion, wikiLinkSuggestions } from "../wikiLinkCompletion";
   import { resolveWikiTarget } from "../wikiLinks";
@@ -77,8 +81,6 @@
   export let onEditorHistoryDiscard: (path: string | null) => void = () => {};
   export let onOpenWikiLink: (path: string, targetPane: LinkTargetPane) => void = () => {};
   export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
-  export let onCreateWikiLinkPage: (path: string) => void = () => {};
-
   type ContextMenuLink = {
     link: WikiLinkAtPosition;
     resolvedPath: string | null;
@@ -86,6 +88,7 @@
   };
 
   type EditorContextMenu = {
+    kind: EditorContextMenuKind;
     x: number;
     y: number;
     line: number;
@@ -428,24 +431,28 @@
 
     if (mode === "live-preview") {
       task = taskKeywordAtDocumentPosition(view.state, position, taskStates);
-      const wikiLink = wikiLinkAtDocumentPosition(view.state, position);
-      if (wikiLink) {
-        const resolved = resolveWikiTarget(wikiLink.target, pages);
-        link = {
-          link: wikiLink,
-          resolvedPath: resolved?.path ?? null,
-          resolvedExists: resolved?.exists ?? false,
-        };
-      }
     }
+
+    const wikiLink = wikiLinkAtDocumentPosition(view.state, position);
+    if (wikiLink) {
+      const resolved = resolveWikiTarget(wikiLink.target, pages);
+      link = {
+        link: wikiLink,
+        resolvedPath: resolved?.path ?? null,
+        resolvedExists: resolved?.exists ?? false,
+      };
+    }
+
+    const kind = editorContextMenuKind(position, selection, Boolean(link), Boolean(task));
 
     event.preventDefault();
     event.stopPropagation();
     editorContextMenu = {
+      kind,
       x: event.clientX,
       y: event.clientY,
       line: view.state.doc.lineAt(position).number,
-      selection: selection.empty ? null : { from: selection.from, to: selection.to },
+      selection: kind === "selection" ? { from: selection.from, to: selection.to } : null,
       task,
       link,
     };
@@ -737,16 +744,6 @@
     view.focus();
   }
 
-  function createWikiLinkPage() {
-    if (!editorContextMenu?.link?.resolvedPath || editorContextMenu.link.resolvedExists) {
-      return;
-    }
-
-    const path = editorContextMenu.link.resolvedPath;
-    closeEditorContextMenu();
-    onCreateWikiLinkPage(path);
-  }
-
   function closeEditorContextMenu() {
     editorContextMenu = null;
   }
@@ -761,10 +758,6 @@
 
   function canFormatSelection(format: InlineMarkdownFormat) {
     return canApplyInlineMarkdownFormat(selectedFormatText(), format);
-  }
-
-  function hasSingleLineFormatSelection() {
-    return !/\r?\n/.test(selectedFormatText());
   }
 
   function applyFormatToSelection(format: InlineMarkdownFormat) {
@@ -1100,7 +1093,7 @@
     y={editorContextMenu.y}
     onClose={closeEditorContextMenu}
   >
-    {#if editorContextMenu.task}
+    {#if editorContextMenu.kind === "task" && editorContextMenu.task}
       <div class="editor-menu-flyout" role="menuitem" tabindex="0">
         <button
           type="button"
@@ -1173,7 +1166,7 @@
       </div>
     {/if}
 
-    {#if !editorContextMenu.task}
+    {#if editorContextMenu.kind === "text"}
       <div class="editor-menu-flyout" role="menuitem" tabindex="0">
         <button
           type="button"
@@ -1221,7 +1214,7 @@
       </div>
     {/if}
 
-    {#if contextLink}
+    {#if editorContextMenu.kind === "link" && contextLink}
       <button
         type="button"
         role="menuitem"
@@ -1231,23 +1224,20 @@
       >
         Open link in right <span class="menu-mnemonic">p</span>ane
       </button>
-      {#if contextLink.resolvedPath && !contextLink.resolvedExists}
-        <button type="button" role="menuitem" data-menu-key="c" on:click={createWikiLinkPage}>
-          <span class="menu-mnemonic">C</span>reate page
-        </button>
-      {/if}
     {/if}
 
-    <button
-      type="button"
-      role="menuitem"
-      data-menu-key="r"
-      on:click={openSourceLineInRightPane}
-    >
-      Open line in <span class="menu-mnemonic">r</span>ight pane
-    </button>
+    {#if editorContextMenu.kind === "task" || editorContextMenu.kind === "text"}
+      <button
+        type="button"
+        role="menuitem"
+        data-menu-key="r"
+        on:click={openSourceLineInRightPane}
+      >
+        Open line in <span class="menu-mnemonic">r</span>ight pane
+      </button>
+    {/if}
 
-    {#if editorContextMenu.selection && hasSingleLineFormatSelection()}
+    {#if editorContextMenu.kind === "selection" && editorContextMenu.selection}
       <div class="editor-menu-flyout" role="menuitem" tabindex="0">
         <button
           type="button"
