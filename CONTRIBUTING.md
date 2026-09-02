@@ -1,6 +1,6 @@
 # Contributing
 
-Semtags is a local Markdown-first knowledge workspace built with Tauri, Rust,
+mentiNote is a local Markdown-first knowledge workspace built with Tauri, Rust,
 Svelte, TypeScript, and CodeMirror. Markdown files are the source of truth, so
 changes that move, rename, delete, parse, or rewrite files should be handled
 conservatively and covered with focused tests.

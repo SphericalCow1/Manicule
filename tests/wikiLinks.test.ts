@@ -31,19 +31,19 @@ const collidingPages: PageSummary[] = [
 test("renders wiki links with markdown extensions to the existing page path", () => {
   assert.equal(
     renderWikiLinks("[[projects/forecasts.md]]", pages),
-    "[Forecasts](semtags:Projects%2FForecasts.md)",
+    "[Forecasts](mentinote:Projects%2FForecasts.md)",
   );
 });
 
 test("keeps explicit wiki link aliases", () => {
   assert.equal(
     renderWikiLinks("[[projects/forecasts.md|Forecast]]", pages),
-    "[Forecast](semtags:Projects%2FForecasts.md)",
+    "[Forecast](mentinote:Projects%2FForecasts.md)",
   );
 });
 
 test("marks missing wiki targets with a non-navigating scheme", () => {
-  assert.equal(wikiLinkHref("Missing/Page", pages), "semtags-missing:Missing%2FPage.md");
+  assert.equal(wikiLinkHref("Missing/Page", pages), "mentinote-missing:Missing%2FPage.md");
 });
 
 test("resolves wiki targets case insensitively", () => {
@@ -55,11 +55,11 @@ test("resolves wiki targets case insensitively", () => {
 });
 
 test("adds folder color styles to rendered wiki link anchors", () => {
-  const html = '<p><a href="semtags:Projects%2FForecasts.md">Forecast</a></p>';
+  const html = '<p><a href="mentinote:Projects%2FForecasts.md">Forecast</a></p>';
 
   assert.equal(
     applyWikiLinkColorStyles(html, pages, { Projects: "orange" }),
-    '<p><a href="semtags:Projects%2FForecasts.md" class="wiki-link-chip" style="background-color: var(--folder-color-orange-chip-bg); color: var(--folder-color-orange-chip-text); border-bottom-color: var(--folder-color-orange-chip-border);">Forecast</a></p>',
+    '<p><a href="mentinote:Projects%2FForecasts.md" class="wiki-link-chip" style="background-color: var(--folder-color-orange-chip-bg); color: var(--folder-color-orange-chip-text); border-bottom-color: var(--folder-color-orange-chip-border);">Forecast</a></p>',
   );
 });
 

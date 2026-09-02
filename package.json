@@ -1,16 +1,16 @@
 {
-  "name": "semtags",
+  "name": "mentinote",
   "description": "A local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags.",
   "version": "0.6.7",
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SphericalCow1/Semtags.git"
+    "url": "git+https://github.com/SphericalCow1/mentiNote.git"
   },
   "bugs": {
-    "url": "https://github.com/SphericalCow1/Semtags/issues"
+    "url": "https://github.com/SphericalCow1/mentiNote/issues"
   },
-  "homepage": "https://github.com/SphericalCow1/Semtags#readme",
+  "homepage": "https://github.com/SphericalCow1/mentiNote#readme",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1420",

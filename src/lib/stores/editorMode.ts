@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 import type { EditorMode } from "../editorLivePreview";
 
-const storageKey = "semtags:editor-mode";
+const storageKey = "mentinote:editor-mode";
 
 function loadEditorMode(): EditorMode {
   if (typeof localStorage === "undefined") {

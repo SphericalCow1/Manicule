@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn normalizes_absolute_paths_relative_to_the_workspace() {
-        let root = std::env::temp_dir().join("semtags-watcher-path-test");
+        let root = std::env::temp_dir().join("mentinote-watcher-path-test");
         let inside = root.join("notes").join("Page.md");
         let outside = root
             .parent()

@@ -18,13 +18,13 @@
   import { workspaceStore } from "./lib/stores/workspace";
   import { zoomStore } from "./lib/stores/zoom";
 
-  const layoutStorageKey = "semtags:layout:columns";
+  const layoutStorageKey = "mentinote:layout:columns";
   const defaultLeftWidth = 280;
   const defaultRightWidth = 440;
   const minLeftWidth = 220;
   const minEditorWidth = 360;
   const minRightWidth = 280;
-  const repositoryUrl = "https://github.com/SphericalCow1/Semtags";
+  const repositoryUrl = "https://github.com/SphericalCow1/mentiNote";
   const licenseUrl = `${repositoryUrl}/blob/main/LICENSE`;
   let leftWidth = defaultLeftWidth;
   let rightWidth = defaultRightWidth;
@@ -43,9 +43,9 @@
     void workspaceStore.openLastWorkspace();
     void loadAppVersion();
     loadLayout();
-    window.addEventListener("semtags-reset-layout", resetLayout);
-    window.addEventListener("semtags-show-about", openAboutDialog);
-    window.addEventListener("semtags-show-keyboard-shortcuts", openKeyboardShortcutsDialog);
+    window.addEventListener("mentinote-reset-layout", resetLayout);
+    window.addEventListener("mentinote-show-about", openAboutDialog);
+    window.addEventListener("mentinote-show-keyboard-shortcuts", openKeyboardShortcutsDialog);
     window.addEventListener("wheel", handleWheel, { passive: false });
   });
 
@@ -89,7 +89,7 @@
   }
 
   function updateWindowTitle(root: string | null) {
-    const title = root ? `Semtags: ${root}` : "Semtags";
+    const title = root ? `mentiNote: ${root}` : "mentiNote";
     if (title === lastWindowTitle) {
       return;
     }
@@ -258,9 +258,9 @@
   onDestroy(() => {
     clearWorkspaceSessionSaveTimer();
     window.removeEventListener("pointermove", resizeColumns);
-    window.removeEventListener("semtags-reset-layout", resetLayout);
-    window.removeEventListener("semtags-show-about", openAboutDialog);
-    window.removeEventListener("semtags-show-keyboard-shortcuts", openKeyboardShortcutsDialog);
+    window.removeEventListener("mentinote-reset-layout", resetLayout);
+    window.removeEventListener("mentinote-show-about", openAboutDialog);
+    window.removeEventListener("mentinote-show-keyboard-shortcuts", openKeyboardShortcutsDialog);
     window.removeEventListener("wheel", handleWheel);
   });
 </script>
@@ -299,7 +299,7 @@
 </main>
 
 <ErrorDialog
-  title="Semtags Error"
+  title="mentiNote Error"
   message={$appErrorStore.message}
   detail={$appErrorStore.detail}
   onClose={() => appErrorStore.clear()}
@@ -324,7 +324,7 @@
       use:trapDialogFocus={{ onClose: closeAboutDialog }}
     >
       <header>
-        <h2 id="about-dialog-title">Semtags</h2>
+        <h2 id="about-dialog-title">mentiNote</h2>
         <p>Version {appVersion}</p>
       </header>
 
@@ -335,7 +335,7 @@
             <dt>Repository</dt>
             <dd>
               <a href={repositoryUrl} target="_blank" rel="noreferrer">
-                SphericalCow1/Semtags
+                SphericalCow1/mentiNote
               </a>
             </dd>
           </div>
@@ -349,7 +349,7 @@
           </div>
         </dl>
         <p class="about-disclaimer">
-          Semtags is provided as is, without warranty of any kind. To the extent permitted by law,
+          mentiNote is provided as is, without warranty of any kind. To the extent permitted by law,
           the authors are not liable for damages arising from use of the software.
         </p>
       </div>

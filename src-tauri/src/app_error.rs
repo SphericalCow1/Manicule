@@ -72,7 +72,7 @@ impl AppError {
     pub fn state_lock(detail: impl Into<String>) -> Self {
         Self::with_detail(
             AppErrorCode::StateLock,
-            "Semtags could not access its current application state. Restart the app and try again.",
+            "mentiNote could not access its current application state. Restart the app and try again.",
             detail,
         )
     }
