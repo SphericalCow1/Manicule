@@ -8,4 +8,5 @@
 - [x] Align quick-access right-pane actions with the file browser hover treatment.
 - [x] Prevent right-pane content refreshes from replaying line highlights.
 - [x] Combine live preview and plain Markdown editing into one menu toggle.
-- [x] Scope editor context-menu actions to the clicked content type.
+- [x] Scope editor context-menu actions to the clicked content type, with direct
+  task status and priority menus.
