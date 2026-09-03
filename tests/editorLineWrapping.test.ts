@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listContinuationIndent } from "../src/lib/editorLineWrapping.js";
+import {
+  listContinuationIndent,
+  listIndentGuideOffsets,
+} from "../src/lib/editorLineWrapping.js";
 
 test("detects hanging indent width for list wrapping", () => {
   assert.equal(listContinuationIndent("- Parent text"), 2);
@@ -21,4 +24,16 @@ test("does not indent non-list or empty marker lines", () => {
   assert.equal(listContinuationIndent("-"), 0);
   assert.equal(listContinuationIndent("- "), 0);
   assert.equal(listContinuationIndent("  - "), 0);
+});
+
+test("places one indentation guide for every nested list level", () => {
+  assert.deepEqual(listIndentGuideOffsets("- Parent"), []);
+  assert.deepEqual(listIndentGuideOffsets("  - Child"), [0.5]);
+  assert.deepEqual(listIndentGuideOffsets("    * Grandchild"), [0.5, 2.5]);
+  assert.deepEqual(listIndentGuideOffsets("      1. Detail"), [0.5, 2.5, 4.5]);
+});
+
+test("does not add indentation guides to ordinary text", () => {
+  assert.deepEqual(listIndentGuideOffsets("    Continued text"), []);
+  assert.deepEqual(listIndentGuideOffsets("Plain paragraph"), []);
 });

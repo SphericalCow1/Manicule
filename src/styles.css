@@ -34,6 +34,7 @@
   --editor-search-match-active-outline: #b77900;
   --editor-cursor-color: #111827;
   --editor-fold-marker-text: #7b858f;
+  --block-indent-guide: rgb(105 114 125 / 24%);
   --navigator-selected-bg: #e8f5ef;
   --navigator-selected-active-bg: #dcecff;
   --navigator-focus-ring: #7aa2f7;
@@ -163,6 +164,7 @@
   --editor-search-match-active-outline: #b77900;
   --editor-cursor-color: #ffffff;
   --editor-fold-marker-text: #7d8590;
+  --block-indent-guide: rgb(154 164 178 / 30%);
   --navigator-selected-bg: #20362d;
   --navigator-selected-active-bg: #17324d;
   --navigator-focus-ring: #4f84c4;
@@ -1933,12 +1935,24 @@ textarea {
 }
 
 .code-editor .cm-line {
+  position: relative;
   padding: 0 18px 0 8px;
 }
 
 .code-editor .cm-list-wrap-indent {
   padding-left: calc(8px + var(--manicule-list-prefix-width)) !important;
   text-indent: calc(-1 * var(--manicule-list-prefix-width));
+}
+
+.code-editor .cm-list-indent-guides::before {
+  position: absolute;
+  inset: 0;
+  background-image: var(--manicule-indent-guide-images);
+  background-position: var(--manicule-indent-guide-positions);
+  background-repeat: no-repeat;
+  background-size: 1px 100%;
+  content: "";
+  pointer-events: none;
 }
 
 .code-editor .cm-gutters {
@@ -2388,6 +2402,22 @@ textarea {
 .markdown-view li > ol {
   margin-top: 2px;
   margin-bottom: 2px;
+}
+
+.right-pane .markdown-view li > ul,
+.right-pane .markdown-view li > ol {
+  position: relative;
+}
+
+.right-pane .markdown-view li > ul::before,
+.right-pane .markdown-view li > ol::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1.85em;
+  border-left: 1px solid var(--block-indent-guide);
+  content: "";
+  pointer-events: none;
 }
 
 .markdown-view .task-list-item {
