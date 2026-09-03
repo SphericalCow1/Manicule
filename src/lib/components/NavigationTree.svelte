@@ -34,9 +34,13 @@
   };
 </script>
 
-<nav class="page-list" aria-label="Markdown files">
+<nav
+  class:search-active={searchActive}
+  class="page-list"
+  aria-label={searchActive ? "Results by filename" : "Markdown files"}
+>
   <div class="navigator-section-heading">
-    <span>{searchActive ? "Search Results" : "Pages"}</span>
+    <span>{searchActive ? "Results by Filename" : "Pages"}</span>
     <small>{rows.length}</small>
   </div>
   {#if !searchActive}

@@ -954,6 +954,10 @@ textarea {
   overflow: auto;
 }
 
+.page-list.search-active {
+  flex: 0 1 auto;
+}
+
 .navigator-section-heading {
   display: flex;
   align-items: center;

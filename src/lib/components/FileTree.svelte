@@ -2235,13 +2235,13 @@
     />
 
     {#if searchQuery.trim()}
-      <section class="content-search-results" aria-label="Ranked search results">
+      <section class="content-search-results" aria-label="Results by content">
         <div class="navigator-section-heading">
-          <span>Ranked Matches</span>
+          <span>Results by Content</span>
           <small>{searchLoading ? "..." : searchResults.length}</small>
         </div>
         {#if !searchLoading && searchResults.length === 0}
-          <p>No ranked matches</p>
+          <p>No content matches</p>
         {:else}
           {#each searchResults as result}
             <button
