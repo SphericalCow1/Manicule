@@ -39,6 +39,8 @@ Changes since `v0.6.5`.
   will switch to.
 - Live preview and plain Markdown editing now share one state-aware menu action
   and keyboard shortcut.
+- Block-level collapse shortcuts now use `Cmd/Ctrl+Shift+1` through
+  `Cmd/Ctrl+Shift+4`.
 - The editor context menu now limits actions to the clicked link, selected text,
   task, or ordinary source line, with direct status and priority menus for tasks.
 - The task-overview button now switches back to the editor when the overview is

@@ -10,3 +10,4 @@
 - [x] Combine live preview and plain Markdown editing into one menu toggle.
 - [x] Scope editor context-menu actions to the clicked content type, with direct
   task status and priority menus.
+- [x] Move block-level collapse shortcuts to Cmd/Ctrl+Shift+1 through 4.

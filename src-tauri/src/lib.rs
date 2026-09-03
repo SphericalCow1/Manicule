@@ -313,19 +313,19 @@ fn ensure_view_menu<R: Runtime>(handle: &AppHandle<R>, menu: &Menu<R>) -> tauri:
             .build(handle)?;
     let collapse_below_level_1 =
         MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_1, "Level 1")
-            .accelerator("CmdOrCtrl+1")
+            .accelerator("CmdOrCtrl+Shift+1")
             .build(handle)?;
     let collapse_below_level_2 =
         MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_2, "Level 2")
-            .accelerator("CmdOrCtrl+2")
+            .accelerator("CmdOrCtrl+Shift+2")
             .build(handle)?;
     let collapse_below_level_3 =
         MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_3, "Level 3")
-            .accelerator("CmdOrCtrl+3")
+            .accelerator("CmdOrCtrl+Shift+3")
             .build(handle)?;
     let collapse_below_level_4 =
         MenuItemBuilder::with_id(MENU_COLLAPSE_BLOCKS_BELOW_LEVEL_4, "Level 4")
-            .accelerator("CmdOrCtrl+4")
+            .accelerator("CmdOrCtrl+Shift+4")
             .build(handle)?;
     let collapse_blocks_submenu = SubmenuBuilder::new(handle, "Collapse All Blocks Below Level")
         .item(&collapse_below_level_1)

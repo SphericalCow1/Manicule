@@ -272,7 +272,7 @@ Important editor shortcuts:
 - `Cmd/Ctrl+Shift+E`: expand all folded blocks
 - `Cmd/Ctrl+Shift+T`: toggle task overview
 - `Cmd/Ctrl+Shift+L`: toggle live preview/plain Markdown editing
-- `Cmd/Ctrl+1` to `Cmd/Ctrl+4`: collapse all blocks below that level
+- `Cmd/Ctrl+Shift+1` to `Cmd/Ctrl+Shift+4`: collapse all blocks below that level
 - `Cmd/Ctrl+F`: search in current file
 - `Cmd/Ctrl+S`: save current file
 - `Cmd/Ctrl+Z`: undo
