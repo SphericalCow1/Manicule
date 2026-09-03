@@ -2,7 +2,6 @@
   import type { NavigationNode, VisibleNavigationRow } from "../navigationTree";
 
   export let rows: VisibleNavigationRow[] = [];
-  export let searchActive = false;
   export let expandedFolders = new Set<string>();
   export let draggedPagePath: string | null = null;
   export let dragOverFolderPath: string | null = null;
@@ -34,33 +33,27 @@
   };
 </script>
 
-<nav
-  class:search-active={searchActive}
-  class="page-list"
-  aria-label={searchActive ? "Results by filename" : "Markdown files"}
->
+<nav class="page-list" aria-label="Markdown files">
   <div class="navigator-section-heading">
-    <span>{searchActive ? "Results by Filename" : "Pages"}</span>
+    <span>Pages</span>
     <small>{rows.length}</small>
   </div>
-  {#if !searchActive}
-    <div
-      class:drop-target={dragOverFolderPath === ""}
-      class="root-drop-row"
-      title="Drop a page here to move it to the workspace root"
-      role="treeitem"
-      aria-selected="false"
-      data-tree-path=""
-      tabindex="-1"
-      on:dragover={(event) => handleFolderDragOver("", event)}
-      on:dragleave={handleFolderDragLeave}
-      on:drop={(event) => handleFolderDrop("", event)}
-      on:contextmenu={(event) => openContextMenu(rootNode, event)}
-    >
-      <span class="folder-glyph"></span>
-      <span>Workspace root</span>
-    </div>
-  {/if}
+  <div
+    class:drop-target={dragOverFolderPath === ""}
+    class="root-drop-row"
+    title="Drop a page here to move it to the workspace root"
+    role="treeitem"
+    aria-selected="false"
+    data-tree-path=""
+    tabindex="-1"
+    on:dragover={(event) => handleFolderDragOver("", event)}
+    on:dragleave={handleFolderDragLeave}
+    on:drop={(event) => handleFolderDrop("", event)}
+    on:contextmenu={(event) => openContextMenu(rootNode, event)}
+  >
+    <span class="folder-glyph"></span>
+    <span>Workspace root</span>
+  </div>
   {#each rows as row}
     {@const node = row.node}
     <div
@@ -101,7 +94,7 @@
           class="tree-item page-item"
           title={node.path}
           style:padding-left={rowPadding(row.depth)}
-          draggable={!searchActive}
+          draggable="true"
           on:click={(event) => handleNodeClick(node, event)}
           on:dragstart={(event) => handleDragStart(node.path, event)}
           on:dragend={handleDragEnd}

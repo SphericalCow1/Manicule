@@ -5,7 +5,7 @@ import test from "node:test";
 
 const root = process.cwd();
 
-test("sizes filename search results by their content", () => {
+test("shows one ranked result list while searching", () => {
   const navigationTree = readFileSync(
     join(root, "src/lib/components/NavigationTree.svelte"),
     "utf8",
@@ -13,8 +13,9 @@ test("sizes filename search results by their content", () => {
   const fileTree = readFileSync(join(root, "src/lib/components/FileTree.svelte"), "utf8");
   const styles = readFileSync(join(root, "src/styles.css"), "utf8");
 
-  assert.match(navigationTree, /class:search-active=\{searchActive\}/);
-  assert.match(navigationTree, /Results by Filename/);
-  assert.match(fileTree, /Results by Content/);
-  assert.match(styles, /\.page-list\.search-active\s*\{\s*flex: 0 1 auto;/);
+  assert.equal(/Results by Filename/.test(navigationTree), false);
+  assert.match(fileTree, /\{#if !searchQuery\.trim\(\)\}\s*<NavigationTree/);
+  assert.match(fileTree, /<span>Ranked Results<\/span>/);
+  assert.equal(/Results by Content/.test(fileTree), false);
+  assert.match(styles, /\.content-search-results\s*\{[^}]*flex: 1;/s);
 });

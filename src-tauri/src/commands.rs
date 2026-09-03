@@ -901,6 +901,27 @@ mod tests {
     }
 
     #[test]
+    fn search_pages_does_not_treat_folder_names_as_filename_matches() {
+        let root = temp_workspace();
+        fs::create_dir_all(root.join("journal")).unwrap();
+        fs::write(
+            root.join("journal").join("2026-09-03.md"),
+            "# Daily note\nNo hit",
+        )
+        .unwrap();
+        let workspace = test_workspace_state(
+            root.clone(),
+            PageIndex::from_paths(vec!["journal/2026-09-03.md".to_string()]),
+        );
+
+        let results = search_pages_in_workspace(&workspace, "na").unwrap();
+
+        assert!(results.is_empty());
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn list_tasks_returns_task_blocks_with_source_lines() {
         let root = temp_workspace();
         fs::create_dir_all(root.join("projects")).unwrap();

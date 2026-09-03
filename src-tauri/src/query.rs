@@ -22,18 +22,14 @@ pub fn search_pages_in_workspace(
     let mut results = Vec::new();
 
     for page in workspace.pages.pages() {
-        if page_matches_filename_or_title(&page, &normalized_query) {
+        if page_matches_filename(&page, &normalized_query) {
             results.push(RankedSearchResult {
-                rank: SearchRank::FilenameOrTitle,
+                rank: SearchRank::Filename,
                 result: SearchResultDto {
                     path: page.path.clone(),
                     title: page.title.clone(),
                     line: 1,
-                    excerpt: if page.title.to_lowercase().contains(&normalized_query) {
-                        page.title.clone()
-                    } else {
-                        page.path.clone()
-                    },
+                    excerpt: page.path.clone(),
                 },
             });
         }
@@ -76,15 +72,16 @@ struct RankedSearchResult {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum SearchRank {
-    FilenameOrTitle,
+    Filename,
     Heading,
     Text,
     Link,
 }
 
-fn page_matches_filename_or_title(page: &Page, normalized_query: &str) -> bool {
-    page.path.to_lowercase().contains(normalized_query)
-        || page.title.to_lowercase().contains(normalized_query)
+fn page_matches_filename(page: &Page, normalized_query: &str) -> bool {
+    let filename = page.path.rsplit('/').next().unwrap_or(&page.path);
+    let page_name = filename.strip_suffix(".md").unwrap_or(filename);
+    page_name.to_lowercase().contains(normalized_query)
 }
 
 fn classify_search_line(line: &str, normalized_query: &str) -> Option<SearchRank> {

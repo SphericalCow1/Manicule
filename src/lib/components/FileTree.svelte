@@ -177,7 +177,7 @@
     $workspaceStore.manualPageOrder,
   );
   $: visibleRows = flattenVisibleTree(tree, expandedFolders);
-  $: filteredRows = searchQuery.trim() ? filteredPageRows(searchQuery) : visibleRows;
+  $: navigationRows = visibleRows;
   $: existingFolderPaths = collectFolderPaths(tree);
   $: moveFolderSuggestions = moveDialog
     ? folderSuggestions(moveDialog.targetFolder, existingFolderPaths, moveDialog.currentFolder)
@@ -279,8 +279,8 @@
     searchResultContextMenu = null;
   }
 
-  $: if (focusedTreePath && !filteredRows.some((row) => row.node.path === focusedTreePath)) {
-    focusedTreePath = filteredRows[0]?.node.path ?? null;
+  $: if (focusedTreePath && !navigationRows.some((row) => row.node.path === focusedTreePath)) {
+    focusedTreePath = navigationRows[0]?.node.path ?? null;
   }
 
   $: pruneSelection();
@@ -535,7 +535,7 @@
   }
 
   function selectRangeTo(path: string) {
-    const visiblePaths = filteredRows.map((row) => row.node.path);
+    const visiblePaths = navigationRows.map((row) => row.node.path);
     const targetIndex = visiblePaths.indexOf(path);
     const anchorIndex = selectionAnchorPath ? visiblePaths.indexOf(selectionAnchorPath) : -1;
 
@@ -1768,33 +1768,7 @@
     });
   }
 
-  function filteredPageRows(query: string) {
-    const normalized = query.trim().toLowerCase();
-
-    return $workspaceStore.pages
-      .filter((page) => {
-        const path = page.path.toLowerCase();
-        const title = page.title.toLowerCase();
-        return path.includes(normalized) || title.includes(normalized);
-      })
-      .map((page) => ({
-        depth: 0,
-        node: {
-          kind: "page" as const,
-          name: pageNameFromPath(page.path),
-          path: page.path,
-          page,
-        },
-      }));
-  }
-
   function openBestSearchMatch() {
-    const first = filteredRows.find((row) => row.node.kind === "page");
-    if (first?.node.kind === "page") {
-      openPageInEditor(first.node.path);
-      return;
-    }
-
     const firstResult = searchResults[0];
     if (firstResult) {
       openSearchResult(firstResult);
@@ -1813,19 +1787,22 @@
   }
 
   function handleTreeKeydown(node: NavigationNode, event: KeyboardEvent) {
-    const currentIndex = filteredRows.findIndex((row) => row.node.path === node.path);
+    const currentIndex = navigationRows.findIndex((row) => row.node.path === node.path);
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
       focusTreeNodeAfterUpdate(
-        filteredRows[Math.min(currentIndex + 1, filteredRows.length - 1)]?.node.path ?? node.path,
+        navigationRows[Math.min(currentIndex + 1, navigationRows.length - 1)]?.node.path ??
+          node.path,
       );
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      focusTreeNodeAfterUpdate(filteredRows[Math.max(currentIndex - 1, 0)]?.node.path ?? node.path);
+      focusTreeNodeAfterUpdate(
+        navigationRows[Math.max(currentIndex - 1, 0)]?.node.path ?? node.path,
+      );
       return;
     }
 
@@ -2207,41 +2184,42 @@
       />
     </div>
 
-    <NavigationTree
-      rows={filteredRows}
-      searchActive={Boolean(searchQuery.trim())}
-      {expandedFolders}
-      {draggedPagePath}
-      {dragOverFolderPath}
-      {focusedTreePath}
-      {selectedPaths}
-      {isActivePage}
-      {isEditorPage}
-      {isRightPanePage}
-      {isFavorite}
-      {rowPadding}
-      {toggleFavorite}
-      {openPageInRightPane}
-      {handleNodeClick}
-      {handleDragStart}
-      {handleDragEnd}
-      {handleFolderDragOver}
-      {handleFolderDragLeave}
-      {handleFolderDrop}
-      {focusTreeNode}
-      {handleTreeKeydown}
-      {openContextMenu}
-      {folderGlyphStyle}
-    />
+    {#if !searchQuery.trim()}
+      <NavigationTree
+        rows={navigationRows}
+        {expandedFolders}
+        {draggedPagePath}
+        {dragOverFolderPath}
+        {focusedTreePath}
+        {selectedPaths}
+        {isActivePage}
+        {isEditorPage}
+        {isRightPanePage}
+        {isFavorite}
+        {rowPadding}
+        {toggleFavorite}
+        {openPageInRightPane}
+        {handleNodeClick}
+        {handleDragStart}
+        {handleDragEnd}
+        {handleFolderDragOver}
+        {handleFolderDragLeave}
+        {handleFolderDrop}
+        {focusTreeNode}
+        {handleTreeKeydown}
+        {openContextMenu}
+        {folderGlyphStyle}
+      />
+    {/if}
 
     {#if searchQuery.trim()}
-      <section class="content-search-results" aria-label="Results by content">
+      <section class="content-search-results" aria-label="Ranked results">
         <div class="navigator-section-heading">
-          <span>Results by Content</span>
+          <span>Ranked Results</span>
           <small>{searchLoading ? "..." : searchResults.length}</small>
         </div>
         {#if !searchLoading && searchResults.length === 0}
-          <p>No content matches</p>
+          <p>No ranked results</p>
         {:else}
           {#each searchResults as result}
             <button

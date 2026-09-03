@@ -712,8 +712,9 @@ textarea {
 
 .content-search-results {
   display: grid;
+  flex: 1;
   gap: 2px;
-  max-height: 220px;
+  min-height: 0;
   padding: 8px;
   border-bottom: 1px solid var(--border-subtle);
   overflow: auto;
@@ -952,10 +953,6 @@ textarea {
   min-height: 0;
   padding: 6px;
   overflow: auto;
-}
-
-.page-list.search-active {
-  flex: 0 1 auto;
 }
 
 .navigator-section-heading {
