@@ -194,6 +194,7 @@
       onEditorHistoryChange={(path) => appUndoStore.recordEditorChange(path)}
       onEditorHistoryDiscard={(path) => appUndoStore.discardEditorHistory(path)}
       onOpenWikiLink={openWikiTarget}
+      onMissingWikiLink={requestMissingPage}
       onOpenSourceLineInRightPane={openCurrentLineInRightPane}
     />
     {#if missingLinkPath}

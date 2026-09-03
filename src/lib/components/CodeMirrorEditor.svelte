@@ -80,6 +80,7 @@
   export let onEditorHistoryChange: (path: string | null) => void = () => {};
   export let onEditorHistoryDiscard: (path: string | null) => void = () => {};
   export let onOpenWikiLink: (path: string, targetPane: LinkTargetPane) => void = () => {};
+  export let onMissingWikiLink: (path: string) => void = () => {};
   export let onOpenSourceLineInRightPane: (line: number) => void = () => {};
   type ContextMenuLink = {
     link: WikiLinkAtPosition;
@@ -644,6 +645,16 @@
     const path = editorContextMenu.link.resolvedPath;
     closeEditorContextMenu();
     onOpenWikiLink(path, "right");
+  }
+
+  function requestMissingWikiLinkPage() {
+    if (!editorContextMenu?.link?.resolvedPath || editorContextMenu.link.resolvedExists) {
+      return;
+    }
+
+    const path = editorContextMenu.link.resolvedPath;
+    closeEditorContextMenu();
+    onMissingWikiLink(path);
   }
 
   function openSourceLineInRightPane() {
@@ -1211,6 +1222,16 @@
       >
         Open link in right <span class="menu-mnemonic">p</span>ane
       </button>
+      {#if contextLink.resolvedPath && !contextLink.resolvedExists}
+        <button
+          type="button"
+          role="menuitem"
+          data-menu-key="c"
+          on:click={requestMissingWikiLinkPage}
+        >
+          <span class="menu-mnemonic">C</span>reate page
+        </button>
+      {/if}
     {/if}
 
     {#if editorContextMenu.kind === "text"}
