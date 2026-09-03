@@ -246,7 +246,7 @@ pub(crate) fn move_page_in_workspace(
 
     let source_key = page_key_from_relative_path(&resolved_path)
         .ok_or_else(|| invalid_page_path(&resolved_path))?;
-    ensure_page_target_available(&workspace.pages, &target_path)?;
+    ensure_page_target_available(&workspace.pages, &target_path, Some(&resolved_path))?;
 
     let source_absolute_path = resolve_workspace_relative_path(&workspace.root, &resolved_path)
         .ok_or_else(|| invalid_page_path(&resolved_path))?;
@@ -368,7 +368,7 @@ pub(crate) fn rename_page_in_workspace(
 
     let source_key = page_key_from_relative_path(&resolved_path)
         .ok_or_else(|| invalid_page_path(&resolved_path))?;
-    ensure_page_target_available(&workspace.pages, &target_path)?;
+    ensure_page_target_available(&workspace.pages, &target_path, Some(&resolved_path))?;
 
     let source_absolute_path = resolve_workspace_relative_path(&workspace.root, &resolved_path)
         .ok_or_else(|| invalid_page_path(&resolved_path))?;
@@ -464,7 +464,7 @@ fn move_folder_to_path(
             )
         })?;
         let new_page_path = format!("{new_folder}/{suffix}");
-        ensure_page_target_available(&workspace.pages, &new_page_path)?;
+        ensure_page_target_available(&workspace.pages, &new_page_path, Some(&page.path))?;
         target_rewrites.push((page.key.clone(), new_page_path));
     }
 
@@ -617,10 +617,18 @@ fn replacement_target_for_link(
         .map(|(_, new_page_path)| page_path_to_link_target(new_page_path))
 }
 
-fn ensure_page_target_available(pages: &PageIndex, target_path: &str) -> AppResult<()> {
+fn ensure_page_target_available(
+    pages: &PageIndex,
+    target_path: &str,
+    source_path: Option<&str>,
+) -> AppResult<()> {
     let target_key =
         page_key_from_relative_path(target_path).ok_or_else(|| invalid_page_path(target_path))?;
-    if !pages.paths_for_key(&target_key).is_empty() {
+    if pages
+        .paths_for_key(&target_key)
+        .iter()
+        .any(|path| Some(path.as_str()) != source_path)
+    {
         return Err(AppError::already_exists(
             "A page with this path already exists, ignoring case. Choose another name or folder.",
         ));

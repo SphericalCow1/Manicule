@@ -754,6 +754,44 @@ mod tests {
     }
 
     #[test]
+    fn rename_page_allows_changing_only_the_file_name_case() {
+        let root = temp_workspace();
+        fs::write(root.join("mathias.md"), "# Mathias").unwrap();
+        fs::write(root.join("Source.md"), "- Link [[mathias]]").unwrap();
+        let mut workspace = test_workspace_state(
+            root.clone(),
+            PageIndex::from_paths(vec!["mathias.md".to_string(), "Source.md".to_string()]),
+        );
+        workspace
+            .backlinks
+            .index_page("Source.md".to_string(), "- Link [[mathias]]");
+
+        let result = rename_page_in_workspace(
+            &mut workspace,
+            "mathias.md".to_string(),
+            "Mathias".to_string(),
+        )
+        .unwrap();
+
+        assert_eq!(result.old_path, "mathias.md");
+        assert_eq!(result.page.path, "Mathias.md");
+        assert_eq!(result.updated_link_count, 1);
+        assert!(root.join("Mathias.md").is_file());
+        let file_names: Vec<_> = fs::read_dir(&root)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert!(file_names.contains(&"Mathias.md".into()));
+        assert!(!file_names.contains(&"mathias.md".into()));
+        assert_eq!(
+            fs::read_to_string(root.join("Source.md")).unwrap(),
+            "- Link [[Mathias]]"
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn rename_folder_updates_links_to_pages_inside_folder() {
         let root = temp_workspace();
         fs::create_dir_all(root.join("team").join("sub")).unwrap();

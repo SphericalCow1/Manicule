@@ -11,3 +11,4 @@
 - [x] Scope editor context-menu actions to the clicked content type, with direct
   task status and priority menus.
 - [x] Move block-level collapse shortcuts to Cmd/Ctrl+Shift+1 through 4.
+- [x] Allow page renames that only change filename capitalization.

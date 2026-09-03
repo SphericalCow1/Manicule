@@ -41,6 +41,7 @@ Changes since `v0.6.5`.
   and keyboard shortcut.
 - Block-level collapse shortcuts now use `Cmd/Ctrl+Shift+1` through
   `Cmd/Ctrl+Shift+4`.
+- Page files can now be renamed when only the filename capitalization changes.
 - The editor context menu now limits actions to the clicked link, selected text,
   task, or ordinary source line, with direct status and priority menus for tasks.
 - The task-overview button now switches back to the editor when the overview is
