@@ -72,7 +72,7 @@
   const taskPriorityOptions = ["A", "B", "C"];
 
   const markdown = new MarkdownIt({
-    breaks: false,
+    breaks: true,
     html: false,
     linkify: true,
   });

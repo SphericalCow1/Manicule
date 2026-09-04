@@ -11,7 +11,8 @@
 ## Implemented
 
 - [x] Make Shift+Enter add an indented, visibly rendered continuation line
-  within the current list block instead of creating a new block.
+  within the current list block instead of creating a new block, and render
+  Markdown softbreaks as visible line breaks in the right pane.
 - [x] Rename the application and its build metadata from Manicule to Logtext,
   including native window and menu labels, dialogs, package metadata, and the
   desktop bundle identifier.
