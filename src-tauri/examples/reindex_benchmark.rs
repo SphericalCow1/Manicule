@@ -96,7 +96,7 @@ fn run_benchmarks(
     generated: &GeneratedWorkspace,
     arguments: &[String],
 ) -> Result<(), String> {
-    println!("Manicule indexing and query benchmark");
+    println!("Logtext indexing and query benchmark");
     println!("workspace: {}", generated.root.display());
     println!("os/arch: {}/{}", env::consts::OS, env::consts::ARCH);
     println!(

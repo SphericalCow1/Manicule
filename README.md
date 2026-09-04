@@ -1,12 +1,12 @@
-# Manicule
+# Logtext
 
-<img align="right" src="assets/branding/manicule-workflow-illustration-transparent.png" alt="Manicule octopus connecting notes and tasks" width="220" />
+<img align="right" src="assets/branding/manicule-workflow-illustration-transparent.png" alt="Logtext octopus connecting notes and tasks" width="220" />
 
-Manicule is a local Markdown-first knowledge workspace for notes and tasks using
+Logtext is a local Markdown-first knowledge workspace for notes and tasks using
 backlinks as semantic tags.
 
 The app is inspired by OrgMode and Logseq, but Markdown files remain the source
-of truth. Manicule scans a local workspace folder, renders wiki links and
+of truth. Logtext scans a local workspace folder, renders wiki links and
 backlinks, and adds project-oriented task workflows on top of plain `.md`
 files.
 
@@ -15,14 +15,14 @@ files.
 ## Example Workspace
 
 A ready-to-open example workspace is included in
-[`docs/example_workspace`](docs/example_workspace). Open this folder in Manicule
+[`docs/example_workspace`](docs/example_workspace). Open this folder in Logtext
 and start with [Start Here](docs/example_workspace/Start%20Here.md) to explore
 journals, backlinks, tasks, favorites, folder colors, and the three-pane
 workflow.
 
 ## Product Vision
 
-Manicule is built for personal knowledge management in project and task management contexts. It follows a simple approach:
+Logtext is built for personal knowledge management in project and task management contexts. It follows a simple approach:
 
 > Capture first. Structure later. Files forever.
 
@@ -44,7 +44,7 @@ The default workflow is:
 
 ## Core Workflow
 
-When a workspace opens, Manicule opens or creates today's journal in the middle
+When a workspace opens, Logtext opens or creates today's journal in the middle
 editor pane:
 
 ```md
@@ -76,10 +76,10 @@ Create database -> define schema -> create document -> fill fields
 
 ### Workspace
 
-Open a workspace with `File > Open Workspace Folder...`. Manicule scans all
+Open a workspace with `File > Open Workspace Folder...`. Logtext scans all
 Markdown files below that folder recursively.
 
-On startup Manicule reads `~/.manicule` from the user home directory. If that file
+On startup Logtext reads `~/.manicule` from the user home directory. If that file
 contains a `lastWorkspace` entry, the workspace is opened automatically. When a
 workspace is opened, the path is stored there again for the next start.
 
@@ -87,7 +87,7 @@ After the workspace is loaded, the middle pane always opens today's journal at
 `journal/YYYY-MM-DD.md`. If the file does not exist, Manicule creates it. The
 right pane keeps its previous context page from the last session.
 
-Each workspace can also contain a `.config` file. Manicule creates it if needed
+Each workspace can also contain a `.config` file. Logtext creates it if needed
 and stores workspace-specific settings there, for example task colors, expanded 
 folders.
 
@@ -95,7 +95,7 @@ Use `View > Toggle Dark Mode` to choose the interface theme from light or dark.
 
 ### Three-Pane Layout
 
-Manicule uses three resizable panes:
+Logtext uses three resizable panes:
 
 - left pane: workspace navigation, favorites, recent pages, task overview entry
   and global search
@@ -115,10 +115,10 @@ name:
 # Project Alpha
 ```
 
-Manicule uses the first `# Heading` as the page title in navigation, task
+Logtext uses the first `# Heading` as the page title in navigation, task
 overview, backlinks, and search results. Existing files without a first-level
 heading fall back to the file name without `.md` until opened; when such a file
-is opened, Manicule adds the default first-level heading at the top.
+is opened, Logtext adds the default first-level heading at the top.
 
 Internal links use wiki-link syntax:
 
@@ -132,14 +132,14 @@ Link targets are resolved case-insensitively. The actual spelling of file and
 folder names is not changed. `.md` in a link target is tolerated, but normal
 links should be written without it.
 
-After typing `[[` in the editor, Manicule offers matching page suggestions based
+After typing `[[` in the editor, Logtext offers matching page suggestions based
 on the current input. Selecting a suggestion inserts the target and closes the
 link with `]]`. Suggestions show the full relative page path so the inserted
 target is unambiguous.
 
 Rendered wiki links without an alias use a compact display label. If the page
 name is unique, only the page name is shown; if multiple pages share that name,
-Manicule shows enough path context to distinguish them.
+Logtext shows enough path context to distinguish them.
 
 Missing target pages are marked in rendered views and can be created explicitly.
 
@@ -200,7 +200,7 @@ Right-click a rendered task keyword or priority in the editor, right pane,
 backlinks, or task overview to change status or priority through the context
 menu.
 
-When a task is set to `DONE`, Manicule can play a short completion sound. This is
+When a task is set to `DONE`, Logtext can play a short completion sound. This is
 controlled by `taskDoneSoundEnabled` in `.config`.
 
 ### Checkboxes
@@ -245,7 +245,7 @@ Useful navigation and file actions:
 - assign colors to folders from the folder context menu
 - open yesterday, today, or tomorrow from the journal shortcuts
 
-When pages or folders are renamed or moved, Manicule updates matching wiki links
+When pages or folders are renamed or moved, Logtext updates matching wiki links
 to the affected pages.
 
 Folder colors are stored in `.config`. They color the folder icon and wiki-link
@@ -284,7 +284,7 @@ Important editor shortcuts:
 - `Cmd/Ctrl + mouse wheel`: change UI zoom
 
 Editor text changes use CodeMirror undo. Task changes and checkbox changes made
-outside direct text editing are tracked by Manicule' app-level undo stack. The
+outside direct text editing are tracked by Logtext' app-level undo stack. The
 Edit menu shows the next undo or redo action when available.
 
 ## Configuration
@@ -315,7 +315,7 @@ Example:
 }
 ```
 
-Manicule may add more fields to `.config` as features evolve.
+Logtext may add more fields to `.config` as features evolve.
 
 ## Development
 
@@ -374,10 +374,10 @@ The current app version is `0.6.5`.
 
 ## License
 
-Manicule is licensed under the GNU Affero General Public License v3.0. See
+Logtext is licensed under the GNU Affero General Public License v3.0. See
 [LICENSE](LICENSE) for the full license text.
 
-Manicule is provided without warranty. Use it with appropriate backups,
+Logtext is provided without warranty. Use it with appropriate backups,
 especially while the project is still in early development.
 
 ## Additional Documentation

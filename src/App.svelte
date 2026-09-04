@@ -111,7 +111,7 @@
   }
 
   function updateWindowTitle(root: string | null) {
-    const title = root ? `Manicule: ${root}` : "Manicule";
+    const title = root ? `Logtext: ${root}` : "Logtext";
     if (title === lastWindowTitle) {
       return;
     }
@@ -293,7 +293,7 @@
 <svelte:window on:resize={() => clampLayout(window.innerWidth)} />
 
 {#if isStarting || restoringWorkspaceSession || !welcomeMinimumDurationElapsed}
-  <main class="welcome-screen" aria-busy="true" aria-label="Loading Manicule">
+  <main class="welcome-screen" aria-busy="true" aria-label="Loading Logtext">
     <img
       class="welcome-illustration"
       src={welcomeIllustration}
@@ -336,7 +336,7 @@
 {/if}
 
 <ErrorDialog
-  title="Manicule Error"
+  title="Logtext Error"
   message={$appErrorStore.message}
   detail={$appErrorStore.detail}
   onClose={() => appErrorStore.clear()}
@@ -361,7 +361,7 @@
       use:trapDialogFocus={{ onClose: closeAboutDialog }}
     >
       <header>
-        <h2 id="about-dialog-title">Manicule</h2>
+        <h2 id="about-dialog-title">Logtext</h2>
         <p>Version {appVersion}</p>
       </header>
 
@@ -372,7 +372,7 @@
             <dt>Repository</dt>
             <dd>
               <a href={repositoryUrl} target="_blank" rel="noreferrer">
-                SphericalCow1/Manicule
+                Source repository
               </a>
             </dd>
           </div>
@@ -386,7 +386,7 @@
           </div>
         </dl>
         <p class="about-disclaimer">
-          Manicule is provided as is, without warranty of any kind. To the extent permitted by law,
+          Logtext is provided as is, without warranty of any kind. To the extent permitted by law,
           the authors are not liable for damages arising from use of the software.
         </p>
       </div>

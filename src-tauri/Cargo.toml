@@ -1,5 +1,5 @@
 [package]
-name = "manicule"
+name = "logtext"
 version = "0.7.0"
 description = "A local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags."
 authors = ["Jens"]
@@ -8,11 +8,11 @@ repository = "https://github.com/SphericalCow1/Manicule"
 homepage = "https://github.com/SphericalCow1/Manicule"
 readme = "../README.md"
 edition = "2021"
-default-run = "Manicule"
+default-run = "Logtext"
 autobins = false
 
 [[bin]]
-name = "Manicule"
+name = "Logtext"
 path = "src/main.rs"
 
 [lib]

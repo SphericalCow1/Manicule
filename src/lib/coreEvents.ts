@@ -75,7 +75,7 @@ export async function setupCoreEvents() {
       const workspace = get(workspaceStore);
       if (!workspace.root) {
         await message("Open a workspace before creating a file.", {
-          title: "Manicule",
+          title: "Logtext",
           kind: "warning",
         });
         return;
@@ -91,7 +91,7 @@ export async function setupCoreEvents() {
       const editor = get(editorSessionStore);
       if (editor.saving) {
         await message("Wait for the current save to finish before closing the workspace.", {
-          title: "Manicule",
+          title: "Logtext",
           kind: "warning",
         });
         return;
@@ -100,7 +100,7 @@ export async function setupCoreEvents() {
       if (
         (editor.dirty || editor.conflict) &&
         !(await confirmDialog("Close workspace and discard unsaved editor changes?", {
-          title: "Manicule",
+          title: "Logtext",
           kind: "warning",
         }))
       ) {
@@ -386,7 +386,7 @@ async function handleUndoRequest(source: "keyboard" | "menu") {
     const undone = await appUndoStore.undoLast();
     const undoState = get(appUndoStore);
     if (!undone && undoState.error) {
-      await message(undoState.error, { title: "Manicule", kind: "warning" });
+      await message(undoState.error, { title: "Logtext", kind: "warning" });
       return;
     }
 
@@ -423,7 +423,7 @@ async function handleRedoRequest(source: "keyboard" | "menu") {
     const redone = await appUndoStore.redoLast();
     const undoState = get(appUndoStore);
     if (!redone && undoState.error) {
-      await message(undoState.error, { title: "Manicule", kind: "warning" });
+      await message(undoState.error, { title: "Logtext", kind: "warning" });
       return;
     }
 
@@ -456,7 +456,7 @@ async function openWorkspaceFromDialog() {
   const selected = await open({
     directory: true,
     multiple: false,
-    title: "Open Manicule workspace",
+    title: "Open Logtext workspace",
   });
 
   if (typeof selected === "string") {

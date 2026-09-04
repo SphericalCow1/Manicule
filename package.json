@@ -1,5 +1,5 @@
 {
-  "name": "manicule",
+  "name": "logtext",
   "description": "A local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags.",
   "version": "0.7.0",
   "license": "AGPL-3.0-only",

@@ -73,7 +73,7 @@ pub(crate) fn create_page_in_workspace(
         .index_page_content(markdown_path.clone(), content)
         .ok_or_else(|| {
             AppError::internal(
-                "The page was created, but Manicule could not add it to the workspace index. Refresh the workspace.",
+                "The page was created, but Logtext could not add it to the workspace index. Refresh the workspace.",
                 format!("Failed to index created page '{markdown_path}'"),
             )
         })?;
@@ -288,7 +288,7 @@ pub(crate) fn move_page_in_workspace(
         .index_page_content(target_path.clone(), content)
         .ok_or_else(|| {
             AppError::internal(
-                "The page was moved, but Manicule could not update the workspace index. Refresh the workspace.",
+                "The page was moved, but Logtext could not update the workspace index. Refresh the workspace.",
                 format!("Failed to index moved page '{target_path}'"),
             )
         })?;
@@ -398,7 +398,7 @@ pub(crate) fn rename_page_in_workspace(
         .index_page_content(target_path.clone(), content)
         .ok_or_else(|| {
             AppError::internal(
-                "The page was renamed, but Manicule could not update the workspace index. Refresh the workspace.",
+                "The page was renamed, but Logtext could not update the workspace index. Refresh the workspace.",
                 format!("Failed to index renamed page '{target_path}'"),
             )
         })?;
@@ -456,7 +456,7 @@ fn move_folder_to_path(
     for page in &pages_to_rename {
         let suffix = page.path.strip_prefix(&old_folder_prefix).ok_or_else(|| {
             AppError::internal(
-                "Manicule could not prepare the folder move. Refresh the workspace and try again.",
+                "Logtext could not prepare the folder move. Refresh the workspace and try again.",
                 format!(
                     "Failed to derive folder-relative page path '{}' from '{old_folder}'",
                     page.path

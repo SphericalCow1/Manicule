@@ -10,6 +10,9 @@
 
 ## Implemented
 
+- [x] Rename the application and its build metadata from Manicule to Logtext,
+  including native window and menu labels, dialogs, package metadata, and the
+  desktop bundle identifier.
 - [x] Generate six elegant Manicule application-icon concepts, with and without
   the octopus mascot.
 - [x] Use the selected octopus-and-manicule application icon and rebuild local

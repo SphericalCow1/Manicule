@@ -308,7 +308,7 @@
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Open Manicule workspace",
+        title: "Open Logtext workspace",
       });
 
       if (typeof selected !== "string") {
@@ -331,7 +331,7 @@
   async function confirmWarning(message: string) {
     try {
       return await confirmDialog(message, {
-        title: "Manicule",
+        title: "Logtext",
         kind: "warning",
       });
     } catch (error) {
@@ -2594,7 +2594,7 @@
 </aside>
 
 <ErrorDialog
-  title="Manicule Error"
+  title="Logtext Error"
   message={popupError}
   detail={popupErrorDetail}
   onClose={closePopupError}

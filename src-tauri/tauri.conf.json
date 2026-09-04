@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Manicule",
+  "productName": "Logtext",
   "version": "0.7.0",
-  "identifier": "dev.manicule.desktop",
+  "identifier": "dev.logtext.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Manicule",
+        "title": "Logtext",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
