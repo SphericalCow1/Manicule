@@ -5,7 +5,7 @@ export type KeyboardShortcut = {
 
 export const keyboardShortcuts: KeyboardShortcut[] = [
   { keys: "Enter", description: "Create a new block or list item" },
-  { keys: "Shift+Enter", description: "Insert a line break within the current block" },
+  { keys: "Shift+Enter", description: "Insert a visible line break within the current block" },
   { keys: "Tab", description: "Indent current or selected block" },
   { keys: "Shift+Tab", description: "Outdent current or selected block" },
   { keys: "Cmd/Ctrl+ArrowUp", description: "Move current block including child blocks up" },

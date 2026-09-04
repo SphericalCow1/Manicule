@@ -147,6 +147,11 @@ export function blockLineBreakPrefix(lines: string[], lineNumber: number) {
   return null;
 }
 
+export function blockLineBreakText(lines: string[], lineNumber: number) {
+  const prefix = blockLineBreakPrefix(lines, lineNumber);
+  return prefix === null ? null : `  \n${prefix}`;
+}
+
 export function nextTaskLineText(lineText: string, taskStates = DEFAULT_TASK_STATES) {
   const states = taskStates.length > 0 ? taskStates : DEFAULT_TASK_STATES;
   const statusMatch = taskKeywordMatch(lineText, 0, states);
@@ -225,14 +230,14 @@ export const insertBlockLineBreak: Command = (view) => {
   }
 
   const line = view.state.doc.lineAt(selection.head);
-  const prefix = blockLineBreakPrefix(documentLines(view.state), line.number);
-  if (prefix === null) {
+  const lineBreak = blockLineBreakText(documentLines(view.state), line.number);
+  if (lineBreak === null) {
     return false;
   }
 
   view.dispatch({
-    changes: { from: selection.head, insert: `\n${prefix}` },
-    selection: EditorSelection.cursor(selection.head + prefix.length + 1),
+    changes: { from: selection.head, insert: lineBreak },
+    selection: EditorSelection.cursor(selection.head + lineBreak.length),
     scrollIntoView: true,
   });
   return true;

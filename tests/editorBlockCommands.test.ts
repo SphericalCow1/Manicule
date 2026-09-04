@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   blockRangeForLines,
   blockLineBreakPrefix,
+  blockLineBreakText,
   collapsibleBlockRangeForLines,
   collapsibleBlockRangesBelowLevel,
   emptyListBlockRange,
@@ -150,6 +151,12 @@ test("indents shift-enter line breaks to remain within the current list block", 
   assert.equal(blockLineBreakPrefix(["- Parent", "  continuation"], 2), "  ");
   assert.equal(blockLineBreakPrefix(["Plain paragraph"], 1), null);
   assert.equal(blockLineBreakPrefix(["- Parent", "", "  continuation"], 3), null);
+});
+
+test("uses Markdown hard breaks for shift-enter continuation lines", () => {
+  assert.equal(blockLineBreakText(["- Parent"], 1), "  \n  ");
+  assert.equal(blockLineBreakText(["  - Child"], 1), "  \n    ");
+  assert.equal(blockLineBreakText(["Plain paragraph"], 1), null);
 });
 
 test("toggles task status for list blocks", () => {
