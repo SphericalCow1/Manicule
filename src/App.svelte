@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getVersion } from "@tauri-apps/api/app";
   import { onDestroy, onMount } from "svelte";
+  import welcomeIllustration from "../assets/branding/manicule-workflow-illustration.png";
   import EditorPane from "./lib/components/EditorPane.svelte";
   import ErrorDialog from "./lib/components/ErrorDialog.svelte";
   import FileTree from "./lib/components/FileTree.svelte";
@@ -37,17 +38,25 @@
   let lastSavedSessionKey = "";
   let lastWindowTitle = "";
   let sessionSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  let isStarting = true;
 
   onMount(() => {
-    void runUserAction("Could not initialize native application events", setupCoreEvents);
-    void workspaceStore.openLastWorkspace();
-    void loadAppVersion();
+    void initializeApp();
     loadLayout();
     window.addEventListener("manicule-reset-layout", resetLayout);
     window.addEventListener("manicule-show-about", openAboutDialog);
     window.addEventListener("manicule-show-keyboard-shortcuts", openKeyboardShortcutsDialog);
     window.addEventListener("wheel", handleWheel, { passive: false });
   });
+
+  async function initializeApp() {
+    await Promise.all([
+      runUserAction("Could not initialize native application events", setupCoreEvents),
+      workspaceStore.openLastWorkspace(),
+      loadAppVersion(),
+    ]);
+    isStarting = false;
+  }
 
   $: gridTemplateColumns = `${leftWidth}px 6px minmax(${minEditorWidth}px, 1fr) 6px ${rightWidth}px`;
   $: if ($workspaceStore.root !== sessionRestoreRoot) {
@@ -267,36 +276,51 @@
 
 <svelte:window on:resize={() => clampLayout(window.innerWidth)} />
 
-<main
-  class:resizing={activeResize !== null}
-  class="app-shell"
-  style:grid-template-columns={gridTemplateColumns}
-  style:--app-font-size={`${14 * $zoomStore}px`}
->
-  <FileTree />
-  <button
-    type="button"
-    class="column-resizer"
-    aria-label="Resize file tree"
-    title="Drag to resize. Double-click to reset columns."
-    on:pointerdown={(event) => startResize("left", event)}
-    on:dblclick={resetLayout}
-  ></button>
-  {#if $mainViewStore === "tasks"}
-    <TaskOverview />
-  {:else}
-    <EditorPane />
-  {/if}
-  <button
-    type="button"
-    class="column-resizer"
-    aria-label="Resize right pane"
-    title="Drag to resize. Double-click to reset columns."
-    on:pointerdown={(event) => startResize("right", event)}
-    on:dblclick={resetLayout}
-  ></button>
-  <RightPane />
-</main>
+{#if isStarting || restoringWorkspaceSession}
+  <main class="welcome-screen" aria-label="Loading Manicule">
+    <div class="welcome-copy">
+      <p class="welcome-kicker">Manicule</p>
+      <h1>Your Markdown workspace</h1>
+      <p>Opening your workspace…</p>
+    </div>
+    <img
+      class="welcome-illustration"
+      src={welcomeIllustration}
+      alt="A friendly octopus connecting notes and tasks"
+    />
+  </main>
+{:else}
+  <main
+    class:resizing={activeResize !== null}
+    class="app-shell"
+    style:grid-template-columns={gridTemplateColumns}
+    style:--app-font-size={`${14 * $zoomStore}px`}
+  >
+    <FileTree />
+    <button
+      type="button"
+      class="column-resizer"
+      aria-label="Resize file tree"
+      title="Drag to resize. Double-click to reset columns."
+      on:pointerdown={(event) => startResize("left", event)}
+      on:dblclick={resetLayout}
+    ></button>
+    {#if $mainViewStore === "tasks"}
+      <TaskOverview />
+    {:else}
+      <EditorPane />
+    {/if}
+    <button
+      type="button"
+      class="column-resizer"
+      aria-label="Resize right pane"
+      title="Drag to resize. Double-click to reset columns."
+      on:pointerdown={(event) => startResize("right", event)}
+      on:dblclick={resetLayout}
+    ></button>
+    <RightPane />
+  </main>
+{/if}
 
 <ErrorDialog
   title="Manicule Error"

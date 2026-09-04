@@ -270,6 +270,65 @@ textarea {
   font: inherit;
 }
 
+.welcome-screen {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) minmax(280px, 430px);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 5vw, 72px);
+  min-height: 100vh;
+  padding: 48px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 72% 46%, rgb(211 230 230 / 38%), transparent 31%),
+    var(--surface-app);
+}
+
+.welcome-copy {
+  max-width: 330px;
+}
+
+.welcome-kicker {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.welcome-copy h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.55rem, 2.5vw, 2.15rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.welcome-copy p:last-child {
+  margin: 14px 0 0;
+  color: var(--text-muted);
+}
+
+.welcome-illustration {
+  display: block;
+  width: min(32vw, 390px);
+  min-width: 280px;
+  height: auto;
+  opacity: 0.78;
+  filter: saturate(0.82);
+}
+
+:root[data-theme="dark"] .welcome-screen {
+  background:
+    radial-gradient(circle at 72% 46%, rgb(114 147 148 / 16%), transparent 31%),
+    var(--surface-app);
+}
+
+:root[data-theme="dark"] .welcome-illustration {
+  opacity: 0.64;
+}
+
 .app-shell {
   display: grid;
   height: 100vh;
