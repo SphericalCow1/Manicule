@@ -9,6 +9,7 @@ import {
 import { confirm as confirmDialog, message, open } from "@tauri-apps/plugin-dialog";
 import { get } from "svelte/store";
 import { runUserAction } from "./stores/appErrors.js";
+import { collapseLevelFromShortcut } from "./keyboardShortcuts";
 import { appUndoStore } from "./stores/appUndo";
 import { editorSessionStore } from "./stores/editorSession";
 import { editorModeStore } from "./stores/editorMode";
@@ -284,6 +285,22 @@ function userAction(context: string, action: () => void | Promise<void>) {
 }
 
 function handleGlobalViewKeydown(event: KeyboardEvent) {
+  const collapseLevel = collapseLevelFromShortcut(event);
+  if (collapseLevel !== null) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    mainViewStore.set("editor");
+    window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("manicule-collapse-all-blocks-below-level", {
+          detail: { level: collapseLevel },
+        }),
+      );
+    }, 0);
+    return;
+  }
+
   if (event.altKey || event.isComposing || !event.shiftKey || (!event.metaKey && !event.ctrlKey)) {
     return;
   }

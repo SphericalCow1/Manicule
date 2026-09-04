@@ -10,7 +10,7 @@ export const keyboardShortcuts: KeyboardShortcut[] = [
   { keys: "Cmd/Ctrl+ArrowUp", description: "Move current block including child blocks up" },
   { keys: "Cmd/Ctrl+ArrowDown", description: "Move current block including child blocks down" },
   { keys: "Cmd/Ctrl+Enter", description: "Add or cycle task state" },
-  { keys: "Cmd/Ctrl+Shift+1–4", description: "Collapse all blocks below that level" },
+  { keys: "Cmd/Ctrl+1–4", description: "Collapse all blocks below that level" },
   { keys: "Cmd/Ctrl+Shift+E", description: "Expand all blocks" },
   { keys: "Cmd/Ctrl+Shift+T", description: "Toggle task overview" },
   { keys: "Cmd/Ctrl+Shift+L", description: "Toggle editor mode" },
@@ -20,3 +20,19 @@ export const keyboardShortcuts: KeyboardShortcut[] = [
   { keys: "Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y", description: "Redo" },
   { keys: "Cmd/Ctrl+Mouse Wheel", description: "Change UI zoom" },
 ];
+
+export function collapseLevelFromShortcut(
+  event: Pick<KeyboardEvent, "altKey" | "code" | "ctrlKey" | "isComposing" | "metaKey" | "shiftKey">,
+) {
+  if (
+    event.altKey ||
+    event.isComposing ||
+    event.shiftKey ||
+    (!event.metaKey && !event.ctrlKey)
+  ) {
+    return null;
+  }
+
+  const match = /^Digit([1-4])$/.exec(event.code);
+  return match ? Number(match[1]) : null;
+}

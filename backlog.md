@@ -16,5 +16,6 @@
 - [x] Combine live preview and plain Markdown editing into one menu toggle.
 - [x] Scope editor context-menu actions to the clicked content type, with direct
   task status and priority menus.
-- [x] Move block-level collapse shortcuts to Cmd/Ctrl+Shift+1 through 4.
+- [x] Make block-level collapse shortcuts work across keyboard layouts using
+  Cmd/Ctrl+1 through 4.
 - [x] Allow page renames that only change filename capitalization.
