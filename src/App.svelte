@@ -38,7 +38,9 @@
   let lastSavedSessionKey = "";
   let lastWindowTitle = "";
   let sessionSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  let welcomeVisibilityTimer: ReturnType<typeof setTimeout> | null = null;
   let isStarting = true;
+  let welcomeMinimumDurationElapsed = false;
 
   onMount(() => {
     void initializeApp();
@@ -56,6 +58,17 @@
       loadAppVersion(),
     ]);
     isStarting = false;
+  }
+
+  function beginWelcomeMinimumDuration() {
+    if (welcomeVisibilityTimer || welcomeMinimumDurationElapsed) {
+      return;
+    }
+
+    welcomeVisibilityTimer = setTimeout(() => {
+      welcomeVisibilityTimer = null;
+      welcomeMinimumDurationElapsed = true;
+    }, 1000);
   }
 
   $: gridTemplateColumns = `${leftWidth}px 6px minmax(${minEditorWidth}px, 1fr) 6px ${rightWidth}px`;
@@ -266,6 +279,9 @@
 
   onDestroy(() => {
     clearWorkspaceSessionSaveTimer();
+    if (welcomeVisibilityTimer) {
+      clearTimeout(welcomeVisibilityTimer);
+    }
     window.removeEventListener("pointermove", resizeColumns);
     window.removeEventListener("manicule-reset-layout", resetLayout);
     window.removeEventListener("manicule-show-about", openAboutDialog);
@@ -276,17 +292,14 @@
 
 <svelte:window on:resize={() => clampLayout(window.innerWidth)} />
 
-{#if isStarting || restoringWorkspaceSession}
-  <main class="welcome-screen" aria-label="Loading Manicule">
-    <div class="welcome-copy">
-      <p class="welcome-kicker">Manicule</p>
-      <h1>Your Markdown workspace</h1>
-      <p>Opening your workspace…</p>
-    </div>
+{#if isStarting || restoringWorkspaceSession || !welcomeMinimumDurationElapsed}
+  <main class="welcome-screen" aria-busy="true" aria-label="Loading Manicule">
     <img
       class="welcome-illustration"
       src={welcomeIllustration}
-      alt="A friendly octopus connecting notes and tasks"
+      alt=""
+      on:load={beginWelcomeMinimumDuration}
+      on:error={beginWelcomeMinimumDuration}
     />
   </main>
 {:else}
