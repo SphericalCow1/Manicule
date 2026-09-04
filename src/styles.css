@@ -281,23 +281,10 @@ textarea {
     var(--surface-app);
 }
 
-.welcome-illustration {
-  display: block;
-  width: min(38vw, 430px);
-  min-width: 320px;
-  height: auto;
-  opacity: 0.78;
-  filter: saturate(0.82);
-}
-
 :root[data-theme="dark"] .welcome-screen {
   background:
     radial-gradient(circle at 72% 46%, rgb(114 147 148 / 16%), transparent 31%),
     var(--surface-app);
-}
-
-:root[data-theme="dark"] .welcome-illustration {
-  opacity: 0.64;
 }
 
 .app-shell {

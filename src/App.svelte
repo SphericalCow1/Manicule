@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getVersion } from "@tauri-apps/api/app";
   import { onDestroy, onMount } from "svelte";
-  import welcomeIllustration from "../assets/branding/manicule-workflow-illustration.png";
   import EditorPane from "./lib/components/EditorPane.svelte";
   import ErrorDialog from "./lib/components/ErrorDialog.svelte";
   import FileTree from "./lib/components/FileTree.svelte";
@@ -38,9 +37,7 @@
   let lastSavedSessionKey = "";
   let lastWindowTitle = "";
   let sessionSaveTimer: ReturnType<typeof setTimeout> | null = null;
-  let welcomeVisibilityTimer: ReturnType<typeof setTimeout> | null = null;
   let isStarting = true;
-  let welcomeMinimumDurationElapsed = false;
 
   onMount(() => {
     void initializeApp();
@@ -58,17 +55,6 @@
       loadAppVersion(),
     ]);
     isStarting = false;
-  }
-
-  function beginWelcomeMinimumDuration() {
-    if (welcomeVisibilityTimer || welcomeMinimumDurationElapsed) {
-      return;
-    }
-
-    welcomeVisibilityTimer = setTimeout(() => {
-      welcomeVisibilityTimer = null;
-      welcomeMinimumDurationElapsed = true;
-    }, 1000);
   }
 
   $: gridTemplateColumns = `${leftWidth}px 6px minmax(${minEditorWidth}px, 1fr) 6px ${rightWidth}px`;
@@ -279,9 +265,6 @@
 
   onDestroy(() => {
     clearWorkspaceSessionSaveTimer();
-    if (welcomeVisibilityTimer) {
-      clearTimeout(welcomeVisibilityTimer);
-    }
     window.removeEventListener("pointermove", resizeColumns);
     window.removeEventListener("manicule-reset-layout", resetLayout);
     window.removeEventListener("manicule-show-about", openAboutDialog);
@@ -292,16 +275,8 @@
 
 <svelte:window on:resize={() => clampLayout(window.innerWidth)} />
 
-{#if isStarting || restoringWorkspaceSession || !welcomeMinimumDurationElapsed}
-  <main class="welcome-screen" aria-busy="true" aria-label="Loading Logtext">
-    <img
-      class="welcome-illustration"
-      src={welcomeIllustration}
-      alt=""
-      on:load={beginWelcomeMinimumDuration}
-      on:error={beginWelcomeMinimumDuration}
-    />
-  </main>
+{#if isStarting || restoringWorkspaceSession}
+  <main class="welcome-screen" aria-busy="true" aria-label="Loading Logtext"></main>
 {:else}
   <main
     class:resizing={activeResize !== null}

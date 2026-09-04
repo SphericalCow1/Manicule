@@ -10,6 +10,7 @@
 
 ## Implemented
 
+- [x] Remove the branded illustration from the application startup screen.
 - [x] Make Shift+Enter add an indented, visibly rendered continuation line
   within the current list block instead of creating a new block, and render
   Markdown softbreaks as visible line breaks in the right pane.
