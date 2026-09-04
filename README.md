@@ -7,7 +7,7 @@
       <p>The app is inspired by OrgMode and Logseq, but Markdown files remain the source of truth. Manicule scans a local workspace folder, renders wiki links and backlinks, and adds project-oriented task workflows on top of plain <code>.md</code> files.</p>
     </td>
     <td width="36%" align="right">
-      <img src="assets/branding/manicule-workflow-illustration.png" alt="Manicule octopus connecting notes and tasks" width="220" />
+      <img src="assets/branding/manicule-workflow-illustration-transparent.png" alt="Manicule octopus connecting notes and tasks" width="220" />
     </td>
   </tr>
 </table>
