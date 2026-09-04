@@ -1,16 +1,16 @@
 # Manicule
 
-<table>
-  <tr>
-    <td width="64%" valign="top">
-      <p>Manicule is a local Markdown-first knowledge workspace for notes and tasks using backlinks as semantic tags.</p>
-      <p>The app is inspired by OrgMode and Logseq, but Markdown files remain the source of truth. Manicule scans a local workspace folder, renders wiki links and backlinks, and adds project-oriented task workflows on top of plain <code>.md</code> files.</p>
-    </td>
-    <td width="36%" align="right">
-      <img src="assets/branding/manicule-workflow-illustration-transparent.png" alt="Manicule octopus connecting notes and tasks" width="220" />
-    </td>
-  </tr>
-</table>
+<img align="right" src="assets/branding/manicule-workflow-illustration-transparent.png" alt="Manicule octopus connecting notes and tasks" width="220" />
+
+Manicule is a local Markdown-first knowledge workspace for notes and tasks using
+backlinks as semantic tags.
+
+The app is inspired by OrgMode and Logseq, but Markdown files remain the source
+of truth. Manicule scans a local workspace folder, renders wiki links and
+backlinks, and adds project-oriented task workflows on top of plain `.md`
+files.
+
+<br clear="right" />
 
 ## Example Workspace
 
