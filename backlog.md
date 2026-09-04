@@ -27,3 +27,4 @@
 - [x] Make block-level collapse shortcuts work across keyboard layouts using
   Cmd/Ctrl+1 through 4.
 - [x] Allow page and folder renames that only change capitalization.
+- [x] Increase the editor block-fold marker size for easier scanning and clicking.

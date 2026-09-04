@@ -2005,8 +2005,8 @@ textarea {
   background: transparent;
   color: var(--editor-fold-marker-text);
   cursor: pointer;
-  font: inherit;
-  line-height: inherit;
+  font-size: 1.2em;
+  line-height: 1;
   place-items: center;
 }
 
