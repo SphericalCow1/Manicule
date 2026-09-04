@@ -2,6 +2,10 @@
 
 ## Planned
 
+- [ ] Add experimental Markdown block attributes using `key:: value` inline or
+  on a block continuation line. First make `((page))` an alias for `[[page]]`
+  across parsing, navigation, backlinks, rendering, completion, and link
+  rewriting; it is not a block-reference syntax.
 - [ ] Make right-pane hierarchy guides align consistently with parent list
   markers on macOS, Windows, and Linux. Replace font-metric-dependent bullet
   positioning with a shared fixed marker column, use a CSS-drawn marker for

@@ -16,12 +16,23 @@ test("matches text after an open wiki link marker", () => {
   assert.deepEqual(matchWikiLinkCompletion("- siehe [[pro", 14), {
     from: 11,
     query: "pro",
+    closingDelimiter: "]]",
+  });
+});
+
+test("matches text after an open round-delimited wiki link marker", () => {
+  assert.deepEqual(matchWikiLinkCompletion("- siehe ((pro", 14), {
+    from: 11,
+    query: "pro",
+    closingDelimiter: "))",
   });
 });
 
 test("does not match aliases or closed wiki links", () => {
   assert.equal(matchWikiLinkCompletion("[[projects|Alias", 16), null);
   assert.equal(matchWikiLinkCompletion("[[projects]]", 12), null);
+  assert.equal(matchWikiLinkCompletion("((projects|Alias", 16), null);
+  assert.equal(matchWikiLinkCompletion("((projects))", 12), null);
 });
 
 test("suggests matching pages without markdown extensions", () => {

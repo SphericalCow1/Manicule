@@ -40,6 +40,22 @@ test("creates preview decorations for wiki links and aliases", () => {
   );
 });
 
+test("creates preview decorations for round-delimited wiki links", () => {
+  const decorations = previewDecorationsForLine("See ((projects/alpha|Alpha)) and ((Beta))");
+
+  assert.deepEqual(
+    decorations.map(({ from, to }) => ({ from, to })),
+    [
+      { from: 4, to: 21 },
+      { from: 21, to: 26 },
+      { from: 26, to: 28 },
+      { from: 33, to: 35 },
+      { from: 35, to: 39 },
+      { from: 39, to: 41 },
+    ],
+  );
+});
+
 test("creates preview decorations for task keywords and strong text", () => {
   const decorations = previewDecorationsForLine("- TODO Finish **report**");
 
@@ -167,6 +183,13 @@ test("finds wiki links at document positions", () => {
   });
 
   assert.deepEqual(wikiLinkAtPosition("[[Beta]]", 0, 3), {
+    from: 0,
+    to: 8,
+    target: "Beta",
+    label: "Beta",
+  });
+
+  assert.deepEqual(wikiLinkAtPosition("((Beta))", 0, 3), {
     from: 0,
     to: 8,
     target: "Beta",

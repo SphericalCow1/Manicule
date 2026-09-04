@@ -70,7 +70,11 @@ export function wikiLinkHref(target: string, pages: PageSummary[]): string | nul
 }
 
 export function renderWikiLinks(source: string, pages: PageSummary[] = []) {
-  return source.replace(/\[\[([^\]\n]+)\]\]/g, (match, inner: string) => {
+  return source.replace(/\[\[([^\]\n]+)\]\]|\(\(([^)\n]+)\)\)/g, (match, squareInner?: string, roundInner?: string) => {
+    const inner = squareInner ?? roundInner;
+    if (!inner) {
+      return match;
+    }
     const [rawTarget, rawAlias] = inner.split("|", 2);
     const target = rawTarget.trim();
     const href = wikiLinkHref(target, pages);

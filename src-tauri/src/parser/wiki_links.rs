@@ -15,22 +15,15 @@ pub fn parse_wiki_links(text: &str) -> Vec<WikiLink> {
     let mut links = Vec::new();
     let mut search_start = 0;
 
-    while let Some(open_offset) = text[search_start..].find("[[") {
-        let open = search_start + open_offset;
-        let content_start = open + 2;
+    while let Some(link_range) = next_wiki_link_range(text, search_start) {
+        let content = &text[link_range.content_start..link_range.close];
 
-        let Some(close_offset) = text[content_start..].find("]]") else {
-            break;
-        };
-
-        let close = content_start + close_offset;
-        let content = &text[content_start..close];
-
-        if let Some(link) = parse_wiki_link_content(content, &text[open..close + 2]) {
+        if let Some(link) = parse_wiki_link_content(content, &text[link_range.open..link_range.end])
+        {
             links.push(link);
         }
 
-        search_start = close + 2;
+        search_start = link_range.end;
     }
 
     links
@@ -45,44 +38,71 @@ pub fn rewrite_wiki_link_targets(
     let mut search_start = 0;
     let mut replacements = 0;
 
-    while let Some(open_offset) = text[search_start..].find("[[") {
-        let open = search_start + open_offset;
-        let content_start = open + 2;
-
-        let Some(close_offset) = text[content_start..].find("]]") else {
-            break;
-        };
-
-        let close = content_start + close_offset;
-        let content = &text[content_start..close];
-        rewritten.push_str(&text[search_start..open]);
+    while let Some(link_range) = next_wiki_link_range(text, search_start) {
+        let content = &text[link_range.content_start..link_range.close];
+        rewritten.push_str(&text[search_start..link_range.open]);
 
         if let Some((target, alias)) = split_wiki_link_content(content) {
             if target_matches(target) {
                 if let Some(replacement_target) = replacement_target(target) {
-                    rewritten.push_str("[[");
+                    rewritten.push_str(link_range.open_delimiter);
                     rewritten.push_str(&replacement_target);
                     if let Some(alias) = alias {
                         rewritten.push('|');
                         rewritten.push_str(alias);
                     }
-                    rewritten.push_str("]]");
+                    rewritten.push_str(link_range.close_delimiter);
                     replacements += 1;
                 } else {
-                    rewritten.push_str(&text[open..close + 2]);
+                    rewritten.push_str(&text[link_range.open..link_range.end]);
                 }
             } else {
-                rewritten.push_str(&text[open..close + 2]);
+                rewritten.push_str(&text[link_range.open..link_range.end]);
             }
         } else {
-            rewritten.push_str(&text[open..close + 2]);
+            rewritten.push_str(&text[link_range.open..link_range.end]);
         }
 
-        search_start = close + 2;
+        search_start = link_range.end;
     }
 
     rewritten.push_str(&text[search_start..]);
     (rewritten, replacements)
+}
+
+struct WikiLinkRange {
+    open: usize,
+    content_start: usize,
+    close: usize,
+    end: usize,
+    open_delimiter: &'static str,
+    close_delimiter: &'static str,
+}
+
+fn next_wiki_link_range(text: &str, search_start: usize) -> Option<WikiLinkRange> {
+    let remaining = &text[search_start..];
+    let square_open = remaining.find("[[");
+    let round_open = remaining.find("((");
+    let (open_offset, open_delimiter, close_delimiter) = match (square_open, round_open) {
+        (Some(square), Some(round)) if square <= round => (square, "[[", "]]"),
+        (Some(_), Some(round)) => (round, "((", "))"),
+        (Some(square), None) => (square, "[[", "]]"),
+        (None, Some(round)) => (round, "((", "))"),
+        (None, None) => return None,
+    };
+    let open = search_start + open_offset;
+    let content_start = open + open_delimiter.len();
+    let close_offset = text[content_start..].find(close_delimiter)?;
+    let close = content_start + close_offset;
+
+    Some(WikiLinkRange {
+        open,
+        content_start,
+        close,
+        end: close + close_delimiter.len(),
+        open_delimiter,
+        close_delimiter,
+    })
 }
 
 fn parse_wiki_link_content(content: &str, raw: &str) -> Option<WikiLink> {
@@ -175,6 +195,17 @@ mod tests {
     }
 
     #[test]
+    fn parses_round_delimited_wiki_links_like_square_delimited_links() {
+        let links = parse_wiki_links("See ((Projekte/Alpha|Alpha)) and [[Beta]]");
+
+        assert_eq!(links.len(), 2);
+        assert_eq!(links[0].raw, "((Projekte/Alpha|Alpha))");
+        assert_eq!(links[0].target, "Projekte/Alpha");
+        assert_eq!(links[0].alias.as_deref(), Some("Alpha"));
+        assert_eq!(links[1].target, "Beta");
+    }
+
+    #[test]
     fn treats_empty_alias_as_target_label() {
         let links = parse_wiki_links("[[Projekte/Alpha| ]]");
 
@@ -201,6 +232,21 @@ mod tests {
         assert_eq!(
             rewritten,
             "See [[archive/Alpha]] and [[archive/Alpha| Alpha ]]"
+        );
+        assert_eq!(replacements, 2);
+    }
+
+    #[test]
+    fn rewrites_round_delimited_links_and_preserves_their_delimiters() {
+        let (rewritten, replacements) = rewrite_wiki_link_targets(
+            "See ((Projects/Alpha)) and ((Projects/Alpha| Alpha ))",
+            |target| target == "Projects/Alpha",
+            |_| Some("archive/Alpha".to_string()),
+        );
+
+        assert_eq!(
+            rewritten,
+            "See ((archive/Alpha)) and ((archive/Alpha| Alpha ))"
         );
         assert_eq!(replacements, 2);
     }

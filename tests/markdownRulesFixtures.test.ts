@@ -112,7 +112,14 @@ test("renders shared wiki-link fixtures consistently", () => {
 test("detects shared wiki-link fixtures in live preview", () => {
   for (const fixture of fixtures.shared.wikiLinks) {
     for (const link of fixture.links) {
-      const markerIndex = fixture.source.indexOf("[[");
+      const squareMarkerIndex = fixture.source.indexOf("[[");
+      const roundMarkerIndex = fixture.source.indexOf("((");
+      const markerIndex =
+        squareMarkerIndex === -1
+          ? roundMarkerIndex
+          : roundMarkerIndex === -1
+            ? squareMarkerIndex
+            : Math.min(squareMarkerIndex, roundMarkerIndex);
       const linkAtPosition = wikiLinkAtPosition(fixture.source, 0, markerIndex + 2);
 
       assert.deepEqual(

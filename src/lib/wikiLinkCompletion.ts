@@ -3,6 +3,7 @@ import type { PageSummary } from "./types";
 export type WikiLinkCompletionMatch = {
   from: number;
   query: string;
+  closingDelimiter: "]]" | "))";
 };
 
 export type WikiLinkSuggestion = {
@@ -11,21 +12,31 @@ export type WikiLinkSuggestion = {
 };
 
 export function matchWikiLinkCompletion(textBeforeCursor: string, cursorPosition: number) {
-  const openIndex = textBeforeCursor.lastIndexOf("[[");
+  const squareOpenIndex = textBeforeCursor.lastIndexOf("[[");
+  const roundOpenIndex = textBeforeCursor.lastIndexOf("((");
+  const [openIndex, openingDelimiter, closingDelimiter] =
+    squareOpenIndex >= roundOpenIndex
+      ? [squareOpenIndex, "[[", "]]"]
+      : [roundOpenIndex, "((", "))"];
 
   if (openIndex === -1) {
     return null;
   }
 
-  const query = textBeforeCursor.slice(openIndex + 2);
+  const query = textBeforeCursor.slice(openIndex + openingDelimiter.length);
 
-  if (query.includes("]") || query.includes("|") || query.includes("\n")) {
+  if (
+    query.includes("|") ||
+    query.includes("\n") ||
+    (closingDelimiter === "]]" ? query.includes("]") : query.includes(")"))
+  ) {
     return null;
   }
 
   return {
     from: cursorPosition - query.length,
     query,
+    closingDelimiter,
   };
 }
 

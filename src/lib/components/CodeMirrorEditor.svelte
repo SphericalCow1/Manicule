@@ -837,7 +837,7 @@
       options: suggestions.map((suggestion) => ({
         label: suggestion.label,
         type: "file",
-        apply: `${suggestion.apply}]]`,
+        apply: `${suggestion.apply}${match.closingDelimiter}`,
       })),
       filter: false,
     };

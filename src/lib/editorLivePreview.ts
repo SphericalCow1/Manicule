@@ -42,6 +42,7 @@ const hiddenMarkdown = Decoration.replace({});
 const strongText = Decoration.mark({ class: "cm-live-strong" });
 const emphasisText = Decoration.mark({ class: "cm-live-emphasis" });
 const taskPriority = Decoration.mark({ class: "cm-live-priority" });
+const wikiLinkMatcher = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]|\(\(([^)|]+)(?:\|([^)]+))?\)\)/g;
 
 export function livePreviewExtension(
   taskStates = DEFAULT_TASK_STATES,
@@ -82,17 +83,15 @@ export function wikiLinkAtPosition(
   position: number,
 ): WikiLinkAtPosition | null {
   const linePosition = position - lineFrom;
-  const matcher = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-
-  for (const match of lineText.matchAll(matcher)) {
+  for (const match of lineText.matchAll(wikiLinkMatcher)) {
     const start = match.index ?? 0;
     const end = start + match[0].length;
     if (linePosition < start || linePosition > end) {
       continue;
     }
 
-    const target = match[1].trim();
-    const alias = match[2]?.trim();
+    const target = (match[1] ?? match[3]).trim();
+    const alias = (match[2] ?? match[4])?.trim();
     return {
       from: lineFrom + start,
       to: lineFrom + end,
@@ -453,13 +452,11 @@ function addWikiLinkDecorations(
   pages: PageSummary[],
   folderColors: FolderColors,
 ) {
-  const matcher = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-
-  for (const match of lineText.matchAll(matcher)) {
+  for (const match of lineText.matchAll(wikiLinkMatcher)) {
     const start = match.index ?? 0;
     const full = match[0];
-    const target = match[1];
-    const alias = match[2];
+    const target = match[1] ?? match[3];
+    const alias = match[2] ?? match[4];
     const decoration = Decoration.mark({
       class: "cm-live-wiki-link",
       attributes: { style: wikiLinkColorStyle(target, pages, folderColors) },

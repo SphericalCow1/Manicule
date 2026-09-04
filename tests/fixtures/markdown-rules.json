@@ -25,6 +25,17 @@
         ]
       },
       {
+        "name": "round-delimited alias target",
+        "source": "((Projects/Alpha|Alpha plan))",
+        "links": [
+          {
+            "target": "Projects/Alpha",
+            "alias": "Alpha plan",
+            "label": "Alpha plan"
+          }
+        ]
+      },
+      {
         "name": "empty alias",
         "source": "[[Projects/Alpha| ]]",
         "links": [
