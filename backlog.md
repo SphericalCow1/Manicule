@@ -10,6 +10,8 @@
 
 ## Implemented
 
+- [x] Make Shift+Enter add an indented continuation line within the current
+  list block instead of creating a new block.
 - [x] Rename the application and its build metadata from Manicule to Logtext,
   including native window and menu labels, dialogs, package metadata, and the
   desktop bundle identifier.

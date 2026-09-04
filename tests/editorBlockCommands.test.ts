@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   blockRangeForLines,
+  blockLineBreakPrefix,
   collapsibleBlockRangeForLines,
   collapsibleBlockRangesBelowLevel,
   emptyListBlockRange,
@@ -141,6 +142,14 @@ test("reduces or exits empty list blocks on enter", () => {
   assert.equal(emptyListLineAfterEnter("  * [x] "), "* [x] ");
   assert.equal(emptyListLineAfterEnter("- [ ] "), "");
   assert.equal(emptyListLineAfterEnter("- Task"), null);
+});
+
+test("indents shift-enter line breaks to remain within the current list block", () => {
+  assert.equal(blockLineBreakPrefix(["- Parent"], 1), "  ");
+  assert.equal(blockLineBreakPrefix(["  - Child"], 1), "    ");
+  assert.equal(blockLineBreakPrefix(["- Parent", "  continuation"], 2), "  ");
+  assert.equal(blockLineBreakPrefix(["Plain paragraph"], 1), null);
+  assert.equal(blockLineBreakPrefix(["- Parent", "", "  continuation"], 3), null);
 });
 
 test("toggles task status for list blocks", () => {

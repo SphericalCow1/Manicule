@@ -119,6 +119,34 @@ export function emptyListLineAfterEnter(lineText: string) {
   return outdented === lineText ? "" : outdented;
 }
 
+export function blockLineBreakPrefix(lines: string[], lineNumber: number) {
+  const boundedLine = Math.min(Math.max(lineNumber, 1), lines.length);
+  const currentLine = lines[boundedLine - 1] ?? "";
+  const current = parseListItemPrefix(currentLine);
+  if (current) {
+    return `${current.indentation}${blockIndent}`;
+  }
+
+  const currentIndent = blockIndentWidth(currentLine);
+  if (currentIndent === 0) {
+    return null;
+  }
+
+  for (let index = boundedLine - 1; index >= 1; index -= 1) {
+    const previousLine = lines[index - 1] ?? "";
+    if (previousLine.trim() === "") {
+      return null;
+    }
+
+    const previous = parseListItemPrefix(previousLine);
+    if (previous && blockIndentWidth(previousLine) < currentIndent) {
+      return `${previous.indentation}${blockIndent}`;
+    }
+  }
+
+  return null;
+}
+
 export function nextTaskLineText(lineText: string, taskStates = DEFAULT_TASK_STATES) {
   const states = taskStates.length > 0 ? taskStates : DEFAULT_TASK_STATES;
   const statusMatch = taskKeywordMatch(lineText, 0, states);
@@ -184,6 +212,26 @@ export const insertListBlock: Command = (view) => {
       { from: selection.head, insert: `\n${prefix}` },
       ...renumberChanges,
     ],
+    selection: EditorSelection.cursor(selection.head + prefix.length + 1),
+    scrollIntoView: true,
+  });
+  return true;
+};
+
+export const insertBlockLineBreak: Command = (view) => {
+  const selection = view.state.selection.main;
+  if (!selection.empty) {
+    return false;
+  }
+
+  const line = view.state.doc.lineAt(selection.head);
+  const prefix = blockLineBreakPrefix(documentLines(view.state), line.number);
+  if (prefix === null) {
+    return false;
+  }
+
+  view.dispatch({
+    changes: { from: selection.head, insert: `\n${prefix}` },
     selection: EditorSelection.cursor(selection.head + prefix.length + 1),
     scrollIntoView: true,
   });
@@ -465,6 +513,7 @@ export function blockEditingKeymap(
   return Prec.highest(
     keymap.of([
       { key: "Enter", run: insertListBlock },
+      { key: "Shift-Enter", run: insertBlockLineBreak },
       { key: "Backspace", run: deleteEmptyListBlock },
       { key: "Tab", run: indentSelectedBlocks },
       { key: "Shift-Tab", run: outdentSelectedBlocks },
