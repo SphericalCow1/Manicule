@@ -1,5 +1,13 @@
 # Backlog
 
+## Planned
+
+- [ ] Make right-pane hierarchy guides align consistently with parent list
+  markers on macOS, Windows, and Linux. Replace font-metric-dependent bullet
+  positioning with a shared fixed marker column, use a CSS-drawn marker for
+  unordered lists, and keep ordered markers in a fixed-width field. Verify the
+  alignment at every supported zoom level on all three platforms.
+
 ## Implemented
 
 - [x] Generate six elegant Manicule application-icon concepts, with and without
