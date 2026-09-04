@@ -11,8 +11,8 @@ use crate::dto::{
 use crate::index::page_index::{default_h1_for_path, Page, PageIndex};
 use crate::parser::wiki_links::rewrite_wiki_link_targets;
 use crate::workspace::paths::{
-    folder_path_from_target, markdown_path_from_page_target, page_key_from_link_target,
-    page_key_from_relative_path, resolve_workspace_relative_path,
+    case_insensitive_key, folder_path_from_target, markdown_path_from_page_target,
+    page_key_from_link_target, page_key_from_relative_path, resolve_workspace_relative_path,
 };
 use crate::workspace::scanner::scan_workspace;
 use crate::workspace_index::reindex_workspace;
@@ -476,7 +476,9 @@ fn move_folder_to_path(
     if !old_absolute_path.is_dir() {
         return Err(folder_not_found(&old_folder));
     }
-    if new_absolute_path.exists() {
+    let is_case_only_rename =
+        case_insensitive_key(&old_folder) == case_insensitive_key(&new_folder);
+    if new_absolute_path.exists() && !is_case_only_rename {
         return Err(AppError::already_exists(
             "A folder already exists at the target path. Choose a different destination.",
         ));

@@ -18,4 +18,4 @@
   task status and priority menus.
 - [x] Make block-level collapse shortcuts work across keyboard layouts using
   Cmd/Ctrl+1 through 4.
-- [x] Allow page renames that only change filename capitalization.
+- [x] Allow page and folder renames that only change capitalization.

@@ -859,6 +859,43 @@ mod tests {
     }
 
     #[test]
+    fn rename_folder_allows_changing_only_the_folder_name_case() {
+        let root = temp_workspace();
+        fs::create_dir_all(root.join("team")).unwrap();
+        fs::write(root.join("team").join("Alpha.md"), "# Alpha").unwrap();
+        fs::write(root.join("Source.md"), "- Link [[team/Alpha]]").unwrap();
+        let mut workspace = test_workspace_state(
+            root.clone(),
+            PageIndex::from_paths(vec!["team/Alpha.md".to_string(), "Source.md".to_string()]),
+        );
+        workspace
+            .backlinks
+            .index_page("Source.md".to_string(), "- Link [[team/Alpha]]");
+
+        let result =
+            rename_folder_in_workspace(&mut workspace, "team".to_string(), "Team".to_string())
+                .unwrap();
+
+        assert_eq!(result.old_path, "team");
+        assert_eq!(result.new_path, "Team");
+        assert_eq!(result.renamed_page_count, 1);
+        assert_eq!(result.updated_link_count, 1);
+        let folder_names: Vec<_> = fs::read_dir(&root)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert!(folder_names.contains(&"Team".into()));
+        assert!(!folder_names.contains(&"team".into()));
+        assert!(root.join("Team").join("Alpha.md").is_file());
+        assert_eq!(
+            fs::read_to_string(root.join("Source.md")).unwrap(),
+            "- Link [[Team/Alpha]]"
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn search_pages_returns_matching_lines_with_context() {
         let root = temp_workspace();
         fs::create_dir_all(root.join("projects")).unwrap();
