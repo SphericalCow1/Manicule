@@ -2,6 +2,10 @@
 
 ## Implemented
 
+- [x] Generate six elegant Manicule application-icon concepts, with and without
+  the octopus mascot.
+- [x] Use the selected octopus-and-manicule application icon and rebuild local
+  Tauri binaries when icon assets change.
 - [x] Keep the native theme menu label synchronized with the active light or dark mode.
 - [x] Keep the task overview menu label synchronized with the active main view.
 - [x] Make the task overview button label and action follow the active main view.

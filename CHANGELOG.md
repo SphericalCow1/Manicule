@@ -18,6 +18,8 @@ Changes since `v0.6.5`.
 
 ### Changed
 
+- The application icon now uses the selected blue octopus-and-manicule design
+  across macOS, Windows, PNG assets, and local Tauri development builds.
 - Workspace scanning now ignores symbolic links and Windows reparse points so
   linked files outside the selected workspace are not indexed or modified.
 - Full workspace reindexing now reads each Markdown file once while building the
