@@ -710,7 +710,7 @@ mod tests {
         fs::write(root.join("Alpha.md"), "# Alpha").unwrap();
         fs::write(
             root.join("Source.md"),
-            "- Link [[Alpha]]\n- Alias [[alpha.md|Old]]",
+            "- Link [[Alpha]]\n- Alias [[alpha.md|Old]]\n- Compact #Alpha",
         )
         .unwrap();
         let mut workspace = test_workspace_state(
@@ -719,7 +719,7 @@ mod tests {
         );
         workspace.backlinks.index_page(
             "Source.md".to_string(),
-            "- Link [[Alpha]]\n- Alias [[alpha.md|Old]]",
+            "- Link [[Alpha]]\n- Alias [[alpha.md|Old]]\n- Compact #Alpha",
         );
 
         let result =
@@ -728,12 +728,12 @@ mod tests {
 
         assert_eq!(result.old_path, "Alpha.md");
         assert_eq!(result.page.path, "Beta.md");
-        assert_eq!(result.updated_link_count, 2);
+        assert_eq!(result.updated_link_count, 3);
         assert!(!root.join("Alpha.md").exists());
         assert!(root.join("Beta.md").is_file());
         assert_eq!(
             fs::read_to_string(root.join("Source.md")).unwrap(),
-            "- Link [[Beta]]\n- Alias [[Beta|Old]]"
+            "- Link [[Beta]]\n- Alias [[Beta|Old]]\n- Compact #Beta"
         );
         assert!(workspace
             .backlinks
@@ -741,13 +741,13 @@ mod tests {
             .is_empty());
         assert_eq!(
             workspace.backlinks.backlinks_for_target_key("beta").len(),
-            2
+            3
         );
         assert!(workspace.contents.get("Alpha.md").is_none());
         assert_eq!(workspace.contents.get("Beta.md"), Some("# Alpha"));
         assert_eq!(
             workspace.contents.get("Source.md"),
-            Some("- Link [[Beta]]\n- Alias [[Beta|Old]]")
+            Some("- Link [[Beta]]\n- Alias [[Beta|Old]]\n- Compact #Beta")
         );
 
         fs::remove_dir_all(root).unwrap();
@@ -930,6 +930,7 @@ mod tests {
         fs::create_dir_all(root.join("02-heading")).unwrap();
         fs::create_dir_all(root.join("03-text")).unwrap();
         fs::create_dir_all(root.join("04-link")).unwrap();
+        fs::create_dir_all(root.join("05-compact-link")).unwrap();
         fs::write(
             root.join("01-filename").join("prognose.md"),
             "# Alpha\nNo hit",
@@ -950,6 +951,11 @@ mod tests {
             "# Alpha\nSee [[targets/Forecast|Prognose Alias]]",
         )
         .unwrap();
+        fs::write(
+            root.join("05-compact-link").join("Alpha.md"),
+            "# Alpha\nSee #targets/prognose",
+        )
+        .unwrap();
         let workspace = test_workspace_state(
             root.clone(),
             PageIndex::from_paths(vec![
@@ -957,12 +963,13 @@ mod tests {
                 "02-heading/Alpha.md".to_string(),
                 "03-text/Alpha.md".to_string(),
                 "04-link/Alpha.md".to_string(),
+                "05-compact-link/Alpha.md".to_string(),
             ]),
         );
 
         let results = search_pages_in_workspace(&workspace, "prognose").unwrap();
 
-        assert_eq!(results.len(), 4);
+        assert_eq!(results.len(), 5);
         assert_eq!(results[0].path, "01-filename/prognose.md");
         assert_eq!(results[0].line, 1);
         assert_eq!(results[1].path, "02-heading/Alpha.md");
@@ -971,6 +978,8 @@ mod tests {
         assert_eq!(results[2].line, 2);
         assert_eq!(results[3].path, "04-link/Alpha.md");
         assert_eq!(results[3].line, 2);
+        assert_eq!(results[4].path, "05-compact-link/Alpha.md");
+        assert_eq!(results[4].line, 2);
 
         fs::remove_dir_all(root).unwrap();
     }

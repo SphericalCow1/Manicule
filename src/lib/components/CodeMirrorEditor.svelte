@@ -827,7 +827,12 @@
       return null;
     }
 
-    const suggestions = wikiLinkSuggestions(match.query, pages);
+    const suggestions = wikiLinkSuggestions(
+      match.query,
+      pages,
+      undefined,
+      match.closingDelimiter === "",
+    );
     if (suggestions.length === 0 && !context.explicit) {
       return null;
     }

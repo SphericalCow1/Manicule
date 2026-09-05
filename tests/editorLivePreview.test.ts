@@ -56,6 +56,15 @@ test("creates preview decorations for round-delimited wiki links", () => {
   );
 });
 
+test("creates preview decorations for compact links", () => {
+  const decorations = previewDecorationsForLine("See #projects/alpha");
+
+  assert.deepEqual(
+    decorations.map(({ from, to }) => ({ from, to })),
+    [{ from: 4, to: 19 }],
+  );
+});
+
 test("creates preview decorations for task keywords and strong text", () => {
   const decorations = previewDecorationsForLine("- TODO Finish **report**");
 
@@ -195,6 +204,13 @@ test("finds wiki links at document positions", () => {
     target: "Beta",
     label: "Beta",
   });
+
+  assert.deepEqual(wikiLinkAtPosition("See #projects/alpha", 0, 8), {
+    from: 4,
+    to: 19,
+    target: "projects/alpha",
+    label: "#projects/alpha",
+  });
 });
 
 test("ignores positions outside wiki links", () => {
@@ -213,6 +229,21 @@ test("ignores wiki links inside fenced code blocks", () => {
     to: 28,
     target: "Beta",
     label: "Beta",
+  });
+});
+
+test("ignores compact links inside inline and fenced code", () => {
+  const state = EditorState.create({
+    doc: "Use `#Alpha` here\n```md\n#Beta\n```\n#Gamma",
+  });
+
+  assert.equal(wikiLinkAtDocumentPosition(state, 6), null);
+  assert.equal(wikiLinkAtDocumentPosition(state, 28), null);
+  assert.deepEqual(wikiLinkAtDocumentPosition(state, 36), {
+    from: 34,
+    to: 40,
+    target: "Gamma",
+    label: "#Gamma",
   });
 });
 

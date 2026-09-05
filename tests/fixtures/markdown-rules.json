@@ -69,6 +69,33 @@
         ]
       },
       {
+        "name": "compact path target",
+        "source": "See #Projects/Alpha today",
+        "links": [
+          {
+            "target": "Projects/Alpha",
+            "alias": null,
+            "label": "Projects/Alpha"
+          }
+        ]
+      },
+      {
+        "name": "compact non-ASCII target",
+        "source": "See #Projekte/Übersicht today",
+        "links": [
+          {
+            "target": "Projekte/Übersicht",
+            "alias": null,
+            "label": "Projekte/Übersicht"
+          }
+        ]
+      },
+      {
+        "name": "compact links ignore Markdown and URL hash syntax",
+        "source": "# Heading [#A] word#Alpha https://example.test/#Alpha `#Alpha` [Label #Alpha](https://example.test)\n```md\n#Alpha\n```",
+        "links": []
+      },
+      {
         "name": "invalid targets",
         "source": "[[]] [[/Alpha]] [[../Alpha]] [[Alpha/./Beta]]",
         "links": []

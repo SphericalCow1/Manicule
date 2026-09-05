@@ -28,6 +28,20 @@ test("matches text after an open round-delimited wiki link marker", () => {
   });
 });
 
+test("matches compact link completion after a hash marker", () => {
+  assert.deepEqual(matchWikiLinkCompletion("- see #pro", 10), {
+    from: 7,
+    query: "pro",
+    closingDelimiter: "",
+  });
+});
+
+test("does not treat headings or task priorities as compact link completion", () => {
+  assert.equal(matchWikiLinkCompletion("# Heading", 9), null);
+  assert.equal(matchWikiLinkCompletion("[#A", 3), null);
+  assert.equal(matchWikiLinkCompletion("word#Alpha", 10), null);
+});
+
 test("does not match aliases or closed wiki links", () => {
   assert.equal(matchWikiLinkCompletion("[[projects|Alias", 16), null);
   assert.equal(matchWikiLinkCompletion("[[projects]]", 12), null);
@@ -110,6 +124,20 @@ test("keeps full suggestion labels in the dropdown", () => {
     {
       label: "processes/prognose",
       apply: "processes/prognose",
+    },
+  ]);
+});
+
+test("compact completion excludes page targets containing spaces", () => {
+  const compactPages: PageSummary[] = [
+    ...pages,
+    { exists: true, key: "projects/new alpha", path: "projects/new alpha.md", title: "New Alpha" },
+  ];
+
+  assert.deepEqual(wikiLinkSuggestions("pro", compactPages, undefined, true), [
+    {
+      label: "projects/forecasts",
+      apply: "projects/forecasts",
     },
   ]);
 });

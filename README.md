@@ -126,16 +126,27 @@ Internal links use wiki-link syntax:
 [[Project Alpha]]
 [[projects/Project Alpha]]
 [[projects/Project Alpha|Alpha]]
+#Project-Alpha
+#projects/Project-Alpha
 ```
 
 Link targets are resolved case-insensitively. The actual spelling of file and
 folder names is not changed. `.md` in a link target is tolerated, but normal
 links should be written without it.
 
-After typing `[[` in the editor, Logtext offers matching page suggestions based
-on the current input. Selecting a suggestion inserts the target and closes the
-link with `]]`. Suggestions show the full relative page path so the inserted
-target is unambiguous.
+The compact `#link` form is an alternative for targets that contain no spaces.
+It supports letters, numbers, `_`, `-`, internal dots, and `/` between path
+segments. For example, `#projects/Forecast-2027` points to
+`projects/Forecast-2027.md`. Use `[[Project Alpha]]` for targets with spaces or
+when an alias such as `[[projects/Project Alpha|Alpha]]` is needed. Markdown
+headings (`# Heading`), task priorities (`[#A]`), URL fragments, escaped hash
+characters, and hash text in code are not interpreted as compact links.
+
+After typing `[[` or a compact `#` target in the editor, Logtext offers matching
+page suggestions based on the current input. Selecting a `[[` suggestion inserts
+the target and closes the link with `]]`; compact suggestions insert the
+space-free target without a closing delimiter. Suggestions show the full
+relative page path so the inserted target is unambiguous.
 
 Rendered wiki links without an alias use a compact display label. If the page
 name is unique, only the page name is shown; if multiple pages share that name,

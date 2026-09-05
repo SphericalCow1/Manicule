@@ -8,7 +8,7 @@ import {
 import { taskColorStyle } from "./taskColors.js";
 import { wikiLinkColorStyle } from "./folderColors.js";
 import { parseCheckboxListItem } from "./markdownPatterns.js";
-import { wikiLinkDisplayLabel } from "./wikiLinks.js";
+import { wikiLinkDisplayLabel, wikiLinksInText } from "./wikiLinks.js";
 import type { FolderColors, PageSummary, TaskStateColors } from "./types.js";
 
 export type EditorMode = "source" | "live-preview";
@@ -42,7 +42,6 @@ const hiddenMarkdown = Decoration.replace({});
 const strongText = Decoration.mark({ class: "cm-live-strong" });
 const emphasisText = Decoration.mark({ class: "cm-live-emphasis" });
 const taskPriority = Decoration.mark({ class: "cm-live-priority" });
-const wikiLinkMatcher = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]|\(\(([^)|]+)(?:\|([^)]+))?\)\)/g;
 
 export function livePreviewExtension(
   taskStates = DEFAULT_TASK_STATES,
@@ -83,20 +82,16 @@ export function wikiLinkAtPosition(
   position: number,
 ): WikiLinkAtPosition | null {
   const linePosition = position - lineFrom;
-  for (const match of lineText.matchAll(wikiLinkMatcher)) {
-    const start = match.index ?? 0;
-    const end = start + match[0].length;
-    if (linePosition < start || linePosition > end) {
+  for (const match of wikiLinksInText(lineText)) {
+    if (linePosition < match.from || linePosition > match.to) {
       continue;
     }
 
-    const target = (match[1] ?? match[3]).trim();
-    const alias = (match[2] ?? match[4])?.trim();
     return {
-      from: lineFrom + start,
-      to: lineFrom + end,
-      target,
-      label: alias || target,
+      from: lineFrom + match.from,
+      to: lineFrom + match.to,
+      target: match.target,
+      label: match.syntax === "compact" ? `#${match.target}` : match.alias || match.target,
     };
   }
 
@@ -452,18 +447,35 @@ function addWikiLinkDecorations(
   pages: PageSummary[],
   folderColors: FolderColors,
 ) {
-  for (const match of lineText.matchAll(wikiLinkMatcher)) {
-    const start = match.index ?? 0;
-    const full = match[0];
-    const target = match[1] ?? match[3];
-    const alias = match[2] ?? match[4];
+  for (const match of wikiLinksInText(lineText)) {
+    const { alias, from: start, raw: full, target } = match;
     const decoration = Decoration.mark({
       class: "cm-live-wiki-link",
       attributes: { style: wikiLinkColorStyle(target, pages, folderColors) },
     });
 
+    if (match.syntax === "compact") {
+      const label = `#${wikiLinkDisplayLabel(target, pages)}`;
+      decorations.push({
+        from: lineFrom + start,
+        to: lineFrom + match.to,
+        decoration:
+          label === full
+            ? decoration
+            : Decoration.replace({
+                widget: new WikiLinkLabelWidget(
+                  label,
+                  wikiLinkColorStyle(target, pages, folderColors),
+                ),
+              }),
+      });
+      continue;
+    }
+
     if (alias) {
-      const aliasStart = start + 2 + target.length + 1;
+      const aliasSeparator = full.indexOf("|", 2);
+      const aliasStart = start + aliasSeparator + 1;
+      const aliasEnd = start + full.length - 2;
       decorations.push({
         from: lineFrom + start,
         to: lineFrom + aliasStart,
@@ -471,7 +483,7 @@ function addWikiLinkDecorations(
       });
       decorations.push({
         from: lineFrom + aliasStart,
-        to: lineFrom + aliasStart + alias.length,
+        to: lineFrom + aliasEnd,
         decoration,
       });
       decorations.push({
@@ -481,6 +493,8 @@ function addWikiLinkDecorations(
       });
     } else {
       const targetStart = start + 2;
+      const targetEnd = start + full.length - 2;
+      const rawTarget = full.slice(2, -2);
       const label = wikiLinkDisplayLabel(target, pages);
       decorations.push({
         from: lineFrom + start,
@@ -489,9 +503,9 @@ function addWikiLinkDecorations(
       });
       decorations.push({
         from: lineFrom + targetStart,
-        to: lineFrom + targetStart + target.length,
+        to: lineFrom + targetEnd,
         decoration:
-          label === target
+          label === rawTarget
             ? decoration
             : Decoration.replace({
                 widget: new WikiLinkLabelWidget(label, wikiLinkColorStyle(target, pages, folderColors)),

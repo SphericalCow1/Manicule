@@ -4,6 +4,12 @@
 
 Changes since `v0.6.7`.
 
+### Added
+
+- Added compact `#page` links as a whitespace-free alternative to `[[page]]`,
+  including completion, rendering, navigation, backlinks, search, and link
+  rewriting during page or folder moves and renames.
+
 ### Changed
 
 - Renamed the application, desktop bundle, executable, menus, dialogs, internal

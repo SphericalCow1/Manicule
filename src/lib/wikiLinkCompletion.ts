@@ -1,9 +1,10 @@
 import type { PageSummary } from "./types";
+import { isCompactWikiLinkStart, isValidCompactWikiTarget } from "./wikiLinks.js";
 
 export type WikiLinkCompletionMatch = {
   from: number;
   query: string;
-  closingDelimiter: "]]" | "))";
+  closingDelimiter: "]]" | "))" | "";
 };
 
 export type WikiLinkSuggestion = {
@@ -19,24 +20,37 @@ export function matchWikiLinkCompletion(textBeforeCursor: string, cursorPosition
       ? [squareOpenIndex, "[[", "]]"]
       : [roundOpenIndex, "((", "))"];
 
-  if (openIndex === -1) {
-    return null;
+  if (openIndex !== -1) {
+    const query = textBeforeCursor.slice(openIndex + openingDelimiter.length);
+
+    if (
+      !query.includes("|") &&
+      !query.includes("\n") &&
+      !(closingDelimiter === "]]" ? query.includes("]") : query.includes(")"))
+    ) {
+      return {
+        from: cursorPosition - query.length,
+        query,
+        closingDelimiter,
+      };
+    }
   }
 
-  const query = textBeforeCursor.slice(openIndex + openingDelimiter.length);
-
+  const compactMatch = /#([\p{L}\p{N}_][\p{L}\p{N}_./-]*)$/u.exec(textBeforeCursor);
+  const compactOpen = compactMatch?.index ?? -1;
+  const compactQuery = compactMatch?.[1] ?? "";
   if (
-    query.includes("|") ||
-    query.includes("\n") ||
-    (closingDelimiter === "]]" ? query.includes("]") : query.includes(")"))
+    compactOpen === -1 ||
+    !isCompactWikiLinkStart(textBeforeCursor, compactOpen) ||
+    !isValidCompactCompletionQuery(compactQuery)
   ) {
     return null;
   }
 
   return {
-    from: cursorPosition - query.length,
-    query,
-    closingDelimiter,
+    from: cursorPosition - compactQuery.length,
+    query: compactQuery,
+    closingDelimiter: "",
   };
 }
 
@@ -46,6 +60,7 @@ export function wikiLinkSuggestions(
   query: string,
   pages: PageSummary[],
   limit = WIKI_LINK_SUGGESTION_LIMIT,
+  compactOnly = false,
 ) {
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -54,9 +69,19 @@ export function wikiLinkSuggestions(
       label: stripMarkdownExtension(page.path),
       apply: stripMarkdownExtension(page.path),
     }))
+    .filter((suggestion) => !compactOnly || isValidCompactWikiTarget(suggestion.apply))
     .filter((suggestion) => suggestionMatchesQuery(suggestion, normalizedQuery))
     .sort((left, right) => scoreSuggestion(left, normalizedQuery) - scoreSuggestion(right, normalizedQuery))
     .slice(0, limit);
+}
+
+function isValidCompactCompletionQuery(query: string) {
+  const segments = query.split("/");
+  return segments.every(
+    (segment, index) =>
+      (segment.length === 0 && index === segments.length - 1) ||
+      isValidCompactWikiTarget(segment),
+  );
 }
 
 function suggestionMatchesQuery(suggestion: WikiLinkSuggestion, query: string) {

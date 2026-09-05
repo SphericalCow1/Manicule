@@ -14,6 +14,8 @@
 
 ## Implemented
 
+- [x] Support compact `#page` links for whitespace-free page targets across
+  completion, rendering, navigation, backlinks, search, and link rewriting.
 - [x] Remove the branded illustration from the application startup screen.
 - [x] Make Shift+Enter add an indented, visibly rendered continuation line
   within the current list block instead of creating a new block, and render

@@ -1,4 +1,4 @@
-use crate::parser::wiki_links::{parse_wiki_links, WikiLink};
+use crate::parser::wiki_links::{markdown_fence_marker, parse_wiki_links, WikiLink};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedBlock {
@@ -41,9 +41,28 @@ pub fn parse_blocks_with_task_states(markdown: &str, task_states: &[String]) -> 
 fn parse_flat_blocks(lines: &[String], task_states: &[String]) -> Vec<FlatBlock> {
     let mut blocks = Vec::new();
     let mut current: Option<FlatBlock> = None;
+    let mut active_fence: Option<(char, usize)> = None;
 
     for (index, line) in lines.iter().enumerate() {
         let line_number = index + 1;
+        let fence_marker = markdown_fence_marker(line);
+        let is_code_line = active_fence.is_some() || fence_marker.is_some();
+        if let Some((marker, length)) = fence_marker {
+            match active_fence {
+                Some((open_marker, open_length))
+                    if marker == open_marker && length >= open_length =>
+                {
+                    active_fence = None;
+                }
+                None => active_fence = Some((marker, length)),
+                _ => {}
+            }
+        }
+        let line_links = if is_code_line {
+            Vec::new()
+        } else {
+            parse_wiki_links(line)
+        };
 
         if let Some(item) = parse_list_item(line) {
             if let Some(block) = current.take() {
@@ -59,7 +78,7 @@ fn parse_flat_blocks(lines: &[String], task_states: &[String]) -> Vec<FlatBlock>
                 task_status: task_marker.status,
                 task_priority: task_marker.priority,
                 markdown_lines: vec![line.to_string()],
-                links: parse_wiki_links(item.text),
+                links: line_links,
             });
             continue;
         }
@@ -68,7 +87,7 @@ fn parse_flat_blocks(lines: &[String], task_states: &[String]) -> Vec<FlatBlock>
             if line.trim().is_empty() || count_indent(line) > block.indent {
                 block.line_end = line_number;
                 block.markdown_lines.push(line.to_string());
-                block.links.extend(parse_wiki_links(line));
+                block.links.extend(line_links);
                 continue;
             }
         }
@@ -88,7 +107,7 @@ fn parse_flat_blocks(lines: &[String], task_states: &[String]) -> Vec<FlatBlock>
                 task_status: task_marker.status,
                 task_priority: task_marker.priority,
                 markdown_lines: vec![line.to_string()],
-                links: parse_wiki_links(line),
+                links: line_links,
             });
         }
     }
@@ -370,6 +389,17 @@ mod tests {
         assert_eq!(blocks.len(), 2);
         assert_eq!(blocks[0].text, "[ ] Task [[Alpha]]");
         assert_eq!(blocks[0].links.len(), 1);
+    }
+
+    #[test]
+    fn recognizes_compact_links_but_not_links_inside_fenced_code() {
+        let blocks = parse_blocks("- See #Alpha\n```md\n#Beta\n```\n- See #Gamma");
+
+        let targets: Vec<&str> = blocks
+            .iter()
+            .flat_map(|block| block.links.iter().map(|link| link.target.as_str()))
+            .collect();
+        assert_eq!(targets, vec!["Alpha", "Gamma"]);
     }
 
     #[test]

@@ -22,6 +22,7 @@ import {
   normalizeWikiTargetKey,
   renderWikiLinks,
   wikiLinkDisplayLabel,
+  wikiLinksInText,
 } from "../src/lib/wikiLinks.js";
 
 type MarkdownRulesFixture = {
@@ -111,16 +112,12 @@ test("renders shared wiki-link fixtures consistently", () => {
 
 test("detects shared wiki-link fixtures in live preview", () => {
   for (const fixture of fixtures.shared.wikiLinks) {
-    for (const link of fixture.links) {
-      const squareMarkerIndex = fixture.source.indexOf("[[");
-      const roundMarkerIndex = fixture.source.indexOf("((");
-      const markerIndex =
-        squareMarkerIndex === -1
-          ? roundMarkerIndex
-          : roundMarkerIndex === -1
-            ? squareMarkerIndex
-            : Math.min(squareMarkerIndex, roundMarkerIndex);
-      const linkAtPosition = wikiLinkAtPosition(fixture.source, 0, markerIndex + 2);
+    const matches = wikiLinksInText(fixture.source);
+    assert.equal(matches.length, fixture.links.length, fixture.name);
+
+    for (const [index, link] of fixture.links.entries()) {
+      const match = matches[index];
+      const linkAtPosition = wikiLinkAtPosition(fixture.source, 0, match.from + 1);
 
       assert.deepEqual(
         linkAtPosition && {
@@ -129,7 +126,7 @@ test("detects shared wiki-link fixtures in live preview", () => {
         },
         {
           target: link.target,
-          label: link.label,
+          label: match.syntax === "compact" ? `#${link.label}` : link.label,
         },
         fixture.name,
       );

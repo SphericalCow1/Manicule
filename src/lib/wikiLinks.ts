@@ -13,6 +13,26 @@ export type ResolvedWikiTarget =
       key: string;
     };
 
+export type WikiLinkSyntax = "square" | "round" | "compact";
+
+export type WikiLinkMatch = {
+  from: number;
+  to: number;
+  raw: string;
+  target: string;
+  alias: string | null;
+  syntax: WikiLinkSyntax;
+};
+
+const compactSegmentPattern = String.raw`[\p{L}\p{N}_](?:[\p{L}\p{N}_-]|\.(?=[\p{L}\p{N}_]))*`;
+const compactTargetPattern = `${compactSegmentPattern}(?:/${compactSegmentPattern})*`;
+const wikiLinkPattern = new RegExp(
+  String.raw`\[\[([^\]\n]+)\]\]|\(\(([^)\n]+)\)\)|#(${compactTargetPattern})`,
+  "gu",
+);
+const compactTargetPatternExact = new RegExp(`^${compactTargetPattern}$`, "u");
+const compactSegmentCharacter = /^[\p{L}\p{N}_-]$/u;
+
 export function normalizeWikiTargetKey(target: string): string | null {
   const withoutExtension = stripMarkdownExtension(target.trim());
 
@@ -70,22 +90,72 @@ export function wikiLinkHref(target: string, pages: PageSummary[]): string | nul
 }
 
 export function renderWikiLinks(source: string, pages: PageSummary[] = []) {
-  return source.replace(/\[\[([^\]\n]+)\]\]|\(\(([^)\n]+)\)\)/g, (match, squareInner?: string, roundInner?: string) => {
-    const inner = squareInner ?? roundInner;
-    if (!inner) {
-      return match;
-    }
-    const [rawTarget, rawAlias] = inner.split("|", 2);
-    const target = rawTarget.trim();
+  let rendered = "";
+  let cursor = 0;
+
+  for (const match of wikiLinksInText(source)) {
+    rendered += source.slice(cursor, match.from);
+    const target = match.target;
     const href = wikiLinkHref(target, pages);
 
     if (!href) {
-      return match;
+      rendered += match.raw;
+      cursor = match.to;
+      continue;
     }
 
-    const label = rawAlias?.trim() || wikiLinkDisplayLabel(target, pages);
-    return `[${escapeMarkdownLabel(label)}](${href})`;
-  });
+    const displayLabel = match.alias || wikiLinkDisplayLabel(target, pages);
+    const label = match.syntax === "compact" ? `#${displayLabel}` : displayLabel;
+    rendered += `[${escapeMarkdownLabel(label)}](${href})`;
+    cursor = match.to;
+  }
+
+  return rendered + source.slice(cursor);
+}
+
+export function wikiLinksInText(source: string): WikiLinkMatch[] {
+  const links: WikiLinkMatch[] = [];
+
+  for (const match of source.matchAll(wikiLinkPattern)) {
+    const from = match.index ?? 0;
+    const raw = match[0];
+    const compactTarget = match[3];
+    const syntax: WikiLinkSyntax = compactTarget
+      ? "compact"
+      : match[1] !== undefined
+        ? "square"
+        : "round";
+
+    if (
+      isMarkdownCodePosition(source, from) ||
+      (syntax === "compact" && isMarkdownLinkLabelPosition(source, from)) ||
+      (syntax === "compact" && !isCompactWikiLinkStart(source, from))
+    ) {
+      continue;
+    }
+
+    const inner = compactTarget ?? match[1] ?? match[2];
+    const [rawTarget, rawAlias] = inner.split("|", 2);
+    const target = rawTarget.trim();
+    if (!isValidWikiTarget(target)) {
+      continue;
+    }
+
+    links.push({
+      from,
+      to: from + raw.length,
+      raw,
+      target,
+      alias: syntax === "compact" ? null : rawAlias?.trim() || null,
+      syntax,
+    });
+  }
+
+  return links;
+}
+
+export function isValidCompactWikiTarget(target: string) {
+  return compactTargetPatternExact.test(target) && isValidWikiTarget(target);
 }
 
 export function wikiLinkDisplayLabel(target: string, pages: PageSummary[] = []) {
@@ -166,4 +236,83 @@ function isValidWikiTarget(target: string) {
 
 function escapeMarkdownLabel(label: string) {
   return label.replace(/([\\\]])/g, "\\$1");
+}
+
+export function isCompactWikiLinkStart(source: string, from: number) {
+  if (from === 0) {
+    return true;
+  }
+
+  const previous = [...source.slice(0, from)].at(-1);
+  return Boolean(
+    previous &&
+      !compactSegmentCharacter.test(previous) &&
+      !["#", "[", "/", "\\", ":", "@", "="].includes(previous),
+  );
+}
+
+function isMarkdownCodePosition(source: string, position: number) {
+  const lineStart = source.lastIndexOf("\n", position - 1) + 1;
+  let fence: { marker: string; length: number } | null = null;
+
+  for (const line of source.slice(0, lineStart).split("\n")) {
+    const marker = markdownFenceMarker(line);
+    if (!marker) {
+      continue;
+    }
+
+    if (fence?.marker === marker.marker && marker.length >= fence.length) {
+      fence = null;
+    } else if (!fence) {
+      fence = marker;
+    }
+  }
+
+  const linePrefix = source.slice(lineStart, position);
+  return Boolean(fence || markdownFenceMarker(linePrefix) || hasUnclosedInlineCode(linePrefix));
+}
+
+function isMarkdownLinkLabelPosition(source: string, position: number) {
+  const lineStart = source.lastIndexOf("\n", position - 1) + 1;
+  const lineEnd = source.indexOf("\n", position);
+  const line = source.slice(lineStart, lineEnd === -1 ? source.length : lineEnd);
+  const relativePosition = position - lineStart;
+  const openBracket = line.lastIndexOf("[", relativePosition);
+  if (openBracket === -1) {
+    return false;
+  }
+
+  const closeBracket = line.indexOf("]", relativePosition);
+  if (closeBracket === -1) {
+    return false;
+  }
+
+  const afterLabel = line.slice(closeBracket + 1);
+  return afterLabel.startsWith("(") || afterLabel.startsWith("[");
+}
+
+function markdownFenceMarker(line: string) {
+  const match = /^\s*(`{3,}|~{3,})/.exec(line);
+  return match ? { marker: match[1][0], length: match[1].length } : null;
+}
+
+function hasUnclosedInlineCode(linePrefix: string) {
+  let openLength: number | null = null;
+
+  for (let index = 0; index < linePrefix.length; ) {
+    if (linePrefix[index] !== "`" || (index > 0 && linePrefix[index - 1] === "\\")) {
+      index += 1;
+      continue;
+    }
+
+    let end = index + 1;
+    while (linePrefix[end] === "`") {
+      end += 1;
+    }
+    const runLength = end - index;
+    openLength = openLength === runLength ? null : openLength ?? runLength;
+    index = end;
+  }
+
+  return openLength !== null;
 }

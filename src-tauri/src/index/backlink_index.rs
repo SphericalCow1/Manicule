@@ -312,6 +312,22 @@ mod tests {
     }
 
     #[test]
+    fn creates_backlinks_for_compact_links() {
+        let mut index = BacklinkIndex::default();
+        index.index_page(
+            "Journal.md".to_string(),
+            "- Discuss #projects/forecasts\n  - Follow up",
+        );
+
+        let backlinks = index.backlinks_for_target_key("projects/forecasts");
+        assert_eq!(backlinks.len(), 1);
+        assert_eq!(
+            backlinks[0].block_markdown,
+            "- Discuss #projects/forecasts\n  - Follow up"
+        );
+    }
+
+    #[test]
     fn removes_old_page_contributions_on_reindex() {
         let mut index = BacklinkIndex::default();
         index.index_page("A.md".to_string(), "- Link [[Alpha]]");

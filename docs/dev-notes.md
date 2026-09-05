@@ -239,6 +239,14 @@ The parser is intentionally lightweight and focused on the Markdown constructs
 Manicule needs for indexing and editing operations. Full Markdown rendering is
 handled in the frontend.
 
+Page links are recognized in square (`[[page]]`), round (`((page))`), and compact
+(`#page`) syntax. Compact targets are slash-separated, whitespace-free path
+segments. The Rust parser and TypeScript live-preview scanner deliberately share
+fixtures for valid links and exclusions such as headings, task priorities, URL
+fragments, escaped hashes, inline code, and fenced code. Rename and move
+operations preserve compact syntax when the replacement remains valid and fall
+back to square syntax when a new target contains spaces.
+
 ## File Operations
 
 Page and folder operations are implemented in `src-tauri/src/page_ops.rs`.

@@ -7,6 +7,7 @@ import {
   compactPageLabel,
   renderWikiLinks,
   resolveWikiTarget,
+  wikiLinksInText,
   wikiLinkDisplayLabel,
   wikiLinkHref,
 } from "../src/lib/wikiLinks.js";
@@ -47,6 +48,28 @@ test("renders round-delimited wiki links with the same semantics", () => {
     renderWikiLinks("((projects/forecasts.md|Forecast))", pages),
     "[Forecast](manicule:Projects%2FForecasts.md)",
   );
+});
+
+test("renders compact links with a visible hash marker", () => {
+  assert.equal(
+    renderWikiLinks("See #projects/forecasts today", pages),
+    "See [#Forecasts](manicule:Projects%2FForecasts.md) today",
+  );
+});
+
+test("renders missing compact links with the existing creation workflow", () => {
+  assert.equal(
+    renderWikiLinks("See #Missing/Page", pages),
+    "See [#Missing/Page](manicule-missing:Missing%2FPage.md)",
+  );
+});
+
+test("ignores compact link lookalikes and Markdown code", () => {
+  const source =
+    "# Heading [#A] word#Alpha https://example.test/#Alpha `#Alpha` [Label #Alpha](https://example.test)\n```md\n#Alpha\n```";
+
+  assert.deepEqual(wikiLinksInText(source), []);
+  assert.equal(renderWikiLinks(source, pages), source);
 });
 
 test("marks missing wiki targets with a non-navigating scheme", () => {
