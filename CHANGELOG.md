@@ -12,6 +12,9 @@ Changes since `v0.6.7`.
 
 ### Changed
 
+- Right-pane list markers, task checkboxes, and hierarchy guides now share a
+  scalable marker axis instead of relying on platform-specific native list
+  marker positioning.
 - Renamed the application, desktop bundle, executable, menus, dialogs, internal
   namespaces, and documentation from Semtags to Manicule.
 - User-level startup configuration is now stored in `~/.manicule`; configuration

@@ -2421,17 +2421,57 @@ textarea {
   margin-bottom: 2px;
 }
 
-.right-pane .markdown-view li > ul,
-.right-pane .markdown-view li > ol {
+.right-pane .markdown-view {
+  --markdown-list-indent: 2em;
+  --markdown-list-marker-axis: -1em;
+  --markdown-list-marker-size: 0.38em;
+}
+
+.right-pane .markdown-view ul,
+.right-pane .markdown-view ol {
+  margin-right: 0;
+  margin-left: 0;
+  padding-left: var(--markdown-list-indent);
+}
+
+.right-pane .markdown-view li[data-list-marker] {
   position: relative;
+  list-style: none;
+}
+
+.right-pane .markdown-view ul > li[data-list-marker]::before,
+.right-pane .markdown-view ol > li[data-list-marker]::before {
+  position: absolute;
+  top: 0.775em;
+  left: var(--markdown-list-marker-axis);
+  box-sizing: border-box;
+  content: "";
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.right-pane .markdown-view ul > li[data-list-marker]::before {
+  width: var(--markdown-list-marker-size);
+  height: var(--markdown-list-marker-size);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.right-pane .markdown-view ol > li[data-list-marker]::before {
+  width: calc(var(--markdown-list-indent) - 0.25em);
+  color: var(--text-secondary);
+  content: attr(data-list-marker);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: center;
 }
 
 .right-pane .markdown-view li > ul::before,
 .right-pane .markdown-view li > ol::before {
   position: absolute;
-  top: 0;
+  top: 2em;
   bottom: 0;
-  left: -1.85em;
+  left: var(--markdown-list-marker-axis);
   border-left: 1px solid var(--block-indent-guide);
   content: "";
   pointer-events: none;
@@ -2439,6 +2479,18 @@ textarea {
 
 .markdown-view .task-list-item {
   list-style-position: outside;
+}
+
+.right-pane .markdown-view li.task-list-item::before {
+  display: none;
+}
+
+.right-pane .markdown-view li.task-list-item > .task-list-checkbox:first-child {
+  position: absolute;
+  top: 0.775em;
+  left: var(--markdown-list-marker-axis);
+  margin: 0;
+  transform: translate(-50%, -50%);
 }
 
 .markdown-view .task-list-checkbox {

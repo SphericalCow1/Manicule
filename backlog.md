@@ -6,14 +6,13 @@
   on a block continuation line. First make `((page))` an alias for `[[page]]`
   across parsing, navigation, backlinks, rendering, completion, and link
   rewriting; it is not a block-reference syntax.
-- [ ] Make right-pane hierarchy guides align consistently with parent list
-  markers on macOS, Windows, and Linux. Replace font-metric-dependent bullet
-  positioning with a shared fixed marker column, use a CSS-drawn marker for
-  unordered lists, and keep ordered markers in a fixed-width field. Verify the
-  alignment at every supported zoom level on all three platforms.
 
 ## Implemented
 
+- [x] Align right-pane hierarchy guides with list markers through a shared,
+  scalable marker axis. Use CSS-drawn unordered markers, fixed-width ordered
+  markers, and the same axis for task checkboxes instead of native browser
+  marker metrics.
 - [x] Support compact `#page` links for whitespace-free page targets across
   completion, rendering, navigation, backlinks, search, and link rewriting.
 - [x] Remove the branded illustration from the application startup screen.

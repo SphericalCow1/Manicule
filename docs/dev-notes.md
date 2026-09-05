@@ -239,6 +239,12 @@ The parser is intentionally lightweight and focused on the Markdown constructs
 Manicule needs for indexing and editing operations. Full Markdown rendering is
 handled in the frontend.
 
+Rendered list items receive `data-list-marker` from their Markdown-it token.
+The right pane disables native list markers and places CSS-drawn unordered
+markers, fixed-width ordered markers, task checkboxes, and nested-list hierarchy
+guides on one shared `em`-based axis. This avoids platform font metrics and keeps
+the horizontal geometry stable when the application font size changes.
+
 Page links are recognized in square (`[[page]]`), round (`((page))`), and compact
 (`#page`) syntax. Compact targets are slash-separated, whitespace-free path
 segments. The Rust parser and TypeScript live-preview scanner deliberately share

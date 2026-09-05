@@ -12,6 +12,14 @@ export function sourceLineForLocalLine(localLine: number, sourceLineNumbers: num
   return sourceLineNumbers[localLine - 1] ?? localLine;
 }
 
+export function renderedListMarker(token: { type: string; info: string; markup: string }) {
+  if (token.type !== "list_item_open") {
+    return null;
+  }
+
+  return token.info ? `${token.info}${token.markup}` : token.markup;
+}
+
 export function sourceLineSelectorForLine(line: number) {
   return `[data-source-line="${line}"], [data-task-line="${line}"], [data-line="${line}"]`;
 }

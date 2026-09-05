@@ -4,6 +4,7 @@
   import ContextMenuShell from "./ContextMenuShell.svelte";
   import { renderCheckboxItems } from "../markdownRendering";
   import {
+    renderedListMarker,
     SOURCE_LINE_RENDER_TOKEN_RULES,
     sourceLineForLocalLine,
     sourceLineFromContextMenuTarget,
@@ -146,10 +147,16 @@
     env: MarkdownRenderEnv,
     self: MarkdownRenderer,
   ) {
-    const localLine = tokens[index]?.map?.[0];
+    const token = tokens[index];
+    const localLine = token?.map?.[0];
     if (localLine !== undefined) {
       const line = sourceLineForLocalLine(localLine + 1, env.sourceLineNumbers);
-      tokens[index]?.attrSet("data-source-line", String(line));
+      token.attrSet("data-source-line", String(line));
+    }
+
+    const listMarker = renderedListMarker(token);
+    if (listMarker !== null) {
+      token.attrSet("data-list-marker", listMarker);
     }
 
     return self.renderToken(tokens, index, options);
@@ -492,6 +499,9 @@
   };
 
   type MarkdownToken = {
+    type: string;
+    info: string;
+    markup: string;
     map: [number, number] | null;
     attrSet(name: string, value: string): void;
   };
