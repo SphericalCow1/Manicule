@@ -12,6 +12,9 @@ Changes since `v0.6.7`.
 
 ### Changed
 
+- Branch and pull-request CI now runs frontend and Rust verification plus
+  cross-platform artifact builds independently from the tag-only GitHub Release
+  workflow.
 - Right-pane list markers, task checkboxes, and hierarchy guides now share a
   scalable marker axis instead of relying on platform-specific native list
   marker positioning.

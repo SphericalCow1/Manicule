@@ -641,6 +641,24 @@ Build validation:
 - Platform-specific package behavior should be checked on the target operating
   system before release.
 
+CI and release automation are intentionally separate:
+
+- `.github/workflows/ci.yml` runs on supported short-lived branches, `main`, and
+  pull requests targeting `main`. It executes frontend checks and tests, Rust
+  formatting and tests, then builds Windows, macOS, and Linux artifacts with a
+  short retention period. It has read-only repository permissions and never
+  creates a release.
+- `.github/workflows/release.yml` runs only for tags. It validates strict
+  `vMAJOR.MINOR.PATCH` syntax, verifies that source versions match the tag and
+  that the commit belongs to `main`, then rebuilds every platform. The final job
+  receives write permission and publishes a GitHub Release only after all build
+  jobs have succeeded.
+- CI and release job names are part of the branch-protection contract. Rename
+  them only together with the required status checks configured on GitHub.
+- Cross-platform dependencies and build targets must stay synchronized between
+  CI and release workflows. CI may use smaller native bundles; releases retain
+  the full distributable package set.
+
 Manual acceptance checks:
 
 - Workspace open, close, and restore behavior
