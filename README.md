@@ -379,11 +379,12 @@ npm run tauri build
 
 ## Release Builds
 
-Pushes to short-lived working branches and pull requests targeting `main` run
-checks, tests, and cross-platform builds through `.github/workflows/ci.yml`.
-These builds are available as temporary GitHub Actions artifacts and do not
-create releases. Completed changes are squash-merged into the stable `main`
-branch.
+Pushes to short-lived working branches and `main` run checks, tests, and
+cross-platform builds through `.github/workflows/ci.yml`. These builds are
+available as temporary GitHub Actions artifacts. Pull requests rerun checks and
+tests against the proposed merge without repeating the Tauri build matrix.
+Neither event creates releases. Completed changes are squash-merged into the
+stable `main` branch.
 
 Official releases are created only by pushing a semantic version tag such as
 `v0.7.0` on a tested `main` commit. `.github/workflows/release.yml` verifies the
