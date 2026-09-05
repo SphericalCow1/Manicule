@@ -343,7 +343,10 @@ export function moveCurrentBlock(direction: "up" | "down"): Command {
     const lines = documentLines(view.state);
     const moved = moveBlockLines(lines, lineNumber, direction);
     if (!moved) {
-      return false;
+      // Keep CodeMirror's document-navigation binding from handling Cmd/Ctrl+Arrow
+      // once the cursor is in a list block, even if that block has no sibling in
+      // the requested direction.
+      return blockRangeForCursorLine(lines, lineNumber).isList;
     }
 
     const currentLine = view.state.doc.lineAt(selection.head);
@@ -370,7 +373,7 @@ export function movableBlockRanges(
   lineNumber: number,
   direction: "up" | "down",
 ) {
-  const current = blockRangeForLines(lines, lineNumber);
+  const current = blockRangeForCursorLine(lines, lineNumber);
   const target =
     direction === "up"
       ? previousSiblingRange(lines, current)
@@ -460,6 +463,23 @@ export function blockRangeForLines(lines: string[], lineNumber: number): BlockLi
     indent: current.indent,
     isList: true,
   };
+}
+
+export function blockRangeForCursorLine(lines: string[], lineNumber: number): BlockLineRange {
+  const boundedLine = Math.min(Math.max(lineNumber, 1), lines.length);
+  const directRange = blockRangeForLines(lines, boundedLine);
+  if (directRange.isList) {
+    return directRange;
+  }
+
+  for (let candidateLine = boundedLine - 1; candidateLine >= 1; candidateLine -= 1) {
+    const candidateRange = blockRangeForLines(lines, candidateLine);
+    if (candidateRange.isList && candidateRange.endLine >= boundedLine) {
+      return candidateRange;
+    }
+  }
+
+  return directRange;
 }
 
 export function collapsibleBlockRangeForLines(

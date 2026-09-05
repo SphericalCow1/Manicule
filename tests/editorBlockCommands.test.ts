@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { EditorState } from "@codemirror/state";
 import {
   blockRangeForLines,
+  blockRangeForCursorLine,
   blockLineBreakPrefix,
   blockLineBreakText,
   collapsibleBlockRangeForLines,
@@ -14,6 +16,7 @@ import {
   listBlockPrefix,
   listContinuationPrefix,
   moveBlockLines,
+  moveCurrentBlock,
   movableBlockRanges,
   nextTaskLineText,
   outdentLineText,
@@ -280,6 +283,45 @@ test("finds sibling ranges for moving blocks", () => {
   });
   assert.equal(movableBlockRanges(lines, 1, "up"), null);
   assert.equal(movableBlockRanges(lines, 5, "down"), null);
+});
+
+test("treats continuation lines as part of their owning list block when moving", () => {
+  const lines = ["- First", "  First continuation", "  - First child", "- Second"];
+
+  assert.deepEqual(blockRangeForCursorLine(lines, 2), {
+    startLine: 1,
+    endLine: 3,
+    indent: 0,
+    isList: true,
+  });
+  assert.deepEqual(moveBlockLines(lines, 2, "down")?.lines, [
+    "- Second",
+    "- First",
+    "  First continuation",
+    "  - First child",
+  ]);
+});
+
+test("does not move a continuation line beyond its list level", () => {
+  const lines = ["- Parent", "  - Only child", "    Child continuation", "- Sibling"];
+
+  assert.equal(movableBlockRanges(lines, 3, "up"), null);
+  assert.equal(movableBlockRanges(lines, 3, "down"), null);
+});
+
+test("consumes block moves at sibling boundaries without moving the cursor", () => {
+  const state = EditorState.create({ doc: "- Only block" });
+  let dispatched = false;
+  const view = {
+    state,
+    dispatch: () => {
+      dispatched = true;
+    },
+  };
+
+  assert.equal(moveCurrentBlock("up")(view as never), true);
+  assert.equal(moveCurrentBlock("down")(view as never), true);
+  assert.equal(dispatched, false);
 });
 
 test("moves list blocks with their child blocks", () => {

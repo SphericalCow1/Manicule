@@ -9,6 +9,8 @@
 
 ## Implemented
 
+- [x] Keep block moves within the current sibling level and resolve cursor
+  positions on continuation lines to their owning list block.
 - [x] Align right-pane hierarchy guides with list markers through a shared,
   scalable marker axis. Use CSS-drawn unordered markers, fixed-width ordered
   markers, and the same axis for task checkboxes instead of native browser
