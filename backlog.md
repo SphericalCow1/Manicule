@@ -9,6 +9,10 @@
 
 ## Implemented
 
+- [x] Separate branch and pull-request CI from tag-only releases. Run frontend
+  and Rust verification plus cross-platform artifact builds for development,
+  and publish official binaries only after a validated semantic version tag
+  completes all release builds.
 - [x] Keep block moves within the current sibling level and resolve cursor
   positions on continuation lines to their owning list block.
 - [x] Align right-pane hierarchy guides with list markers through a shared,

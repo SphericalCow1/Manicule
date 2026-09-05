@@ -359,8 +359,10 @@ Run checks and tests:
 ```bash
 npm run check
 npm run test:frontend
+npm run build
 cd src-tauri
-cargo test
+cargo fmt --check
+cargo test --locked
 ```
 
 Build the frontend:
@@ -377,11 +379,18 @@ npm run tauri build
 
 ## Release Builds
 
-Release builds are created by GitHub Actions when a version tag matching
-`v*` is pushed. The workflow creates a draft GitHub release and uploads
-Windows, macOS, and Linux desktop artifacts.
+Pushes to short-lived working branches and pull requests targeting `main` run
+checks, tests, and cross-platform builds through `.github/workflows/ci.yml`.
+These builds are available as temporary GitHub Actions artifacts and do not
+create releases. Completed changes are squash-merged into the stable `main`
+branch.
 
-The current app version is `0.6.5`.
+Official releases are created only by pushing a semantic version tag such as
+`v0.7.0` on a tested `main` commit. `.github/workflows/release.yml` verifies the
+tag and source versions, rebuilds all platforms, and publishes the Windows,
+macOS, and Linux assets after every build succeeds.
+
+The current app version is `0.7.0`.
 
 ## License
 
