@@ -62,9 +62,11 @@ safeguards.
   fixups. Merge completed pull requests into `main` with Squash Merge.
 - Delete the working branch after its squash merge.
 
-Pushes to supported working branches and pull requests targeting `main` run
-checks, tests, cross-platform builds, and produce temporary GitHub Actions
-artifacts. They never create a GitHub Release.
+Pushes to supported working branches and `main` run checks, tests,
+cross-platform builds, and produce temporary GitHub Actions artifacts. Pull
+requests targeting `main` rerun checks and tests against the proposed merge
+without repeating the Tauri build matrix. Neither event creates a GitHub
+Release.
 
 ## Commit Messages
 

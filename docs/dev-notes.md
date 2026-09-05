@@ -644,10 +644,14 @@ Build validation:
 CI and release automation are intentionally separate:
 
 - `.github/workflows/ci.yml` runs on supported short-lived branches, `main`, and
-  pull requests targeting `main`. It executes frontend checks and tests, Rust
-  formatting and tests, then builds Windows, macOS, and Linux artifacts with a
-  short retention period. It has read-only repository permissions and never
-  creates a release.
+  pull requests targeting `main`. Every event executes frontend checks and
+  tests plus Rust formatting and tests. Pushes additionally build Windows,
+  macOS, and Linux artifacts with a short retention period; pull requests check
+  the proposed merge without repeating that Tauri build matrix. The workflow
+  has read-only repository permissions and never creates a release.
+- Push and pull-request runs use separate concurrency groups. A new commit may
+  cancel an obsolete run of the same event type, but a pull-request check must
+  not cancel the platform builds started by the corresponding branch push.
 - `.github/workflows/release.yml` runs only for tags. It validates strict
   `vMAJOR.MINOR.PATCH` syntax, verifies that source versions match the tag and
   that the commit belongs to `main`, then rebuilds every platform. The final job
