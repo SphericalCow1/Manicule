@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -72,6 +72,7 @@ jobs:
 
   build:
     name: ci-build-${{ matrix.kind }}
+    if: github.event_name == 'push'
     needs: quality
     runs-on: ${{ matrix.platform }}
     strategy:
